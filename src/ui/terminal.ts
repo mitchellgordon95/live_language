@@ -1,6 +1,7 @@
 import type { GameState, AIUnderstandingResult, ActionResult, Goal, Intent } from '../engine/types.js';
 import { formatTime } from '../engine/game-state.js';
 import { getWordIdFromObject, getFamiliaritySummary, getObjectLabel } from '../engine/vocabulary.js';
+import { getNPCsInLocation, getPetsInLocation } from '../data/home-basics.js';
 
 const COLORS = {
   reset: '\x1b[0m',
@@ -156,6 +157,20 @@ export function printAvailableVerbs(state: GameState): void {
     verbs.push({ spanish: 'cocino', english: 'I cook', wordId: 'i_cook' });
   }
 
+  // NPC/Pet interactions
+  const npcsHere = getNPCsInLocation(state.location.id);
+  const petsHere = getPetsInLocation(state.location.id, state.petLocations);
+
+  if (npcsHere.length > 0) {
+    verbs.push({ spanish: 'hablo con', english: 'I talk to', wordId: 'i_talk_to' });
+    verbs.push({ spanish: 'le doy', english: 'I give', wordId: 'i_give' });
+  }
+
+  if (petsHere.length > 0) {
+    verbs.push({ spanish: 'acaricio', english: 'I pet', wordId: 'i_pet' });
+    verbs.push({ spanish: 'le doy comida', english: 'I feed', wordId: 'i_feed' });
+  }
+
   console.log(`${COLORS.dim}Verbs: ${verbs.map(v => {
     const word = state.vocabulary.words[v.wordId];
     const stage = word?.stage || 'new';
@@ -279,9 +294,32 @@ export function printVocab(state: GameState): void {
 // Thresholds for display (import from vocabulary would create circular dep)
 const THRESHOLDS = { totalUsesToKnow: 5 };
 
+export function printNPCsAndPets(state: GameState): void {
+  const npcsHere = getNPCsInLocation(state.location.id);
+  const petsHere = getPetsInLocation(state.location.id, state.petLocations);
+
+  if (npcsHere.length > 0 || petsHere.length > 0) {
+    console.log(`${COLORS.bold}Who's here:${COLORS.reset}`);
+
+    for (const npc of npcsHere) {
+      const npcState = state.npcState[npc.id];
+      let status = '';
+      if (npcState?.mood) status = ` ${COLORS.dim}(${npcState.mood})${COLORS.reset}`;
+      console.log(`  • ${COLORS.cyan}${npc.name.spanish}${COLORS.reset} ${COLORS.dim}(${npc.name.english})${COLORS.reset}${status}`);
+    }
+
+    for (const pet of petsHere) {
+      console.log(`  • ${pet.name.spanish} ${COLORS.dim}(${pet.name.english})${COLORS.reset}`);
+    }
+
+    console.log();
+  }
+}
+
 export function printGameState(state: GameState): void {
   printLocation(state);
   printObjects(state);
+  printNPCsAndPets(state);
   printAvailableVerbs(state);
   printNeeds(state);
   printGoal(state.currentGoal, state.failedCurrentGoal);

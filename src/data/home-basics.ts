@@ -1,4 +1,4 @@
-import type { Location, Goal, VocabWord, GameState } from '../engine/types.js';
+import type { Location, Goal, VocabWord, GameState, NPC, Pet } from '../engine/types.js';
 
 // ============================================================================
 // LOCATIONS
@@ -42,6 +42,7 @@ export const bedroom: Location = {
   exits: [
     { to: 'bathroom', name: { spanish: 'el baño', english: 'bathroom' } },
     { to: 'kitchen', name: { spanish: 'la cocina', english: 'kitchen' } },
+    { to: 'living_room', name: { spanish: 'la sala', english: 'living room' } },
   ],
 };
 
@@ -96,6 +97,7 @@ export const bathroom: Location = {
   exits: [
     { to: 'bedroom', name: { spanish: 'el dormitorio', english: 'bedroom' } },
     { to: 'kitchen', name: { spanish: 'la cocina', english: 'kitchen' } },
+    { to: 'living_room', name: { spanish: 'la sala', english: 'living room' } },
   ],
 };
 
@@ -216,6 +218,56 @@ export const kitchen: Location = {
   exits: [
     { to: 'bedroom', name: { spanish: 'el dormitorio', english: 'bedroom' } },
     { to: 'bathroom', name: { spanish: 'el baño', english: 'bathroom' } },
+    { to: 'living_room', name: { spanish: 'la sala', english: 'living room' } },
+  ],
+};
+
+export const livingRoom: Location = {
+  id: 'living_room',
+  name: { spanish: 'la sala', english: 'living room' },
+  objects: [
+    {
+      id: 'couch',
+      name: { spanish: 'el sofá', english: 'couch' },
+      state: {},
+      actions: [],
+    },
+    {
+      id: 'tv',
+      name: { spanish: 'la televisión', english: 'TV' },
+      state: { on: false },
+      actions: ['TURN_ON', 'TURN_OFF'],
+    },
+    {
+      id: 'coffee_table',
+      name: { spanish: 'la mesa de centro', english: 'coffee table' },
+      state: {},
+      actions: [],
+    },
+    {
+      id: 'bookshelf',
+      name: { spanish: 'la estantería', english: 'bookshelf' },
+      state: {},
+      actions: ['LOOK'],
+    },
+    {
+      id: 'remote',
+      name: { spanish: 'el control remoto', english: 'remote control' },
+      state: {},
+      actions: ['TAKE', 'USE'],
+      takeable: true,
+    },
+    {
+      id: 'pet_food',
+      name: { spanish: 'la comida para mascotas', english: 'pet food' },
+      state: {},
+      actions: ['TAKE'],
+      takeable: true,
+    },
+  ],
+  exits: [
+    { to: 'bedroom', name: { spanish: 'el dormitorio', english: 'bedroom' } },
+    { to: 'kitchen', name: { spanish: 'la cocina', english: 'kitchen' } },
   ],
 };
 
@@ -223,7 +275,44 @@ export const locations: Record<string, Location> = {
   bedroom,
   bathroom,
   kitchen,
+  living_room: livingRoom,
 };
+
+// ============================================================================
+// NPCS AND PETS
+// ============================================================================
+
+export const npcs: NPC[] = [
+  {
+    id: 'roommate',
+    name: { spanish: 'Carlos', english: 'Carlos' },
+    location: 'living_room',
+    personality: 'Sleepy but friendly roommate. Just woke up, sitting on the couch. Wants coffee or breakfast. Speaks casually.',
+  },
+];
+
+export const pets: Pet[] = [
+  {
+    id: 'cat',
+    name: { spanish: 'el gato', english: 'cat' },
+    defaultLocation: 'living_room',
+    personality: 'Independent and aloof. Occasionally affectionate. Named Luna.',
+  },
+  {
+    id: 'dog',
+    name: { spanish: 'el perro', english: 'dog' },
+    defaultLocation: 'living_room',
+    personality: 'Excited and hungry. Always wants attention and food. Named Max.',
+  },
+];
+
+export function getNPCsInLocation(locationId: string): NPC[] {
+  return npcs.filter(npc => npc.location === locationId);
+}
+
+export function getPetsInLocation(locationId: string, petLocations: Record<string, string>): Pet[] {
+  return pets.filter(pet => petLocations[pet.id] === locationId);
+}
 
 // ============================================================================
 // GOALS
@@ -293,12 +382,51 @@ export const goals: Goal[] = [
     checkComplete: (state: GameState) =>
       state.completedGoals.includes('make_breakfast') ||
       state.completedGoals.includes('ate_food'),
+    nextGoalId: 'go_to_living_room',
+  },
+  {
+    id: 'go_to_living_room',
+    title: 'Go to the living room',
+    description: 'Time to check on your roommate and the pets.',
+    hint: 'Try "Voy a la sala" (I go to the living room)',
+    checkComplete: (state: GameState) => state.location.id === 'living_room',
+    nextGoalId: 'greet_roommate',
+  },
+  {
+    id: 'greet_roommate',
+    title: 'Say good morning to Carlos',
+    description: 'Your roommate Carlos is on the couch. Say hi!',
+    hint: 'Try "Hola Carlos" or "Buenos días, Carlos"',
+    checkComplete: (state: GameState) =>
+      state.completedGoals.includes('greet_roommate') ||
+      state.completedGoals.includes('greeted_roommate'),
+    nextGoalId: 'ask_roommate_breakfast',
+  },
+  {
+    id: 'ask_roommate_breakfast',
+    title: 'Ask Carlos what he wants for breakfast',
+    description: 'Carlos looks hungry. Ask what he wants!',
+    hint: 'Try "¿Qué quieres para desayunar?" or "¿Tienes hambre?"',
+    checkComplete: (state: GameState) =>
+      state.completedGoals.includes('ask_roommate_breakfast') ||
+      state.completedGoals.includes('asked_breakfast'),
+    nextGoalId: 'feed_pets',
+  },
+  {
+    id: 'feed_pets',
+    title: 'Feed the pets',
+    description: 'Luna the cat and Max the dog are hungry!',
+    hint: 'Try "Le doy comida al gato" or "Le doy comida al perro"',
+    checkComplete: (state: GameState) =>
+      state.completedGoals.includes('fed_cat') ||
+      state.completedGoals.includes('fed_dog') ||
+      state.completedGoals.includes('feed_pets'),
     nextGoalId: 'morning_complete',
   },
   {
     id: 'morning_complete',
     title: 'Morning routine complete!',
-    description: 'Congratulations! You completed your morning routine.',
+    description: 'Congratulations! You completed your morning routine with your roommate and pets.',
     checkComplete: () => false, // Final goal, always shown
   },
 ];
@@ -371,6 +499,32 @@ export const vocabulary: VocabWord[] = [
   { spanish: 'voy', english: 'I go', category: 'verb' },
   { spanish: 'uso', english: 'I use', category: 'verb' },
 
+  // Living room
+  { spanish: 'la sala', english: 'living room', category: 'noun', gender: 'feminine' },
+  { spanish: 'el sofá', english: 'couch', category: 'noun', gender: 'masculine' },
+  { spanish: 'la televisión', english: 'TV', category: 'noun', gender: 'feminine' },
+  { spanish: 'la mesa de centro', english: 'coffee table', category: 'noun', gender: 'feminine' },
+  { spanish: 'la estantería', english: 'bookshelf', category: 'noun', gender: 'feminine' },
+  { spanish: 'el control remoto', english: 'remote control', category: 'noun', gender: 'masculine' },
+
+  // Pets
+  { spanish: 'el gato', english: 'cat', category: 'noun', gender: 'masculine' },
+  { spanish: 'el perro', english: 'dog', category: 'noun', gender: 'masculine' },
+  { spanish: 'la mascota', english: 'pet', category: 'noun', gender: 'feminine' },
+  { spanish: 'la comida para mascotas', english: 'pet food', category: 'noun', gender: 'feminine' },
+
+  // Conversation verbs
+  { spanish: 'hablo con', english: 'I talk to', category: 'verb' },
+  { spanish: 'le pregunto', english: 'I ask him/her', category: 'verb' },
+  { spanish: 'le doy', english: 'I give him/her', category: 'verb' },
+  { spanish: 'acaricio', english: 'I pet/stroke', category: 'verb' },
+  { spanish: 'juego con', english: 'I play with', category: 'verb' },
+
+  // Greetings
+  { spanish: 'hola', english: 'hello', category: 'other' },
+  { spanish: 'buenos días', english: 'good morning', category: 'other' },
+  { spanish: '¿qué quieres?', english: 'what do you want?', category: 'other' },
+
   // Other
   { spanish: 'a', english: 'to', category: 'other' },
   { spanish: 'de', english: 'of/from', category: 'other' },
@@ -378,4 +532,5 @@ export const vocabulary: VocabWord[] = [
   { spanish: 'la', english: 'the (fem.)', category: 'other' },
   { spanish: 'y', english: 'and', category: 'other' },
   { spanish: 'con', english: 'with', category: 'other' },
+  { spanish: 'para', english: 'for', category: 'other' },
 ];

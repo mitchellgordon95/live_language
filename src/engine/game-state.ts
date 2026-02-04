@@ -31,6 +31,13 @@ export function createInitialState(
     learnedWords: [],
     vocabulary: existingVocabulary || createInitialVocabulary(),
     failedCurrentGoal: false,
+    petLocations: {
+      cat: 'living_room',
+      dog: 'living_room',
+    },
+    npcState: {
+      roommate: { mood: 'sleepy' },
+    },
   };
 }
 

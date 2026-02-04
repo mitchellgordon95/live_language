@@ -10,9 +10,9 @@
 import Anthropic from '@anthropic-ai/sdk';
 import * as readline from 'readline';
 import * as fs from 'fs';
-import type { GameState, Goal, VocabularyProgress, Needs, ObjectState, GrammarIssue } from '../engine/types.js';
+import type { GameState, Goal, VocabularyProgress, Needs, ObjectState, GrammarIssue, NPCState } from '../engine/types.js';
 import { createInitialState, advanceTime } from '../engine/game-state.js';
-import { bedroom, getStartGoal, getGoalById, locations } from '../data/home-basics.js';
+import { bedroom, getStartGoal, getGoalById, locations, getNPCsInLocation, getPetsInLocation, npcs, pets } from '../data/home-basics.js';
 import { createInitialVocabulary, recordWordUse, extractWordsFromText } from '../engine/vocabulary.js';
 import {
   clearScreen,
@@ -58,6 +58,13 @@ interface UnifiedAIResponse {
     inventoryAdd?: string[]; // object IDs
     inventoryRemove?: string[]; // object IDs
     goalComplete?: string | string[]; // goal IDs this action completes
+    npcResponse?: {
+      npcId: string;
+      spanish: string;
+      english: string;
+      wantsItem?: string; // What they asked for (for breakfast requests)
+    };
+    petLocationChange?: { petId: string; newLocation: string };
   };
 }
 
@@ -96,6 +103,24 @@ function buildPrompt(state: GameState): string {
     ? `Current goal: ${state.currentGoal.title}\nGoal ID: ${state.currentGoal.id}`
     : 'No current goal';
 
+  // NPCs in current location
+  const npcsHere = getNPCsInLocation(state.location.id);
+  const npcsDesc = npcsHere.length > 0
+    ? npcsHere.map(npc => {
+        const npcState = state.npcState[npc.id];
+        let desc = `- ${npc.id}: ${npc.name.spanish} (${npc.name.english}) - ${npc.personality}`;
+        if (npcState?.mood) desc += ` [mood: ${npcState.mood}]`;
+        if (npcState?.wantsItem) desc += ` [wants: ${npcState.wantsItem}]`;
+        return desc;
+      }).join('\n')
+    : '(none)';
+
+  // Pets in current location
+  const petsHere = getPetsInLocation(state.location.id, state.petLocations);
+  const petsDesc = petsHere.length > 0
+    ? petsHere.map(pet => `- ${pet.id}: "${pet.name.spanish}" (${pet.name.english}) - ${pet.personality}`).join('\n')
+    : '(none)';
+
   return `CURRENT GAME STATE:
 
 Location: ${state.location.id} (${state.location.name.english})
@@ -103,6 +128,12 @@ Player position: ${state.playerPosition}
 
 Objects here:
 ${objectsDesc}
+
+People here:
+${npcsDesc}
+
+Pets here:
+${petsDesc}
 
 Exits to:
 ${exitsDesc}
@@ -154,7 +185,8 @@ RESPOND WITH ONLY VALID JSON:
     "positionChange": "standing",
     "inventoryAdd": ["object_id"],
     "inventoryRemove": ["object_id"],
-    "goalComplete": ["goal_id"]
+    "goalComplete": ["goal_id"],
+    "npcResponse": { "npcId": "roommate", "spanish": "...", "english": "...", "wantsItem": "eggs" }
   }
 }
 
@@ -168,6 +200,10 @@ RULES FOR EFFECTS:
   - "brush_teeth" - when player brushes teeth
   - "take_shower" - when player showers
   - "make_breakfast" - when player eats food
+  - "greet_roommate" - when player greets the roommate (hola, buenos días, etc.)
+  - "ask_roommate_breakfast" - when player asks roommate what they want to eat
+  - "feed_pets" - when player feeds a pet
+- npcResponse: When player talks to an NPC, include their response in Spanish and English. For breakfast questions, include wantsItem (eggs, toast, coffee, etc.)
 
 VALIDATION RULES:
 - Can't interact with objects not in current location
@@ -176,6 +212,8 @@ VALIDATION RULES:
 - Must be in kitchen to cook, bathroom to shower/brush teeth
 - Can't take items from closed fridge
 - Player must get out of bed (positionChange: "standing") before moving to other rooms
+- Can only talk to NPCs in the current location
+- Can only interact with pets in the current location
 
 IMPORTANT: Let the player do whatever valid action they want, even if it doesn't match the current goal. Don't refuse actions just because there's a "better" thing to do. The player is in control.
 
@@ -192,6 +230,24 @@ COMMON ACTIONS:
 - "me cepillo los dientes" → needsChanges (hygiene +10), goalComplete: ["brush_teeth"], must be in bathroom
 - "miro [object]" → just describe it, no state changes needed
 - "me visto" → requires closet open, in bedroom
+
+NPC INTERACTIONS:
+- "hola [name]" / "buenos días" → greet NPC, they respond, goalComplete: ["greet_roommate"]
+- "hablo con [name]" → start conversation, NPC responds based on personality
+- "¿qué quieres?" / "¿qué quieres para desayunar?" → NPC says what food they want (use wantsItem), goalComplete: ["ask_roommate_breakfast"]
+- "le doy [food] a [name]" → give food to NPC, they thank you
+
+PET INTERACTIONS:
+- "acaricio al [gato/perro]" → pet the animal, it reacts happily
+- "le doy comida al [gato/perro]" → feed the pet, goalComplete: ["feed_pets"]
+- "juego con el [perro]" → play with dog, it gets excited
+
+NPC PERSONALITIES:
+- Carlos (roommate): Sleepy, friendly, casual speech. In the morning, wants coffee or breakfast (eggs, toast).
+- Luna (cat): Independent, aloof. Responds with purring or ignoring.
+- Max (dog): Excited, eager. Responds with tail wagging and barking.
+
+When generating NPC responses, use simple Spanish appropriate for language learners. Keep responses short (1-2 sentences).
 
 Be encouraging! Focus grammar corrections on one main issue, not every small error.`;
 
@@ -328,6 +384,34 @@ function applyEffects(state: GameState, effects: UnifiedAIResponse['effects']): 
     }
   }
 
+  // Track NPC responses and state
+  if (effects.npcResponse) {
+    const npcId = effects.npcResponse.npcId;
+    const currentNpcState = newState.npcState[npcId] || { mood: 'neutral' };
+    newState = {
+      ...newState,
+      npcState: {
+        ...newState.npcState,
+        [npcId]: {
+          ...currentNpcState,
+          lastResponse: effects.npcResponse.spanish,
+          wantsItem: effects.npcResponse.wantsItem || currentNpcState.wantsItem,
+        },
+      },
+    };
+  }
+
+  // Handle pet location changes
+  if (effects.petLocationChange) {
+    newState = {
+      ...newState,
+      petLocations: {
+        ...newState.petLocations,
+        [effects.petLocationChange.petId]: effects.petLocationChange.newLocation,
+      },
+    };
+  }
+
   // Advance time
   newState = advanceTime(newState, 5);
 
@@ -339,6 +423,7 @@ function printResults(response: UnifiedAIResponse): void {
     reset: '\x1b[0m',
     green: '\x1b[32m',
     yellow: '\x1b[33m',
+    cyan: '\x1b[36m',
     dim: '\x1b[2m',
   };
 
@@ -348,6 +433,14 @@ function printResults(response: UnifiedAIResponse): void {
     console.log(`${COLORS.yellow}✗${COLORS.reset} ${response.invalidReason || response.effects.message}`);
   }
   console.log();
+
+  // Show NPC response if present and valid
+  if (response.effects.npcResponse?.spanish && response.effects.npcResponse?.npcId) {
+    const npc = response.effects.npcResponse;
+    console.log(`   ${COLORS.cyan}💬 ${npc.npcId}:${COLORS.reset} "${npc.spanish}"`);
+    console.log(`      ${COLORS.dim}(${npc.english})${COLORS.reset}`);
+    console.log();
+  }
 
   if (response.understood) {
     if (response.grammar.score === 100) {

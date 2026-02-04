@@ -11,6 +11,28 @@ export interface GameState {
   learnedWords: string[];
   vocabulary: VocabularyProgress;
   failedCurrentGoal: boolean;  // Show hint only after failing
+  petLocations: Record<string, string>;  // { cat: 'living_room', dog: 'kitchen' }
+  npcState: Record<string, NPCState>;
+}
+
+export interface NPCState {
+  mood: string;
+  lastResponse?: string;
+  wantsItem?: string;  // What they asked for (e.g., 'eggs', 'coffee')
+}
+
+export interface NPC {
+  id: string;
+  name: { spanish: string; english: string };
+  location: string;
+  personality: string;
+}
+
+export interface Pet {
+  id: string;
+  name: { spanish: string; english: string };
+  defaultLocation: string;
+  personality: string;
 }
 
 export interface Needs {
