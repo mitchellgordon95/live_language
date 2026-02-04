@@ -263,6 +263,7 @@ export const goals: Goal[] = [
     description: 'Good hygiene is important!',
     hint: 'Try "Me cepillo los dientes" (I brush my teeth)',
     checkComplete: (state: GameState) =>
+      state.completedGoals.includes('brush_teeth') ||
       state.completedGoals.includes('brush_teeth_action'),
     nextGoalId: 'take_shower',
   },
@@ -272,6 +273,7 @@ export const goals: Goal[] = [
     description: 'A shower will help you feel fresh.',
     hint: 'Try "Me ducho" (I shower)',
     checkComplete: (state: GameState) =>
+      state.completedGoals.includes('take_shower') ||
       state.completedGoals.includes('shower_action'),
     nextGoalId: 'go_to_kitchen',
   },
@@ -289,6 +291,7 @@ export const goals: Goal[] = [
     description: 'Prepare something to eat. Maybe some eggs?',
     hint: 'Try "Abro la nevera" to open the fridge, then "Cocino los huevos"',
     checkComplete: (state: GameState) =>
+      state.completedGoals.includes('make_breakfast') ||
       state.completedGoals.includes('ate_food'),
     nextGoalId: 'morning_complete',
   },

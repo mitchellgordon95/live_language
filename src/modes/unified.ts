@@ -57,7 +57,7 @@ interface UnifiedAIResponse {
     positionChange?: 'in_bed' | 'standing';
     inventoryAdd?: string[]; // object IDs
     inventoryRemove?: string[]; // object IDs
-    goalComplete?: string; // goal ID
+    goalComplete?: string | string[]; // goal IDs this action completes
   };
 }
 
@@ -154,7 +154,7 @@ RESPOND WITH ONLY VALID JSON:
     "positionChange": "standing",
     "inventoryAdd": ["object_id"],
     "inventoryRemove": ["object_id"],
-    "goalComplete": "goal_id"
+    "goalComplete": ["goal_id"]
   }
 }
 
@@ -164,7 +164,10 @@ RULES FOR EFFECTS:
 - locationChange: Only to valid exits from current location.
 - positionChange: "standing" or "in_bed". Player must be standing to leave bedroom.
 - inventoryAdd/Remove: Only for takeable/consumable items.
-- goalComplete: Set if this action completes the current goal.
+- goalComplete: Array of goal IDs this action completes. Include ANY matching goal, not just the current one:
+  - "brush_teeth" - when player brushes teeth
+  - "take_shower" - when player showers
+  - "make_breakfast" - when player eats food
 
 VALIDATION RULES:
 - Can't interact with objects not in current location
@@ -182,11 +185,11 @@ COMMON ACTIONS:
 - "abro/cierro [object]" → objectChanges with open: true/false
 - "enciendo/apago [object]" → objectChanges with on: true/false, ringing: false for alarm
 - "tomo/agarro [object]" → inventoryAdd (if takeable)
-- "como [food]" → inventoryRemove + needsChanges (hunger +20-30)
+- "como [food]" → inventoryRemove + needsChanges (hunger +20-30), goalComplete: ["make_breakfast"]
 - "bebo [drink]" → needsChanges (hunger +5-10)
-- "me ducho" → needsChanges (hygiene +50), must be in bathroom
+- "me ducho" → needsChanges (hygiene +50), goalComplete: ["take_shower"], must be in bathroom
 - "uso el inodoro" → needsChanges (bladder +100), must be in bathroom
-- "me cepillo los dientes" → needsChanges (hygiene +10), must be in bathroom
+- "me cepillo los dientes" → needsChanges (hygiene +10), goalComplete: ["brush_teeth"], must be in bathroom
 - "miro [object]" → just describe it, no state changes needed
 - "me visto" → requires closet open, in bedroom
 
@@ -312,6 +315,19 @@ function applyEffects(state: GameState, effects: UnifiedAIResponse['effects']): 
     };
   }
 
+  // Track goal-completing actions (so checkComplete can find them)
+  if (effects.goalComplete) {
+    const goals = Array.isArray(effects.goalComplete)
+      ? effects.goalComplete
+      : [effects.goalComplete];
+    if (goals.length > 0) {
+      newState = {
+        ...newState,
+        completedGoals: [...newState.completedGoals, ...goals],
+      };
+    }
+  }
+
   // Advance time
   newState = advanceTime(newState, 5);
 
@@ -434,20 +450,42 @@ async function runScriptMode(scriptFile: string, initialState: GameState): Promi
 
     printResults(response);
 
-    // Check goal completion
-    if (response.effects.goalComplete || (gameState.currentGoal && gameState.currentGoal.checkComplete(gameState))) {
-      const completedGoal = gameState.currentGoal;
-      if (completedGoal) {
-        printGoalComplete(completedGoal);
-        if (completedGoal.nextGoalId) {
-          const nextGoal = getGoalById(completedGoal.nextGoalId);
-          gameState = {
-            ...gameState,
-            completedGoals: [...gameState.completedGoals, completedGoal.id],
-            currentGoal: nextGoal || null,
-            failedCurrentGoal: false,
-          };
+    // Track goals we've already shown completion for (to avoid double-printing)
+    const alreadyPrinted = new Set<string>();
+
+    // Show immediate feedback for goals completed out of order
+    if (response.effects.goalComplete) {
+      const completedIds = Array.isArray(response.effects.goalComplete)
+        ? response.effects.goalComplete
+        : [response.effects.goalComplete];
+      for (const goalId of completedIds) {
+        const goal = getGoalById(goalId);
+        if (goal) {
+          printGoalComplete(goal);
+          alreadyPrinted.add(goalId);
         }
+      }
+    }
+
+    // Advance through satisfied goals (only print if newly completed, not previously)
+    while (gameState.currentGoal && gameState.currentGoal.checkComplete(gameState)) {
+      const completedGoal = gameState.currentGoal;
+      const wasAlreadyComplete = gameState.completedGoals.includes(completedGoal.id);
+      if (!alreadyPrinted.has(completedGoal.id) && !wasAlreadyComplete) {
+        printGoalComplete(completedGoal);
+      }
+      if (completedGoal.nextGoalId) {
+        const nextGoal = getGoalById(completedGoal.nextGoalId);
+        gameState = {
+          ...gameState,
+          completedGoals: wasAlreadyComplete
+            ? gameState.completedGoals
+            : [...gameState.completedGoals, completedGoal.id],
+          currentGoal: nextGoal || null,
+          failedCurrentGoal: false,
+        };
+      } else {
+        break;
       }
     }
 
@@ -536,15 +574,37 @@ async function runInteractiveMode(initialState: GameState): Promise<void> {
 
     printResults(response);
 
-    // Check goal completion
+    // Track goals we've already shown completion for (to avoid double-printing)
+    const alreadyPrinted = new Set<string>();
+
+    // Show immediate feedback for goals completed
+    if (response.effects.goalComplete) {
+      const completedIds = Array.isArray(response.effects.goalComplete)
+        ? response.effects.goalComplete
+        : [response.effects.goalComplete];
+      for (const goalId of completedIds) {
+        const goal = getGoalById(goalId);
+        if (goal) {
+          printGoalComplete(goal);
+          alreadyPrinted.add(goalId);
+        }
+      }
+    }
+
+    // Advance through satisfied goals (only print if newly completed, not previously)
     while (gameState.currentGoal && gameState.currentGoal.checkComplete(gameState)) {
       const completedGoal = gameState.currentGoal;
-      printGoalComplete(completedGoal);
+      const wasAlreadyComplete = gameState.completedGoals.includes(completedGoal.id);
+      if (!alreadyPrinted.has(completedGoal.id) && !wasAlreadyComplete) {
+        printGoalComplete(completedGoal);
+      }
       if (completedGoal.nextGoalId) {
         const nextGoal = getGoalById(completedGoal.nextGoalId);
         gameState = {
           ...gameState,
-          completedGoals: [...gameState.completedGoals, completedGoal.id],
+          completedGoals: wasAlreadyComplete
+            ? gameState.completedGoals
+            : [...gameState.completedGoals, completedGoal.id],
           currentGoal: nextGoal || null,
           failedCurrentGoal: false,
         };
