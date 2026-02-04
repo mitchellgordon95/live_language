@@ -65,7 +65,10 @@ export type ActionType =
   | 'EAT'
   | 'DRINK'
   | 'USE'
-  | 'COOK';
+  | 'COOK'
+  | 'LOOK'
+  | 'DRESS'
+  | 'PREPARE';
 
 export interface Item {
   id: string;
@@ -101,7 +104,7 @@ export interface AIUnderstandingResult {
 }
 
 export interface Intent {
-  action: ActionType | 'GO' | 'WAKE_UP' | 'SHOWER' | 'BRUSH_TEETH' | null;
+  action: ActionType | 'GO' | 'WAKE_UP' | 'SHOWER' | 'BRUSH_TEETH' | 'LOOK' | 'DRESS' | 'PREPARE' | null;
   target: string | null;       // object id
   destination: string | null;  // location id for GO
 }

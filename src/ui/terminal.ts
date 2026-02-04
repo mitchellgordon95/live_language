@@ -196,19 +196,17 @@ export function printResults(
   }
   console.log();
 
-  // Show what they said and grammar feedback
+  // Show grammar feedback
   if (understanding.understood) {
     if (understanding.grammar.score === 100) {
-      console.log(`   ${COLORS.dim}You said: "${understanding.response.spanishModel}"${COLORS.reset}`);
-      console.log(`   ${COLORS.green}Perfect! ⭐${COLORS.reset}`);
+      console.log(`   ${COLORS.green}Perfect! ⭐${COLORS.reset} ${COLORS.dim}"${understanding.response.spanishModel}"${COLORS.reset}`);
     } else if (understanding.grammar.issues.length > 0) {
       const issue = understanding.grammar.issues[0];
-      console.log(`   ${COLORS.dim}You said: "${issue.original}"${COLORS.reset}`);
-      console.log(`   ${COLORS.yellow}📝 Small note:${COLORS.reset} "${issue.corrected}" is more natural`);
+      console.log(`   ${COLORS.yellow}📝 Tip:${COLORS.reset} "${issue.corrected}" is more natural`);
       console.log(`      ${COLORS.dim}${issue.explanation}${COLORS.reset}`);
     }
   } else {
-    console.log(`   ${COLORS.dim}Try again, or use the hint above!${COLORS.reset}`);
+    console.log(`   ${COLORS.dim}Try again, or type /hint for help!${COLORS.reset}`);
   }
   console.log();
 }
@@ -297,6 +295,10 @@ export function printPrompt(): void {
 
 export function printError(message: string): void {
   console.log(`${COLORS.red}Error:${COLORS.reset} ${message}`);
+}
+
+export function printDebugStateChange(label: string, data: unknown): void {
+  console.log(`${COLORS.dim}[DEBUG ${label}]: ${JSON.stringify(data, null, 2)}${COLORS.reset}`);
 }
 
 export function printThinking(): void {
