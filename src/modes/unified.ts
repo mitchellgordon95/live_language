@@ -879,6 +879,86 @@ function saveVocabulary(vocab: VocabularyProgress): void {
   }
 }
 
+const MAX_LEARN_PER_DAY = 5;
+
+async function handleLearnCommand(state: GameState, topic: string): Promise<{ state: GameState }> {
+  const COLORS = {
+    reset: '\x1b[0m',
+    bold: '\x1b[1m',
+    dim: '\x1b[2m',
+    cyan: '\x1b[36m',
+    yellow: '\x1b[33m',
+    green: '\x1b[32m',
+  };
+
+  // Calculate current in-game day
+  const currentDay = Math.floor((state.time.hour + state.time.minute / 60) / 24) + 1;
+
+  // Reset counter if it's a new day
+  let newState = state;
+  if (state.lastLearnCommandDay !== currentDay) {
+    newState = {
+      ...state,
+      learnCommandsUsedToday: 0,
+      lastLearnCommandDay: currentDay,
+    };
+  }
+
+  // Check if limit reached
+  if (newState.learnCommandsUsedToday >= MAX_LEARN_PER_DAY) {
+    console.log(`\n${COLORS.yellow}📚 You've used all ${MAX_LEARN_PER_DAY} /learn commands for today.${COLORS.reset}`);
+    console.log(`${COLORS.dim}Come back tomorrow (advance time by playing the game)!${COLORS.reset}\n`);
+    return { state: newState };
+  }
+
+  console.log(`\n${COLORS.cyan}📚 Learning about: ${topic}${COLORS.reset}`);
+  console.log(`${COLORS.dim}(${MAX_LEARN_PER_DAY - newState.learnCommandsUsedToday - 1} /learn uses remaining today)${COLORS.reset}\n`);
+  process.stdout.write(`${COLORS.dim}Generating lesson...${COLORS.reset}`);
+
+  try {
+    const response = await getClient().messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1024,
+      system: `You are a friendly Spanish language tutor. Give a brief, helpful lesson on the requested topic.
+
+Guidelines:
+- Keep it concise (under 300 words)
+- Use simple explanations with clear examples
+- Include 3-5 example sentences in Spanish with English translations
+- Focus on practical usage, not linguistic theory
+- If the topic is vague, pick a common interpretation
+- Use markdown formatting for clarity`,
+      messages: [
+        {
+          role: 'user',
+          content: `Teach me about: ${topic}`,
+        },
+      ],
+    });
+
+    process.stdout.write('\r' + ' '.repeat(30) + '\r');
+
+    const content = response.content[0];
+    if (content.type === 'text') {
+      console.log(`${COLORS.green}${COLORS.bold}📖 Lesson: ${topic}${COLORS.reset}\n`);
+      console.log(content.text);
+      console.log();
+    }
+
+    // Increment usage counter
+    newState = {
+      ...newState,
+      learnCommandsUsedToday: newState.learnCommandsUsedToday + 1,
+    };
+
+  } catch (error) {
+    process.stdout.write('\r' + ' '.repeat(30) + '\r');
+    console.log(`${COLORS.yellow}Could not generate lesson. Try again.${COLORS.reset}\n`);
+  }
+
+  return { state: newState };
+}
+
 export interface GameOptions {
   scriptFile?: string;
   startLocation?: string;
@@ -978,6 +1058,13 @@ async function runScriptMode(scriptFile: string, initialState: GameState): Promi
         clearScreen();
         printHeader(gameState);
         printGameState(gameState);
+      }
+      if (command.toLowerCase().startsWith('/learn ')) {
+        const topic = command.slice(7).trim();
+        if (topic) {
+          const result = await handleLearnCommand(gameState, topic);
+          gameState = result.state;
+        }
       }
       continue;
     }
@@ -1092,6 +1179,19 @@ async function runInteractiveMode(initialState: GameState): Promise<void> {
     }
 
     if (trimmedInput.startsWith('/')) {
+      // Handle /learn with argument
+      if (trimmedInput.toLowerCase().startsWith('/learn ')) {
+        const topic = trimmedInput.slice(7).trim();
+        if (!topic) {
+          console.log('Usage: /learn <topic>\nExample: /learn ser vs estar\n');
+        } else {
+          const result = await handleLearnCommand(gameState, topic);
+          gameState = result.state;
+        }
+        printPrompt();
+        return;
+      }
+
       switch (trimmedInput.toLowerCase()) {
         case '/quit':
         case '/exit':
@@ -1115,6 +1215,9 @@ async function runInteractiveMode(initialState: GameState): Promise<void> {
           clearScreen();
           printHeader(gameState);
           printGameState(gameState);
+          break;
+        case '/learn':
+          console.log('Usage: /learn <topic>\nExample: /learn ser vs estar\n');
           break;
         default:
           console.log(`Unknown command: ${trimmedInput}\n`);

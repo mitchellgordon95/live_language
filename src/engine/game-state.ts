@@ -108,6 +108,10 @@ export function createInitialState(
         chainComplete: false,
       },
     },
+
+    // Learn command tracking
+    learnCommandsUsedToday: 0,
+    lastLearnCommandDay: 0,  // Will be set on first use
   };
 }
 

@@ -340,19 +340,16 @@ Type ${COLORS.bold}/help${COLORS.reset} for help, or ${COLORS.bold}/quit${COLORS
 export function printHelp(): void {
   console.log(`
 ${COLORS.bold}Commands:${COLORS.reset}
-  /help     - Show this help
-  /quit     - Exit the game
-  /vocab    - Show vocabulary progress
-  /hint     - Show current goal hint (if stuck)
+  /help           - Show this help
+  /quit           - Exit the game
+  /vocab          - Show vocabulary progress
+  /hint           - Show current goal hint (if stuck)
+  /learn <topic>  - Get a Spanish lesson (5/day)
+                    Example: /learn ser vs estar
 
 ${COLORS.bold}How to play:${COLORS.reset}
-  Combine verbs with objects to take action.
-  Example: verb + object → "abro la nevera"
-
-${COLORS.bold}Sentence patterns:${COLORS.reset}
-  [verb] [object]           → abro la ventana
-  [verb] a [place]          → voy al baño
-  me [reflexive verb]       → me levanto, me ducho
+  Say what you're doing in Spanish to make it happen.
+  Talk to nearby NPCs by addressing them by name or role.
 `);
 }
 

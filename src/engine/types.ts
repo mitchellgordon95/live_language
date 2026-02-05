@@ -20,6 +20,10 @@ export interface GameState {
   level: number;
   totalPointsEarned: number;
   locationProgress: Record<string, LocationProgress>;  // Per-building goal tracking
+
+  // Learn command tracking (5 per in-game day)
+  learnCommandsUsedToday: number;
+  lastLearnCommandDay: number;  // In-game day (hour / 24)
 }
 
 export interface LocationProgress {
