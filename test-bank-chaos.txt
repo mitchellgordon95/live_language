@@ -1,0 +1,107 @@
+# BANK MODULE CHAOS TEST
+# Tests all bank goals + edge cases + UX validation
+
+# ============================================
+# GOAL 1: Greet the guard (bank_enter_greet)
+# ============================================
+
+# Test: Formal greeting to guard
+Buenos dias, senor
+
+# ============================================
+# GOAL 2: Take a number (bank_take_number)
+# ============================================
+
+# Test: Go to waiting area
+Voy a la sala de espera
+
+# Test: Take a number from dispenser
+Tomo un numero del dispensador
+
+# ============================================
+# GOAL 3: Approach teller window (bank_approach_teller)
+# ============================================
+
+# Test: Go to teller window
+Voy a la ventanilla
+
+# Test: Greet teller formally
+Buenos dias, quisiera hacer una consulta
+
+# ============================================
+# GOAL 4: Check balance (bank_check_balance)
+# ============================================
+
+# Test: Check balance with polite conditional
+Quisiera consultar mi saldo, por favor
+
+# ============================================
+# GOAL 5: Make deposit (bank_make_deposit)
+# ============================================
+
+# Test: Deposit with large number
+Quisiera depositar quinientos pesos
+
+# ============================================
+# GOAL 6: Withdraw cash (bank_withdraw_cash)
+# ============================================
+
+# Test: Withdraw with different number
+Quisiera retirar doscientos pesos, por favor
+
+# ============================================
+# GOAL 7: Get receipt (bank_get_receipt)
+# ============================================
+
+# Test: Request receipt politely
+Me puede dar un recibo, por favor?
+
+# ============================================
+# GOAL 8: Say goodbye (bank_polite_farewell)
+# ============================================
+
+# Test: Formal farewell
+Muchas gracias por su ayuda. Que tenga un buen dia.
+
+# ============================================
+# EDGE CASES & CHAOS TESTS
+# ============================================
+
+# Test: Go back to waiting area (should work)
+Voy a la sala de espera
+
+# Test: Try talking to someone not here (guard is at entrance)
+Hablo con Roberto
+
+# Test: Look at queue display
+Miro la pantalla de turnos
+
+# Test: Go to manager office (testing navigation)
+Voy a la oficina del gerente
+
+# Test: Greet manager formally (if present)
+Buenas tardes, senor Mendoza
+
+# Test: Compound command - go somewhere and do something
+Voy a la sala de espera y tomo un folleto
+
+# Test: Misspelling - should still understand
+Kiero consultar mi cuenta
+
+# Test: Informal tu instead of usted (grammar feedback expected)
+Como estas?
+
+# Test: Looking at objects
+Miro el horario del banco
+
+# Test: Going back to entrance
+Voy a la entrada
+
+# Test: Greeting guard again
+Hasta luego, senor
+
+# Test: Using ATM
+Uso el cajero automatico
+
+# Test: Exiting to street (if available)
+Voy a la calle

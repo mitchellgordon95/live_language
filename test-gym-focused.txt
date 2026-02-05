@@ -1,0 +1,26 @@
+# Test: Gym Module - Focused Reflexive Verb Tests
+# This test focuses specifically on reflexive verbs
+
+# Test reflexive verb: cambiarse (change clothes)
+me cambio de ropa
+
+# Test reflexive verb: ponerse (put on)
+abro el casillero
+me pongo la toalla
+
+# Test reflexive verb: quitarse (take off)
+me quito la ropa sucia
+
+# Test reflexive verb variations
+me visto
+me desvisto
+
+# Test reflexive: ducharse with body washing
+me lavo el pelo
+me seco con la toalla
+
+# Trainer imperative responses
+voy a la zona de entrenamiento
+respiro profundo
+bajo los brazos
+empujo la barra

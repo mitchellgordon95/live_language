@@ -1,0 +1,67 @@
+# FOCUSED CHAOS TEST: Restaurant Module (staying inside)
+# Tests compound commands, state tracking, out-of-order
+
+# === Goal 1: Enter - auto complete since we start here ===
+
+# === Goal 2: Get seated ===
+# TEST: Polite greeting with compound request
+buenas noches, una mesa para dos personas por favor
+
+# === Goal 3: Order drink ===
+# TEST: Try to order food first (out of order)
+quiero los tacos
+
+# TEST: Now order drink properly with quisiera
+quisiera una limonada bien fria
+
+# === Goal 4: Read menu ===
+# TEST: Compound - open menu and look at it
+abro el menu y miro las opciones
+
+# === Goal 5: Order food ===
+# TEST: Order with modification (sin/con)
+quiero el pollo asado sin cebolla y con papas fritas
+
+# === TEST: Does state remember both drink and food? ===
+# Try ordering another drink while waiting
+tambien quiero otra cerveza
+
+# === Goal 6: Eat meal ===
+# TEST: Try to eat before food delivered (should fail gracefully)
+como el pollo
+
+# TEST: Comment on the food (present tense)
+esta delicioso el pollo
+
+# TEST: Actually eat
+como la comida
+
+# === Goal 7: Ask for bill ===
+# TEST: Multiple ways to ask
+me trae la cuenta?
+la cuenta por favor
+
+# === Goal 8: Pay ===
+# TEST: Try to leave without paying
+me voy
+
+# TEST: Pay properly
+pago la cuenta
+
+# TEST: Leave a tip
+dejo una propina
+
+# === Goal 9: Complete ===
+# TEST: Thank and leave
+muchas gracias por todo
+adios
+
+# === EDGE CASES ===
+# Talk to chef (should not be here)
+hablo con el chef
+
+# Go to kitchen (restricted?)
+voy a la cocina
+
+# Misspelling
+kiero agua

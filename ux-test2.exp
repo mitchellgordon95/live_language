@@ -1,0 +1,61 @@
+#!/usr/bin/expect -f
+
+# UX Testing session 2 - Testing edge cases and error handling
+set timeout 30
+
+spawn npm run dev
+
+# Wait for the game to start
+expect ">"
+
+# Test 1: Try an English command (will it understand?)
+send "I wake up\r"
+expect ">"
+
+# Test 2: Try gibberish
+send "asdfasdf\r"
+expect ">"
+
+# Test 3: Try just pressing enter
+send "\r"
+expect ">"
+
+# Test 4: Try a misspelled Spanish command
+send "me lebanto\r"
+expect ">"
+
+# Test 5: Try the correct command
+send "me levanto\r"
+expect ">"
+
+# Test 6: Check vocabulary
+send "/vocab\r"
+expect ">"
+
+# Test 7: Try a hint
+send "/hint\r"
+expect ">"
+
+# Test 8: Go to bathroom
+send "voy al baño\r"
+expect ">"
+
+# Test 9: Try showering
+send "me ducho\r"
+expect ">"
+
+# Test 10: Try an action not listed (creative input)
+send "miro el espejo\r"
+expect ">"
+
+# Test 11: Try incomplete sentence
+send "voy\r"
+expect ">"
+
+# Test 12: Try going to a place that doesn't exist
+send "voy al parque\r"
+expect ">"
+
+# Quit
+send "/quit\r"
+expect eof

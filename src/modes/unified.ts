@@ -138,6 +138,16 @@ interface Action {
   petId?: string;
 }
 
+// NPC-initiated actions that affect game state
+interface NPCAction {
+  npcId: string;
+  type: 'give_item' | 'take_item' | 'change_object' | 'move_player';
+  objectId?: string;       // For change_object
+  itemId?: string;         // For give_item/take_item
+  changes?: Record<string, unknown>;  // For change_object - state changes to apply
+  locationId?: string;     // For move_player
+}
+
 interface UnifiedAIResponse {
   // Language learning
   understood: boolean;
@@ -168,6 +178,8 @@ interface UnifiedAIResponse {
     petId: string;
     reaction: string;
   };
+  // NPC actions that affect game state (e.g., waiter delivers food)
+  npcActions?: NPCAction[];
 }
 
 function buildPrompt(state: GameState): string {
@@ -311,7 +323,10 @@ RESPOND WITH ONLY VALID JSON:
   "message": "What happened, in English (e.g., 'You get up, go to the kitchen, and open the refrigerator.')",
   "needsChanges": { "hunger": 10, "energy": -5 },
   "goalComplete": ["goal_id"],
-  "npcResponse": { "npcId": "roommate", "spanish": "...", "english": "...", "wantsItem": "eggs" }
+  "npcResponse": { "npcId": "roommate", "spanish": "...", "english": "...", "wantsItem": "eggs" },
+  "npcActions": [
+    { "npcId": "waiter", "type": "change_object", "objectId": "ordered_food", "changes": { "delivered": true, "itemName": "sopa" } }
+  ]
 }
 
 ACTIONS (put them in the order they should happen):
@@ -330,6 +345,21 @@ ACTIONS (put them in the order they should happen):
 - { "type": "feed", "petId": "dog" } - feed a pet
 - { "type": "talk", "npcId": "roommate" } - talk to someone
 - { "type": "give", "objectId": "eggs", "npcId": "roommate" } - give item to NPC
+
+NPC ACTIONS - NPCs can take actions that affect the game world in response to player requests:
+- { "npcId": "waiter", "type": "change_object", "objectId": "ordered_food", "changes": { "ordered": true, "delivered": true, "itemName": "sopa del dia" } } - NPC changes object state (waiter delivers food)
+- { "npcId": "waiter", "type": "change_object", "objectId": "bill", "changes": { "delivered": true, "total": 150 } } - NPC brings the bill
+- { "npcId": "host", "type": "move_player", "locationId": "restaurant_table" } - NPC moves player (host seats player)
+- { "npcId": "vendor", "type": "give_item", "itemId": "manzanas" } - NPC gives item to player
+- { "npcId": "cashier", "type": "take_item", "itemId": "money" } - NPC takes item from player
+
+WHEN TO USE npcActions:
+- Waiter takes food order → npcActions: [{ change ordered_food.ordered=true, delivered=true, itemName="..." }]
+- Waiter brings bill → npcActions: [{ change bill.delivered=true, total=price }]
+- Host seats player → npcActions: [{ move_player to restaurant_table }]
+- Vendor sells item → npcActions: [{ give_item itemId }]
+- Doctor gives prescription → npcActions: [{ change prescription.delivered=true }]
+IMPORTANT: When an NPC does something for the player (not just talks), include npcActions!
 
 ORDER MATTERS! Put actions in the sequence they should execute:
 - "me levanto y apago el despertador" → position first, then turn_off
@@ -435,14 +465,14 @@ RESTAURANT NPCs:
 - Chef (Rosa): Busy, passionate about food. Occasionally checks on diners. Speaks quickly.
 
 RESTAURANT INTERACTIONS:
-- "buenas noches" or "una mesa para uno, por favor" at entrance → actions: [{ "type": "talk", "npcId": "host" }], goalComplete: ["seated_by_host"], npcResponse from host
-- "quiero una limonada" or "quisiera agua" → actions: [{ "type": "talk", "npcId": "waiter" }], goalComplete: ["ordered_drink"], npcResponse from waiter
+- "buenas noches" or "una mesa para uno, por favor" at entrance → actions: [{ "type": "talk", "npcId": "host" }], goalComplete: ["seated_by_host"], npcResponse from host, npcActions: [{ "npcId": "host", "type": "move_player", "locationId": "restaurant_table" }]
+- "quiero una limonada" or "quisiera agua" → actions: [{ "type": "talk", "npcId": "waiter" }], goalComplete: ["ordered_drink"], npcResponse from waiter, npcActions: [{ "npcId": "waiter", "type": "change_object", "objectId": "ordered_drink", "changes": { "ordered": true, "delivered": true, "itemName": "limonada" } }]
 - "abro el menu" or "miro el menu" or "leo el menu" → actions: [{ "type": "open", "objectId": "menu" }], goalComplete: ["read_menu"]
   IMPORTANT: When player opens/reads the menu, your message MUST include the menu contents:
   "You open the menu and see: BEBIDAS: agua (gratis), refresco ($25), limonada ($30), cerveza ($45), vino ($65), cafe ($35). ENTRADAS: sopa del dia ($55), ensalada ($50), guacamole ($60). PLATOS: pollo asado ($120), carne asada ($150), pescado ($140), tacos ($95), enchiladas ($105), hamburguesa ($100). POSTRES: flan ($50), helado ($45), churros ($40)."
-- "quiero el pollo" or "quisiera los tacos" → actions: [{ "type": "talk", "npcId": "waiter" }], goalComplete: ["ordered_food"], npcResponse from waiter
+- "quiero el pollo" or "quisiera los tacos" → actions: [{ "type": "talk", "npcId": "waiter" }], goalComplete: ["ordered_food"], npcResponse from waiter, npcActions: [{ "npcId": "waiter", "type": "change_object", "objectId": "ordered_food", "changes": { "ordered": true, "delivered": true, "itemName": "pollo asado" } }]
 - "como el pollo" or "como la comida" → actions: [{ "type": "eat", "objectId": "ordered_food" }], goalComplete: ["ate_meal"], needsChanges: { hunger: 40 }
-- "la cuenta, por favor" → actions: [{ "type": "talk", "npcId": "waiter" }], goalComplete: ["asked_for_bill"], npcResponse from waiter
+- "la cuenta, por favor" → actions: [{ "type": "talk", "npcId": "waiter" }], goalComplete: ["asked_for_bill"], npcResponse from waiter, npcActions: [{ "npcId": "waiter", "type": "change_object", "objectId": "bill", "changes": { "delivered": true, "total": 150 } }]
 - "pago la cuenta" → actions: [{ "type": "use", "objectId": "bill" }], goalComplete: ["paid_bill"]
 - "donde esta el bano?" or "voy al bano" → Player can go to restaurant_bathroom
 
@@ -617,6 +647,71 @@ function applyObjectChange(state: GameState, objectId: string, changes: Partial<
   };
 }
 
+// Apply NPC-initiated actions (e.g., waiter delivers food, host seats player)
+function applyNPCActions(state: GameState, actions: NPCAction[]): GameState {
+  let newState = state;
+
+  for (const action of actions) {
+    switch (action.type) {
+      case 'change_object':
+        // NPC changes an object's state (e.g., waiter sets food.delivered = true)
+        if (action.objectId && action.changes) {
+          newState = {
+            ...newState,
+            objectStates: {
+              ...newState.objectStates,
+              [action.objectId]: {
+                ...newState.objectStates[action.objectId],
+                ...action.changes,
+              },
+            },
+          };
+        }
+        break;
+
+      case 'move_player':
+        // NPC moves the player (e.g., host seats player at table)
+        if (action.locationId && locations[action.locationId]) {
+          newState = {
+            ...newState,
+            location: locations[action.locationId],
+            playerPosition: 'standing',
+          };
+        }
+        break;
+
+      case 'give_item':
+        // NPC gives item to player (e.g., vendor gives purchase)
+        if (action.itemId) {
+          // Check if player already has this item
+          const alreadyHave = newState.inventory.some(i => i.id === action.itemId);
+          if (!alreadyHave) {
+            newState = {
+              ...newState,
+              inventory: [
+                ...newState.inventory,
+                { id: action.itemId, name: { spanish: action.itemId, english: action.itemId } },
+              ],
+            };
+          }
+        }
+        break;
+
+      case 'take_item':
+        // NPC takes item from player
+        if (action.itemId) {
+          newState = {
+            ...newState,
+            inventory: newState.inventory.filter(i => i.id !== action.itemId),
+          };
+        }
+        break;
+    }
+  }
+
+  return newState;
+}
+
 // Result of applying effects, including progression info
 interface ApplyEffectsResult {
   state: GameState;
@@ -769,13 +864,7 @@ function applyEffects(state: GameState, response: UnifiedAIResponse): ApplyEffec
         completedGoals: [...newState.completedGoals, ...goals],
       };
 
-      // Handle goals that should automatically move the player
-      for (const goalId of goals) {
-        if (goalId === 'seated_by_host' && locations['restaurant_table']) {
-          // Host seats player at table
-          newState = { ...newState, location: locations['restaurant_table'] };
-        }
-      }
+      // Note: Player movement from goals (like being seated by host) is now handled via npcActions
     }
   }
 
@@ -794,6 +883,11 @@ function applyEffects(state: GameState, response: UnifiedAIResponse): ApplyEffec
         },
       },
     };
+  }
+
+  // Apply NPC actions (waiter delivers food, host seats player, etc.)
+  if (response.npcActions && response.npcActions.length > 0) {
+    newState = applyNPCActions(newState, response.npcActions);
   }
 
   // Advance time
@@ -833,6 +927,9 @@ function printResults(response: UnifiedAIResponse, state: GameState): void {
     dim: '\x1b[2m',
   };
 
+  // Track what to speak (only speak one thing per turn)
+  let textToSpeak: string | null = null;
+
   if (response.valid) {
     console.log(`${COLORS.green}✓${COLORS.reset} ${response.message}`);
   } else {
@@ -844,19 +941,17 @@ function printResults(response: UnifiedAIResponse, state: GameState): void {
   if (response.npcResponse?.spanish && response.npcResponse?.npcId) {
     const npc = response.npcResponse;
     console.log(`   ${COLORS.cyan}💬 ${npc.npcId}:${COLORS.reset} "${npc.spanish}"`);
-    // Speak NPC response
-    if (state.audioEnabled) {
-      speak(npc.spanish);
-    }
+    // NPC response takes priority for TTS
+    textToSpeak = npc.spanish;
     console.log();
   }
 
   if (response.understood) {
     if (response.grammar.score === 100) {
       console.log(`   ${COLORS.green}Perfect! ⭐${COLORS.reset} ${COLORS.dim}"${response.spanishModel}"${COLORS.reset}`);
-      // Speak the Spanish model for perfect responses
-      if (state.audioEnabled && response.spanishModel) {
-        speak(response.spanishModel);
+      // Speak Spanish model only if no NPC response
+      if (!textToSpeak && response.spanishModel) {
+        textToSpeak = response.spanishModel;
       }
     } else if (response.grammar.issues.length > 0) {
       const issue = response.grammar.issues[0];
@@ -864,15 +959,21 @@ function printResults(response: UnifiedAIResponse, state: GameState): void {
       if (issue.original.toLowerCase().trim() !== issue.corrected.toLowerCase().trim()) {
         console.log(`   ${COLORS.yellow}📝 Tip:${COLORS.reset} "${issue.corrected}" is more natural`);
         console.log(`      ${COLORS.dim}${issue.explanation}${COLORS.reset}`);
-        // Speak the corrected version
-        if (state.audioEnabled) {
-          speak(issue.corrected);
+        // Speak correction only if no NPC response
+        if (!textToSpeak) {
+          textToSpeak = issue.corrected;
         }
       }
     }
   } else {
     console.log(`   ${COLORS.dim}Try again! Type /hint for help.${COLORS.reset}`);
   }
+
+  // Speak once at the end
+  if (state.audioEnabled && textToSpeak) {
+    speak(textToSpeak);
+  }
+
   console.log();
 }
 

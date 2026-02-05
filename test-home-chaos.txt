@@ -1,0 +1,157 @@
+# HOME MODULE CHAOS PLAYTEST
+# Tests: Morning routine from bedroom to living room with roommate and pets
+# Focus: Bugs AND UX issues
+
+# ============================================================================
+# PHASE 1: BEDROOM - Wake up and alarm
+# ============================================================================
+
+# Goal 1: Wake up (starting in bed)
+# Test: Standard command
+me levanto
+
+# Test: Turn off alarm (should work after getting up)
+apago el despertador
+
+# Test: Can we look around? (no explicit LOOK goal but natural)
+miro la habitacion
+
+# Edge case: Try to open window
+abro la ventana
+
+# Edge case: Try to turn on lamp
+enciendo la lampara
+
+# ============================================================================
+# PHASE 2: BATHROOM - Hygiene routine
+# ============================================================================
+
+# Goal 3: Go to bathroom
+voy al bano
+
+# Test: Misspelling (missing accent)
+# The AI should understand "bano" as "bano"
+
+# Test: Can we see the objects? (UX check - are they listed?)
+# Just moving on to actions...
+
+# Goal 4: Brush teeth
+me cepillo los dientes
+
+# Goal 5: Take shower
+me ducho
+
+# Edge case: Use toilet (should work, satisfies bladder need)
+uso el inodoro
+
+# Edge case: Use towel after shower
+uso la toalla
+
+# ============================================================================
+# PHASE 3: KITCHEN - Breakfast
+# ============================================================================
+
+# Goal 6: Go to kitchen
+voy a la cocina
+
+# Test: Open fridge to see contents
+abro la nevera
+
+# Test: Take eggs (should work with fridge open)
+tomo los huevos
+
+# Goal 7: Make breakfast - cook eggs
+cocino los huevos
+
+# Edge case: Drink coffee (should satisfy energy/hunger)
+bebo el cafe
+
+# Edge case: Try compound command
+como el pan y bebo el jugo
+
+# Edge case: Close fridge after done
+cierro la nevera
+
+# ============================================================================
+# PHASE 4: LIVING ROOM - Social interactions
+# ============================================================================
+
+# Goal 8: Go to living room
+voy a la sala
+
+# UX CHECK: Can we see Carlos? Can we see the pets?
+# The display should show "Who's here:" with Carlos, Luna, Max
+
+# Goal 9: Greet roommate
+hola carlos
+
+# Alternative greeting test
+buenos dias, carlos
+
+# Goal 10: Ask what Carlos wants for breakfast
+que quieres para desayunar carlos
+
+# Alternative form
+tienes hambre?
+
+# Goal 11: Feed pets
+le doy comida al perro
+
+# Alternative: Feed cat
+le doy comida al gato
+
+# Edge case: Pet the cat
+acaricio al gato
+
+# Edge case: Pet the dog
+acaricio al perro
+
+# ============================================================================
+# PHASE 5: EDGE CASES & CHAOS
+# ============================================================================
+
+# Test: Compound command across rooms (should fail gracefully)
+voy al bano y me ducho
+
+# Test: Invalid action (try to eat non-food)
+como la television
+
+# Test: Misspelled command (should still work)
+abro la nevara
+
+# Test: Wrong article gender
+abro el nevera
+
+# Test: Try to go somewhere locked (restaurant at level 1)
+voy al restaurante
+
+# Test: Turn on TV
+enciendo la television
+
+# Test: Take remote
+tomo el control remoto
+
+# Test: Look at bookshelf
+miro la estanteria
+
+# ============================================================================
+# PHASE 6: RETURN TO PREVIOUS ROOMS (state persistence)
+# ============================================================================
+
+# Go back to kitchen
+voy a la cocina
+
+# Check if fridge state persisted (should be closed from earlier)
+# Open it again to verify
+abro la nevera
+
+# Go back to bedroom
+voy al dormitorio
+
+# Check if alarm is still off (state should persist)
+# Try to turn it off again (should indicate it's already off or do nothing)
+apago el despertador
+
+# ============================================================================
+# END OF TEST
+# ============================================================================

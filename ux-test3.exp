@@ -1,0 +1,41 @@
+#!/usr/bin/expect -f
+
+# UX Testing session 3 - More controlled testing with delays
+set timeout 45
+
+spawn npm run dev
+
+# Wait for game to fully load
+sleep 2
+expect ">"
+
+# Test proper wake up sequence with delays between commands
+send "apago el despertador\r"
+sleep 3
+expect ">"
+
+send "me levanto\r"
+sleep 3
+expect ">"
+
+# Check if I can do something unusual - try to sleep again
+send "me acuesto\r"
+sleep 3
+expect ">"
+
+# Try using formal vs informal
+send "Abro la ventana, por favor\r"
+sleep 3
+expect ">"
+
+# Try a full sentence
+send "Quiero ir al baño porque necesito ducharme\r"
+sleep 3
+expect ">"
+
+# Check progress
+send "/vocab\r"
+expect ">"
+
+send "/quit\r"
+expect eof

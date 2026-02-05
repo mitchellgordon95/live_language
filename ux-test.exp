@@ -1,0 +1,61 @@
+#!/usr/bin/expect -f
+
+# UX Testing session for Language Life Sim
+set timeout 30
+
+spawn npm run dev
+
+# Wait for the game to start
+expect ">"
+
+# First impression: I see an alarm ringing, let me try to wake up
+send "me despierto\r"
+expect ">"
+
+# Try to turn off the alarm - I see "apago" as a verb
+send "apago el despertador\r"
+expect ">"
+
+# Now get out of bed
+send "me levanto\r"
+expect ">"
+
+# Open the window to let in light
+send "abro la ventana\r"
+expect ">"
+
+# Let me check what's happening
+send "/help\r"
+expect ">"
+
+# Try going to the bathroom
+send "voy al baño\r"
+expect ">"
+
+# What can I do here?
+sleep 1
+expect ">"
+
+# Try using the toilet (testing if game handles basic needs)
+send "uso el inodoro\r"
+expect ">"
+
+# Try washing hands
+send "me lavo las manos\r"
+expect ">"
+
+# Go to kitchen for breakfast
+send "voy a la cocina\r"
+expect ">"
+
+# Look around
+sleep 1
+expect ">"
+
+# Try to eat something
+send "como\r"
+expect ">"
+
+# Quit the game
+send "/quit\r"
+expect eof
