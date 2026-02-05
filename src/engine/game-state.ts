@@ -7,14 +7,70 @@ import type {
   Item,
   ObjectState,
   VocabularyProgress,
+  LocationProgress,
 } from './types.js';
 import { createInitialVocabulary } from './vocabulary.js';
+
+// Building names for location grouping
+export type BuildingName = 'home' | 'street' | 'restaurant' | 'market' | 'gym' | 'park' | 'clinic' | 'bank';
+
+// Map location IDs to their building
+export function getBuildingForLocation(locationId: string): BuildingName {
+  if (['bedroom', 'bathroom', 'kitchen', 'living_room'].includes(locationId)) return 'home';
+  if (locationId === 'street') return 'street';
+  if (locationId.startsWith('restaurant')) return 'restaurant';
+  if (locationId.startsWith('market') || ['fruit_stand', 'vegetable_stand', 'meat_counter'].includes(locationId)) return 'market';
+  if (locationId.startsWith('gym') || ['stretching_area', 'training_floor', 'weight_room', 'cardio_zone', 'locker_room'].includes(locationId)) return 'gym';
+  if (locationId.startsWith('park') || ['main_path', 'fountain_area', 'garden', 'playground', 'kiosk'].includes(locationId)) return 'park';
+  if (locationId.startsWith('clinic') || ['waiting_room', 'exam_room', 'pharmacy'].includes(locationId)) return 'clinic';
+  if (locationId.startsWith('bank')) return 'bank';
+  return 'home'; // Default fallback
+}
+
+// Level thresholds
+export function getPointsForLevel(level: number): number {
+  return level * 500;  // Level 1 = 500, Level 2 = 1000, etc.
+}
+
+// Building unlock levels
+export const BUILDING_UNLOCK_LEVELS: Record<BuildingName, number> = {
+  home: 1,
+  street: 1,
+  restaurant: 2,
+  market: 3,
+  park: 3,
+  gym: 5,
+  clinic: 5,
+  bank: 7,
+};
+
+// Point values for actions
+export const ACTION_POINTS: Record<string, number> = {
+  go: 5,
+  talk: 10,
+  greet: 10,
+  open: 10,
+  close: 10,
+  use: 10,
+  take: 15,
+  give: 15,
+  eat: 15,
+  drink: 15,
+  cook: 25,
+  position: 5,
+  turn_on: 10,
+  turn_off: 10,
+  pet: 10,
+  feed: 15,
+};
 
 export function createInitialState(
   startLocation: Location,
   startGoal: Goal | null,
   existingVocabulary?: VocabularyProgress
 ): GameState {
+  const building = getBuildingForLocation(startLocation.id);
+
   return {
     location: startLocation,
     playerPosition: 'in_bed',
@@ -39,6 +95,19 @@ export function createInitialState(
       roommate: { mood: 'sleepy' },
     },
     objectStates: {},
+
+    // Progression system
+    points: 0,
+    level: 1,
+    totalPointsEarned: 0,
+    locationProgress: {
+      [building]: {
+        currentGoalId: startGoal?.id || null,
+        completedGoals: [],
+        difficulty: 1,
+        chainComplete: false,
+      },
+    },
   };
 }
 
@@ -160,4 +229,125 @@ export function formatTime(time: { hour: number; minute: number }): string {
   const period = time.hour < 12 ? 'AM' : 'PM';
   const displayHour = time.hour % 12 || 12;
   return `${displayHour}:${m} ${period}`;
+}
+
+// ============================================================================
+// PROGRESSION SYSTEM HELPERS
+// ============================================================================
+
+// Calculate grammar multiplier based on score
+export function getGrammarMultiplier(grammarScore: number): number {
+  if (grammarScore >= 90) return 1.5;
+  if (grammarScore >= 70) return 1.0;
+  if (grammarScore >= 50) return 0.75;
+  return 0.5;
+}
+
+// Award points and check for level up
+export function awardPoints(state: GameState, basePoints: number, grammarScore: number = 100): { state: GameState; pointsAwarded: number; leveledUp: boolean } {
+  const multiplier = getGrammarMultiplier(grammarScore);
+  const pointsAwarded = Math.round(basePoints * multiplier);
+
+  const newPoints = state.points + pointsAwarded;
+  const newTotal = state.totalPointsEarned + pointsAwarded;
+
+  let newLevel = state.level;
+  let leveledUp = false;
+
+  // Check for level up
+  while (newPoints >= getPointsForLevel(newLevel)) {
+    newLevel++;
+    leveledUp = true;
+  }
+
+  return {
+    state: {
+      ...state,
+      points: newPoints,
+      totalPointsEarned: newTotal,
+      level: newLevel,
+    },
+    pointsAwarded,
+    leveledUp,
+  };
+}
+
+// Award goal completion bonus
+export function awardGoalBonus(state: GameState, isChainComplete: boolean, isFirstTime: boolean): { state: GameState; pointsAwarded: number; leveledUp: boolean } {
+  let basePoints = 100; // Regular goal bonus
+
+  if (isChainComplete) {
+    basePoints = 500; // Chain complete bonus
+  }
+
+  if (isFirstTime) {
+    basePoints = Math.round(basePoints * 1.5); // First time bonus
+  }
+
+  return awardPoints(state, basePoints, 100); // No grammar multiplier for goal bonuses
+}
+
+// Check if a building is unlocked for the player
+export function isBuildingUnlocked(state: GameState, building: BuildingName): boolean {
+  return state.level >= BUILDING_UNLOCK_LEVELS[building];
+}
+
+// Save current building's goal progress
+export function saveLocationProgress(state: GameState, building: BuildingName): GameState {
+  const progress: LocationProgress = {
+    currentGoalId: state.currentGoal?.id || null,
+    completedGoals: [...state.completedGoals],
+    difficulty: state.locationProgress[building]?.difficulty || 1,
+    chainComplete: state.locationProgress[building]?.chainComplete || false,
+  };
+
+  return {
+    ...state,
+    locationProgress: {
+      ...state.locationProgress,
+      [building]: progress,
+    },
+  };
+}
+
+// Load a building's goal progress (returns new goal ID and completedGoals)
+export function loadLocationProgress(state: GameState, building: BuildingName): { goalId: string | null; completedGoals: string[]; difficulty: number } {
+  const progress = state.locationProgress[building];
+
+  if (progress) {
+    return {
+      goalId: progress.currentGoalId,
+      completedGoals: progress.completedGoals,
+      difficulty: progress.difficulty,
+    };
+  }
+
+  // No progress yet - return defaults
+  return {
+    goalId: null,
+    completedGoals: [],
+    difficulty: 1,
+  };
+}
+
+// Mark a building's goal chain as complete and increment difficulty for next visit
+export function markChainComplete(state: GameState, building: BuildingName): GameState {
+  const currentProgress = state.locationProgress[building] || {
+    currentGoalId: null,
+    completedGoals: [],
+    difficulty: 1,
+    chainComplete: false,
+  };
+
+  return {
+    ...state,
+    locationProgress: {
+      ...state.locationProgress,
+      [building]: {
+        ...currentProgress,
+        chainComplete: true,
+        difficulty: currentProgress.difficulty + 1, // Harder next time
+      },
+    },
+  };
 }

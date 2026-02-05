@@ -14,6 +14,19 @@ export interface GameState {
   petLocations: Record<string, string>;  // { cat: 'living_room', dog: 'kitchen' }
   npcState: Record<string, NPCState>;
   objectStates: Record<string, ObjectState>;  // Persists object state across location changes
+
+  // Progression system
+  points: number;
+  level: number;
+  totalPointsEarned: number;
+  locationProgress: Record<string, LocationProgress>;  // Per-building goal tracking
+}
+
+export interface LocationProgress {
+  currentGoalId: string | null;
+  completedGoals: string[];
+  difficulty: number;  // 1, 2, 3... for harder goal versions on return visits
+  chainComplete: boolean;  // true when all goals in building done
 }
 
 export interface NPCState {

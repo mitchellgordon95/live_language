@@ -11,7 +11,21 @@ import Anthropic from '@anthropic-ai/sdk';
 import * as readline from 'readline';
 import * as fs from 'fs';
 import type { GameState, Goal, VocabularyProgress, Needs, ObjectState, GrammarIssue, NPCState } from '../engine/types.js';
-import { createInitialState, advanceTime, getObjectState } from '../engine/game-state.js';
+import {
+  createInitialState,
+  advanceTime,
+  getObjectState,
+  getBuildingForLocation,
+  awardPoints,
+  awardGoalBonus,
+  isBuildingUnlocked,
+  saveLocationProgress,
+  loadLocationProgress,
+  markChainComplete,
+  ACTION_POINTS,
+  BUILDING_UNLOCK_LEVELS,
+  type BuildingName,
+} from '../engine/game-state.js';
 import { bedroom, getStartGoal, getGoalById, locations as homeLocations, getNPCsInLocation as getHomeNPCsInLocation, getPetsInLocation, npcs, pets } from '../data/home-basics.js';
 import { restaurantLocations, restaurantNPCs, getRestaurantNPCsInLocation, restaurantGoals, getRestaurantGoalById, getRestaurantStartGoal } from '../data/restaurant-module.js';
 import { clinicLocations, clinicNPCs, getClinicNPCsInLocation, clinicGoals, getClinicGoalById, getClinicStartGoal, clinicVocabulary } from '../data/clinic-module.js';
@@ -43,6 +57,49 @@ function getNPCsInLocation(locationId: string) {
 function getGoalByIdCombined(id: string) {
   return getGoalById(id) || getRestaurantGoalById(id) || getClinicGoalById(id) || getGymGoalById(id) || getParkGoalById(id) || getMarketGoalById(id) || getBankGoalById(id);
 }
+
+// Get start goal for a building
+function getStartGoalForBuilding(building: BuildingName): Goal | null {
+  switch (building) {
+    case 'home': return getStartGoal();
+    case 'restaurant': return getRestaurantStartGoal();
+    case 'clinic': return getClinicStartGoal();
+    case 'gym': return getGymStartGoal();
+    case 'park': return getParkStartGoal();
+    case 'market': return getMarketStartGoal();
+    case 'bank': return getBankStartGoal();
+    case 'street': return null; // Street uses mini-goals (TODO: add street goals)
+    default: return null;
+  }
+}
+
+// Handle transitioning to a new building - load goals and update state
+function handleBuildingTransition(state: GameState, newBuilding: BuildingName): GameState {
+  printBuildingEntered(newBuilding);
+
+  // Load saved progress for this building
+  const progress = loadLocationProgress(state, newBuilding);
+
+  // Determine the goal to use
+  let newGoal: Goal | null = null;
+
+  if (progress.goalId) {
+    // Resume saved goal
+    newGoal = getGoalByIdCombined(progress.goalId) || null;
+  }
+
+  if (!newGoal) {
+    // Start fresh with building's first goal
+    newGoal = getStartGoalForBuilding(newBuilding);
+  }
+
+  return {
+    ...state,
+    currentGoal: newGoal,
+    completedGoals: progress.completedGoals,
+    failedCurrentGoal: false,
+  };
+}
 import { createInitialVocabulary, recordWordUse, extractWordsFromText } from '../engine/vocabulary.js';
 import {
   clearScreen,
@@ -55,6 +112,9 @@ import {
   printPrompt,
   printError,
   printSeparator,
+  printPointsAwarded,
+  printBuildingLocked,
+  printBuildingEntered,
 } from '../ui/terminal.js';
 
 let client: Anthropic | null = null;
@@ -533,14 +593,55 @@ function applyObjectChange(state: GameState, objectId: string, changes: Partial<
   };
 }
 
-function applyEffects(state: GameState, response: UnifiedAIResponse): GameState {
+// Result of applying effects, including progression info
+interface ApplyEffectsResult {
+  state: GameState;
+  pointsAwarded: number;
+  leveledUp: boolean;
+  buildingChanged: boolean;
+  newBuilding?: BuildingName;
+  buildingBlocked?: BuildingName;  // If tried to enter locked building
+}
+
+function applyEffects(state: GameState, response: UnifiedAIResponse): ApplyEffectsResult {
   let newState = { ...state };
+  let totalActionPoints = 0;
+  let buildingChanged = false;
+  let newBuilding: BuildingName | undefined;
+  let buildingBlocked: BuildingName | undefined;
+
+  const grammarScore = response.grammar?.score ?? 100;
+  const oldBuilding = getBuildingForLocation(state.location.id);
 
   // Process actions in order - this is the key to handling compound commands correctly
   for (const action of response.actions || []) {
+    // Award points for valid actions
+    const actionPoints = ACTION_POINTS[action.type] || 5;
+    totalActionPoints += actionPoints;
+
     switch (action.type) {
       case 'go':
         if (action.locationId && locations[action.locationId]) {
+          const targetBuilding = getBuildingForLocation(action.locationId);
+
+          // Check if building is unlocked
+          if (!isBuildingUnlocked(newState, targetBuilding)) {
+            buildingBlocked = targetBuilding;
+            // Don't award points for blocked action
+            totalActionPoints -= actionPoints;
+            // Don't move - building is locked
+            break;
+          }
+
+          // Handle building transition
+          if (targetBuilding !== oldBuilding) {
+            buildingChanged = true;
+            newBuilding = targetBuilding;
+
+            // Save current building's goal progress
+            newState = saveLocationProgress(newState, oldBuilding);
+          }
+
           newState = { ...newState, location: locations[action.locationId] };
         }
         break;
@@ -664,7 +765,29 @@ function applyEffects(state: GameState, response: UnifiedAIResponse): GameState 
   // Advance time
   newState = advanceTime(newState, 5);
 
-  return newState;
+  // Award points for actions (with grammar multiplier)
+  let pointsAwarded = 0;
+  let leveledUp = false;
+
+  if (response.valid && totalActionPoints > 0) {
+    // Compound commands get bonus multiplier
+    const compoundBonus = (response.actions?.length || 1) > 1 ? 2 : 1;
+    const basePoints = totalActionPoints * compoundBonus;
+
+    const result = awardPoints(newState, basePoints, grammarScore);
+    newState = result.state;
+    pointsAwarded = result.pointsAwarded;
+    leveledUp = result.leveledUp;
+  }
+
+  return {
+    state: newState,
+    pointsAwarded,
+    leveledUp,
+    buildingChanged,
+    newBuilding,
+    buildingBlocked,
+  };
 }
 
 function printResults(response: UnifiedAIResponse): void {
@@ -833,8 +956,11 @@ async function runScriptMode(scriptFile: string, initialState: GameState): Promi
 
     process.stdout.write('\r' + ' '.repeat(20) + '\r');
 
+    let effectsResult: ApplyEffectsResult | null = null;
+
     if (response.valid) {
-      gameState = applyEffects(gameState, response);
+      effectsResult = applyEffects(gameState, response);
+      gameState = effectsResult.state;
 
       // Track vocabulary
       if (response.understood && response.grammar.score >= 80) {
@@ -849,6 +975,21 @@ async function runScriptMode(scriptFile: string, initialState: GameState): Promi
     }
 
     printResults(response);
+
+    // Show points awarded
+    if (effectsResult && effectsResult.pointsAwarded > 0) {
+      printPointsAwarded(effectsResult.pointsAwarded, effectsResult.leveledUp, gameState.level);
+    }
+
+    // Handle building transition
+    if (effectsResult?.buildingChanged && effectsResult.newBuilding) {
+      gameState = handleBuildingTransition(gameState, effectsResult.newBuilding);
+    }
+
+    // Show if building was blocked
+    if (effectsResult?.buildingBlocked) {
+      printBuildingLocked(effectsResult.buildingBlocked, BUILDING_UNLOCK_LEVELS[effectsResult.buildingBlocked]);
+    }
 
     // Track goals we've already shown completion for (to avoid double-printing)
     const alreadyPrinted = new Set<string>();
@@ -956,8 +1097,11 @@ async function runInteractiveMode(initialState: GameState): Promise<void> {
 
     process.stdout.write('\r' + ' '.repeat(20) + '\r');
 
+    let effectsResult: ApplyEffectsResult | null = null;
+
     if (response.valid) {
-      gameState = applyEffects(gameState, response);
+      effectsResult = applyEffects(gameState, response);
+      gameState = effectsResult.state;
 
       if (response.understood && response.grammar.score >= 80) {
         const wordsUsed = extractWordsFromText(trimmedInput, gameState.vocabulary);
@@ -973,6 +1117,21 @@ async function runInteractiveMode(initialState: GameState): Promise<void> {
     }
 
     printResults(response);
+
+    // Show points awarded
+    if (effectsResult && effectsResult.pointsAwarded > 0) {
+      printPointsAwarded(effectsResult.pointsAwarded, effectsResult.leveledUp, gameState.level);
+    }
+
+    // Handle building transition
+    if (effectsResult?.buildingChanged && effectsResult.newBuilding) {
+      gameState = handleBuildingTransition(gameState, effectsResult.newBuilding);
+    }
+
+    // Show if building was blocked
+    if (effectsResult?.buildingBlocked) {
+      printBuildingLocked(effectsResult.buildingBlocked, BUILDING_UNLOCK_LEVELS[effectsResult.buildingBlocked]);
+    }
 
     // Track goals we've already shown completion for (to avoid double-printing)
     const alreadyPrinted = new Set<string>();

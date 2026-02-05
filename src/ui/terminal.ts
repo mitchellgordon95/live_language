@@ -1,5 +1,5 @@
 import type { GameState, AIUnderstandingResult, ActionResult, Goal, Intent } from '../engine/types.js';
-import { formatTime, getObjectState } from '../engine/game-state.js';
+import { formatTime, getObjectState, getPointsForLevel } from '../engine/game-state.js';
 import { getWordIdFromObject, getFamiliaritySummary, getObjectLabel } from '../engine/vocabulary.js';
 import { getNPCsInLocation, getPetsInLocation } from '../data/home-basics.js';
 
@@ -93,6 +93,15 @@ export function printNeeds(state: GameState): void {
   const bladderBar = makeBar(state.needs.bladder);
 
   console.log(`${COLORS.bold}Needs:${COLORS.reset} ⚡ ${energyBar}  🍔 ${hungerBar}  🧼 ${hygieneBar}  🚽 ${bladderBar}`);
+  console.log();
+}
+
+export function printLevel(state: GameState): void {
+  const pointsToNext = getPointsForLevel(state.level);
+  const progress = Math.min(100, Math.round((state.points / pointsToNext) * 100));
+  const progressBar = makeBar(progress);
+
+  console.log(`${COLORS.bold}Level ${state.level}${COLORS.reset} ${progressBar} ${COLORS.dim}${state.points}/${pointsToNext} pts${COLORS.reset}`);
   console.log();
 }
 
@@ -234,6 +243,52 @@ export function printGoalComplete(goal: Goal): void {
   console.log();
 }
 
+export function printPointsAwarded(points: number, leveledUp: boolean, newLevel: number): void {
+  const multiplierNote = points > 15 ? ' (grammar bonus!)' : '';
+  console.log(`   ${COLORS.cyan}+${points} points${multiplierNote}${COLORS.reset}`);
+
+  if (leveledUp) {
+    console.log(`   ${COLORS.green}🎊 LEVEL UP! Now level ${newLevel}${COLORS.reset}`);
+  }
+  console.log();
+}
+
+export function printBuildingLocked(building: string, requiredLevel: number): void {
+  const buildingNames: Record<string, string> = {
+    home: 'Home',
+    street: 'Street',
+    restaurant: 'Restaurant',
+    market: 'Market',
+    park: 'Park',
+    gym: 'Gym',
+    clinic: 'Clinic',
+    bank: 'Bank',
+  };
+  const displayName = buildingNames[building] || building;
+  console.log(`   ${COLORS.yellow}🔒 ${displayName} is locked! Reach level ${requiredLevel} to unlock.${COLORS.reset}`);
+  console.log();
+}
+
+export function printBuildingEntered(building: string): void {
+  const buildingNames: Record<string, string> = {
+    home: 'Home',
+    street: 'the Street',
+    restaurant: 'the Restaurant',
+    market: 'the Market',
+    park: 'the Park',
+    gym: 'the Gym',
+    clinic: 'the Clinic',
+    bank: 'the Bank',
+  };
+  const displayName = buildingNames[building] || building;
+  console.log(`   ${COLORS.cyan}📍 Entering ${displayName}...${COLORS.reset}`);
+  console.log();
+}
+
+export function printProgressStatus(points: number, level: number, pointsToNextLevel: number): void {
+  console.log(`   ${COLORS.dim}Level ${level} | ${points} pts | Next: ${pointsToNextLevel}${COLORS.reset}`);
+}
+
 export function printWelcome(): void {
   console.log(`
 ${COLORS.cyan}Welcome to Language Life Sim!${COLORS.reset}
@@ -325,6 +380,7 @@ export function printGameState(state: GameState): void {
   printNPCsAndPets(state);
   printAvailableVerbs(state);
   printNeeds(state);
+  printLevel(state);
   printGoal(state.currentGoal, state.failedCurrentGoal);
   printInventory(state);
   printSeparator();
