@@ -685,7 +685,9 @@ function applyEffects(state: GameState, response: UnifiedAIResponse): ApplyEffec
       case 'take':
         if (action.objectId) {
           const obj = newState.location.objects.find(o => o.id === action.objectId);
-          if (obj) {
+          // Only add if not already in inventory (prevent duplicates)
+          const alreadyHave = newState.inventory.some(i => i.id === action.objectId);
+          if (obj && !alreadyHave) {
             newState = {
               ...newState,
               inventory: [...newState.inventory, { id: obj.id, name: obj.name }],
@@ -831,8 +833,11 @@ function printResults(response: UnifiedAIResponse): void {
       console.log(`   ${COLORS.green}Perfect! ⭐${COLORS.reset} ${COLORS.dim}"${response.spanishModel}"${COLORS.reset}`);
     } else if (response.grammar.issues.length > 0) {
       const issue = response.grammar.issues[0];
-      console.log(`   ${COLORS.yellow}📝 Tip:${COLORS.reset} "${issue.corrected}" is more natural`);
-      console.log(`      ${COLORS.dim}${issue.explanation}${COLORS.reset}`);
+      // Only show tip if the correction is actually different
+      if (issue.original.toLowerCase().trim() !== issue.corrected.toLowerCase().trim()) {
+        console.log(`   ${COLORS.yellow}📝 Tip:${COLORS.reset} "${issue.corrected}" is more natural`);
+        console.log(`      ${COLORS.dim}${issue.explanation}${COLORS.reset}`);
+      }
     }
   } else {
     console.log(`   ${COLORS.dim}Try again! Type /hint for help.${COLORS.reset}`);
