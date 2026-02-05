@@ -1,5 +1,5 @@
 import type { GameState, AIUnderstandingResult, ActionResult, Goal, Intent } from '../engine/types.js';
-import { formatTime } from '../engine/game-state.js';
+import { formatTime, getObjectState } from '../engine/game-state.js';
 import { getWordIdFromObject, getFamiliaritySummary, getObjectLabel } from '../engine/vocabulary.js';
 import { getNPCsInLocation, getPetsInLocation } from '../data/home-basics.js';
 
@@ -40,22 +40,25 @@ export function printObjects(state: GameState): void {
   console.log(`${COLORS.bold}You see:${COLORS.reset}`);
 
   const visibleObjects = state.location.objects.filter((obj) => {
+    const objState = getObjectState(state, obj);
     // Hide items in closed fridge
-    if (obj.state.inFridge) {
+    if (objState.inFridge) {
       const fridge = state.location.objects.find((o) => o.id === 'refrigerator');
-      return fridge?.state.open;
+      const fridgeState = fridge ? getObjectState(state, fridge) : {};
+      return fridgeState.open;
     }
     return true;
   });
 
   for (const obj of visibleObjects) {
+    const objState = getObjectState(state, obj);
     let status = '';
-    if (obj.state.ringing) status = ` ${COLORS.red}RINGING!${COLORS.reset}`;
-    else if (obj.state.open === true) status = ` ${COLORS.dim}- open${COLORS.reset}`;
-    else if (obj.state.open === false) status = ` ${COLORS.dim}- closed${COLORS.reset}`;
-    else if (obj.state.on === true) status = ` ${COLORS.yellow}- on${COLORS.reset}`;
-    else if (obj.state.on === false) status = ` ${COLORS.dim}- off${COLORS.reset}`;
-    if (obj.state.inFridge) status += ` ${COLORS.dim}(from fridge)${COLORS.reset}`;
+    if (objState.ringing) status = ` ${COLORS.red}RINGING!${COLORS.reset}`;
+    else if (objState.open === true) status = ` ${COLORS.dim}- open${COLORS.reset}`;
+    else if (objState.open === false) status = ` ${COLORS.dim}- closed${COLORS.reset}`;
+    else if (objState.on === true) status = ` ${COLORS.yellow}- on${COLORS.reset}`;
+    else if (objState.on === false) status = ` ${COLORS.dim}- off${COLORS.reset}`;
+    if (objState.inFridge) status += ` ${COLORS.dim}(from fridge)${COLORS.reset}`;
 
     // Use familiarity-aware label:
     // - new: "la nevera (refrigerator)"

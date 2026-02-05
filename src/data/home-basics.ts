@@ -268,6 +268,35 @@ export const livingRoom: Location = {
   exits: [
     { to: 'bedroom', name: { spanish: 'el dormitorio', english: 'bedroom' } },
     { to: 'kitchen', name: { spanish: 'la cocina', english: 'kitchen' } },
+    { to: 'street', name: { spanish: 'la calle', english: 'street' } },
+  ],
+};
+
+export const street: Location = {
+  id: 'street',
+  name: { spanish: 'la calle', english: 'street' },
+  objects: [
+    {
+      id: 'streetlamp',
+      name: { spanish: 'la farola', english: 'streetlamp' },
+      state: { on: true },
+      actions: ['LOOK'],
+    },
+    {
+      id: 'bench',
+      name: { spanish: 'el banco', english: 'bench' },
+      state: {},
+      actions: [],
+    },
+  ],
+  exits: [
+    { to: 'living_room', name: { spanish: 'la casa', english: 'home' } },
+    { to: 'restaurant_entrance', name: { spanish: 'el restaurante', english: 'restaurant' } },
+    { to: 'clinic_reception', name: { spanish: 'la clinica', english: 'clinic' } },
+    { to: 'gym_entrance', name: { spanish: 'el gimnasio', english: 'gym' } },
+    { to: 'market_entrance', name: { spanish: 'el mercado', english: 'market' } },
+    { to: 'park_entrance', name: { spanish: 'el parque', english: 'park' } },
+    { to: 'bank_entrance', name: { spanish: 'el banco', english: 'bank' } },
   ],
 };
 
@@ -276,6 +305,7 @@ export const locations: Record<string, Location> = {
   bathroom,
   kitchen,
   living_room: livingRoom,
+  street,
 };
 
 // ============================================================================

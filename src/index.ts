@@ -6,15 +6,65 @@ dotenv.config({ path: '.env.local' });
 
 import { runUnifiedMode } from './modes/unified.js';
 
+export interface GameOptions {
+  scriptFile?: string;
+  startLocation?: string;  // Start in a specific room (e.g., 'kitchen', 'bathroom')
+  startGoal?: string;      // Start at a specific goal ID
+  skipGoals?: boolean;     // Start with no goals
+  standing?: boolean;      // Start standing (not in bed)
+  module?: string;         // Start a specific module (e.g., 'restaurant')
+}
+
 // Parse command line args
-function parseArgs(): { scriptFile?: string } {
+function parseArgs(): GameOptions {
   const args = process.argv.slice(2);
-  const result: { scriptFile?: string } = {};
+  const result: GameOptions = {};
 
   for (let i = 0; i < args.length; i++) {
-    if (args[i] === '--script' && args[i + 1]) {
-      result.scriptFile = args[i + 1];
+    const arg = args[i];
+    const next = args[i + 1];
+
+    if (arg === '--script' && next) {
+      result.scriptFile = next;
       i++;
+    } else if (arg === '--start-location' && next) {
+      result.startLocation = next;
+      i++;
+    } else if (arg === '--start-goal' && next) {
+      result.startGoal = next;
+      i++;
+    } else if (arg === '--skip-goals') {
+      result.skipGoals = true;
+    } else if (arg === '--standing') {
+      result.standing = true;
+    } else if (arg === '--module' && next) {
+      result.module = next;
+      i++;
+    } else if (arg === '--help') {
+      console.log(`
+Usage: npm start -- [options]
+
+Options:
+  --script <file>          Run commands from a script file
+  --start-location <id>    Start in a specific room (bedroom, bathroom, kitchen, living_room, street, restaurant_entrance, clinic_reception, bank_entrance, park_entrance, gym_entrance, market_entrance)
+  --start-goal <id>        Start at a specific goal
+  --skip-goals             Start with no goals
+  --standing               Start standing (not in bed)
+  --module <name>          Start a specific module (e.g., 'restaurant', 'clinic', 'bank', 'park', 'gym', 'market')
+  --help                   Show this help message
+
+Examples:
+  npm start -- --start-location kitchen --standing
+  npm start -- --start-goal make_breakfast --standing
+  npm start -- --script test.txt
+  npm start -- --module restaurant
+  npm start -- --module clinic
+  npm start -- --module bank
+  npm start -- --module park
+  npm start -- --module gym
+  npm start -- --module market
+`);
+      process.exit(0);
     }
   }
 
@@ -22,8 +72,8 @@ function parseArgs(): { scriptFile?: string } {
 }
 
 async function main(): Promise<void> {
-  const args = parseArgs();
-  await runUnifiedMode(args.scriptFile);
+  const options = parseArgs();
+  await runUnifiedMode(options);
 }
 
 main().catch(console.error);

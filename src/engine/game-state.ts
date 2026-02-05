@@ -38,7 +38,13 @@ export function createInitialState(
     npcState: {
       roommate: { mood: 'sleepy' },
     },
+    objectStates: {},
   };
+}
+
+// Get effective object state by merging base definition with tracked changes
+export function getObjectState(state: GameState, obj: GameObject): ObjectState {
+  return { ...obj.state, ...state.objectStates[obj.id] };
 }
 
 export function findObject(
