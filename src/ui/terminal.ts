@@ -1,5 +1,5 @@
 import type { GameState, AIUnderstandingResult, ActionResult, Goal, Intent } from '../engine/types.js';
-import { formatTime, getObjectState, getPointsForLevel } from '../engine/game-state.js';
+import { formatTime, getObjectState, getPointsForLevel, getBuildingForLocation, isBuildingUnlocked, BUILDING_UNLOCK_LEVELS } from '../engine/game-state.js';
 import { getWordIdFromObject, getFamiliaritySummary, getObjectLabel } from '../engine/vocabulary.js';
 import { getNPCsInLocation, getPetsInLocation } from '../data/home-basics.js';
 
@@ -81,7 +81,16 @@ export function printObjects(state: GameState): void {
 
   if (state.location.exits.length > 0) {
     console.log();
-    console.log(`${COLORS.dim}Exits: ${state.location.exits.map((e) => e.name.spanish).join(', ')}${COLORS.reset}`);
+    const exitLabels = state.location.exits.map((e) => {
+      const building = getBuildingForLocation(e.to);
+      const locked = !isBuildingUnlocked(state, building);
+      if (locked) {
+        const requiredLevel = BUILDING_UNLOCK_LEVELS[building];
+        return `${e.name.spanish} ${COLORS.yellow}🔒L${requiredLevel}${COLORS.dim}`;
+      }
+      return e.name.spanish;
+    });
+    console.log(`${COLORS.dim}Exits: ${exitLabels.join(', ')}${COLORS.reset}`);
   }
   console.log();
 }
