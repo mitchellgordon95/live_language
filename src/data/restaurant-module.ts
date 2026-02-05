@@ -118,6 +118,7 @@ export const restaurantTable: Location = {
     { to: 'restaurant_entrance', name: { spanish: 'la entrada', english: 'entrance' } },
     { to: 'restaurant_kitchen', name: { spanish: 'la cocina', english: 'kitchen' } },
     { to: 'restaurant_cashier', name: { spanish: 'la caja', english: 'cashier' } },
+    { to: 'restaurant_bathroom', name: { spanish: 'el bano', english: 'bathroom' } },
   ],
 };
 
@@ -178,11 +179,62 @@ export const restaurantCashier: Location = {
   ],
 };
 
+export const restaurantBathroom: Location = {
+  id: 'restaurant_bathroom',
+  name: { spanish: 'el bano', english: 'bathroom' },
+  objects: [
+    {
+      id: 'restaurant_toilet',
+      name: { spanish: 'el inodoro', english: 'toilet' },
+      state: {},
+      actions: ['USE'],
+      needsEffect: { bladder: 50 },
+    },
+    {
+      id: 'restaurant_sink',
+      name: { spanish: 'el lavabo', english: 'sink' },
+      state: { on: false },
+      actions: ['USE', 'TURN_ON', 'TURN_OFF'],
+      needsEffect: { hygiene: 10 },
+    },
+    {
+      id: 'restaurant_mirror',
+      name: { spanish: 'el espejo', english: 'mirror' },
+      state: {},
+      actions: ['LOOK'],
+    },
+    {
+      id: 'paper_towels',
+      name: { spanish: 'las toallas de papel', english: 'paper towels' },
+      state: {},
+      actions: ['USE', 'TAKE'],
+      takeable: true,
+    },
+    {
+      id: 'hand_dryer',
+      name: { spanish: 'el secador de manos', english: 'hand dryer' },
+      state: { on: false },
+      actions: ['USE', 'TURN_ON'],
+    },
+    {
+      id: 'soap_dispenser',
+      name: { spanish: 'el dispensador de jabon', english: 'soap dispenser' },
+      state: {},
+      actions: ['USE'],
+      needsEffect: { hygiene: 5 },
+    },
+  ],
+  exits: [
+    { to: 'restaurant_table', name: { spanish: 'el comedor', english: 'dining room' } },
+  ],
+};
+
 export const restaurantLocations: Record<string, Location> = {
   restaurant_entrance: restaurantEntrance,
   restaurant_table: restaurantTable,
   restaurant_kitchen: restaurantKitchen,
   restaurant_cashier: restaurantCashier,
+  restaurant_bathroom: restaurantBathroom,
 };
 
 // ============================================================================
@@ -543,4 +595,15 @@ export const restaurantVocabulary: VocabWord[] = [
   { spanish: 'caliente', english: 'hot', category: 'adjective' },
   { spanish: 'frio', english: 'cold', category: 'adjective' },
   { spanish: 'picante', english: 'spicy', category: 'adjective' },
+
+  // Bathroom vocabulary
+  { spanish: 'el bano', english: 'bathroom', category: 'noun', gender: 'masculine' },
+  { spanish: 'el inodoro', english: 'toilet', category: 'noun', gender: 'masculine' },
+  { spanish: 'el lavabo', english: 'sink', category: 'noun', gender: 'masculine' },
+  { spanish: 'el espejo', english: 'mirror', category: 'noun', gender: 'masculine' },
+  { spanish: 'el jabon', english: 'soap', category: 'noun', gender: 'masculine' },
+  { spanish: 'las toallas', english: 'towels', category: 'noun', gender: 'feminine' },
+  { spanish: 'las toallas de papel', english: 'paper towels', category: 'noun', gender: 'feminine' },
+  { spanish: 'el secador de manos', english: 'hand dryer', category: 'noun', gender: 'masculine' },
+  { spanish: 'donde esta el bano?', english: 'where is the bathroom?', category: 'other' },
 ];

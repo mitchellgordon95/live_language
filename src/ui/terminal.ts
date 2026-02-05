@@ -346,6 +346,9 @@ ${COLORS.bold}Commands:${COLORS.reset}
   /hint           - Show current goal hint (if stuck)
   /learn <topic>  - Get a Spanish lesson (5/day)
                     Example: /learn ser vs estar
+  /audio          - Toggle audio on/off
+  /say <text>     - Hear pronunciation
+                    Example: /say buenos días
 
 ${COLORS.bold}How to play:${COLORS.reset}
   Say what you're doing in Spanish to make it happen.

@@ -24,6 +24,9 @@ export interface GameState {
   // Learn command tracking (5 per in-game day)
   learnCommandsUsedToday: number;
   lastLearnCommandDay: number;  // In-game day (hour / 24)
+
+  // Audio
+  audioEnabled: boolean;
 }
 
 export interface LocationProgress {

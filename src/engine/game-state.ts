@@ -112,6 +112,9 @@ export function createInitialState(
     // Learn command tracking
     learnCommandsUsedToday: 0,
     lastLearnCommandDay: 0,  // Will be set on first use
+
+    // Audio
+    audioEnabled: true,
   };
 }
 

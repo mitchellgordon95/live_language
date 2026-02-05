@@ -33,6 +33,7 @@ import { gymLocations, gymNPCs, getGymNPCsInLocation, gymGoals, getGymGoalById, 
 import { parkLocations, parkNpcs, getParkNPCsInLocation, parkGoals, getParkGoalById, getParkStartGoal, parkVocabulary } from '../data/park-module.js';
 import { marketLocations, marketNPCs, getMarketNPCsInLocation, marketGoals, getMarketGoalById, getMarketStartGoal, marketVocabulary } from '../data/market-module.js';
 import { bankLocations, bankNPCs, getBankNPCsInLocation, bankGoals, getBankGoalById, getBankStartGoal, bankVocabulary } from '../data/bank-module.js';
+import { speak } from '../audio/speak.js';
 
 // Merge all locations from home, restaurant, clinic, gym, park, market, and bank modules
 const locations: Record<string, typeof homeLocations[keyof typeof homeLocations]> = {
@@ -436,11 +437,14 @@ RESTAURANT NPCs:
 RESTAURANT INTERACTIONS:
 - "buenas noches" or "una mesa para uno, por favor" at entrance → actions: [{ "type": "talk", "npcId": "host" }], goalComplete: ["seated_by_host"], npcResponse from host
 - "quiero una limonada" or "quisiera agua" → actions: [{ "type": "talk", "npcId": "waiter" }], goalComplete: ["ordered_drink"], npcResponse from waiter
-- "abro el menu" or "miro el menu" → actions: [{ "type": "open", "objectId": "menu" }], goalComplete: ["read_menu"]
+- "abro el menu" or "miro el menu" or "leo el menu" → actions: [{ "type": "open", "objectId": "menu" }], goalComplete: ["read_menu"]
+  IMPORTANT: When player opens/reads the menu, your message MUST include the menu contents:
+  "You open the menu and see: BEBIDAS: agua (gratis), refresco ($25), limonada ($30), cerveza ($45), vino ($65), cafe ($35). ENTRADAS: sopa del dia ($55), ensalada ($50), guacamole ($60). PLATOS: pollo asado ($120), carne asada ($150), pescado ($140), tacos ($95), enchiladas ($105), hamburguesa ($100). POSTRES: flan ($50), helado ($45), churros ($40)."
 - "quiero el pollo" or "quisiera los tacos" → actions: [{ "type": "talk", "npcId": "waiter" }], goalComplete: ["ordered_food"], npcResponse from waiter
 - "como el pollo" or "como la comida" → actions: [{ "type": "eat", "objectId": "ordered_food" }], goalComplete: ["ate_meal"], needsChanges: { hunger: 40 }
 - "la cuenta, por favor" → actions: [{ "type": "talk", "npcId": "waiter" }], goalComplete: ["asked_for_bill"], npcResponse from waiter
 - "pago la cuenta" → actions: [{ "type": "use", "objectId": "bill" }], goalComplete: ["paid_bill"]
+- "donde esta el bano?" or "voy al bano" → Player can go to restaurant_bathroom
 
 KEY SPANISH FOR ORDERING (teach these patterns):
 - "Quiero..." (I want...) - direct but acceptable
@@ -820,7 +824,7 @@ function applyEffects(state: GameState, response: UnifiedAIResponse): ApplyEffec
   };
 }
 
-function printResults(response: UnifiedAIResponse): void {
+function printResults(response: UnifiedAIResponse, state: GameState): void {
   const COLORS = {
     reset: '\x1b[0m',
     green: '\x1b[32m',
@@ -840,18 +844,30 @@ function printResults(response: UnifiedAIResponse): void {
   if (response.npcResponse?.spanish && response.npcResponse?.npcId) {
     const npc = response.npcResponse;
     console.log(`   ${COLORS.cyan}💬 ${npc.npcId}:${COLORS.reset} "${npc.spanish}"`);
+    // Speak NPC response
+    if (state.audioEnabled) {
+      speak(npc.spanish);
+    }
     console.log();
   }
 
   if (response.understood) {
     if (response.grammar.score === 100) {
       console.log(`   ${COLORS.green}Perfect! ⭐${COLORS.reset} ${COLORS.dim}"${response.spanishModel}"${COLORS.reset}`);
+      // Speak the Spanish model for perfect responses
+      if (state.audioEnabled && response.spanishModel) {
+        speak(response.spanishModel);
+      }
     } else if (response.grammar.issues.length > 0) {
       const issue = response.grammar.issues[0];
       // Only show tip if the correction is actually different
       if (issue.original.toLowerCase().trim() !== issue.corrected.toLowerCase().trim()) {
         console.log(`   ${COLORS.yellow}📝 Tip:${COLORS.reset} "${issue.corrected}" is more natural`);
         console.log(`      ${COLORS.dim}${issue.explanation}${COLORS.reset}`);
+        // Speak the corrected version
+        if (state.audioEnabled) {
+          speak(issue.corrected);
+        }
       }
     }
   } else {
@@ -1094,7 +1110,7 @@ async function runScriptMode(scriptFile: string, initialState: GameState): Promi
       }
     }
 
-    printResults(response);
+    printResults(response, gameState);
 
     // Show points awarded
     if (effectsResult && effectsResult.pointsAwarded > 0) {
@@ -1192,6 +1208,21 @@ async function runInteractiveMode(initialState: GameState): Promise<void> {
         return;
       }
 
+      // Handle /say with argument
+      if (trimmedInput.toLowerCase().startsWith('/say ')) {
+        const text = trimmedInput.slice(5).trim();
+        if (!text) {
+          console.log('Usage: /say <spanish text>\nExample: /say buenos días\n');
+        } else if (!gameState.audioEnabled) {
+          console.log('Audio is off. Use /audio to turn it on.\n');
+        } else {
+          speak(text);
+          console.log(`🔊 "${text}"\n`);
+        }
+        printPrompt();
+        return;
+      }
+
       switch (trimmedInput.toLowerCase()) {
         case '/quit':
         case '/exit':
@@ -1218,6 +1249,13 @@ async function runInteractiveMode(initialState: GameState): Promise<void> {
           break;
         case '/learn':
           console.log('Usage: /learn <topic>\nExample: /learn ser vs estar\n');
+          break;
+        case '/audio':
+          gameState = { ...gameState, audioEnabled: !gameState.audioEnabled };
+          console.log(`🔊 Audio ${gameState.audioEnabled ? 'ON' : 'OFF'}\n`);
+          break;
+        case '/say':
+          console.log('Usage: /say <spanish text>\nExample: /say buenos días\n');
           break;
         default:
           console.log(`Unknown command: ${trimmedInput}\n`);
@@ -1252,7 +1290,7 @@ async function runInteractiveMode(initialState: GameState): Promise<void> {
       gameState = { ...gameState, failedCurrentGoal: true };
     }
 
-    printResults(response);
+    printResults(response, gameState);
 
     // Show points awarded
     if (effectsResult && effectsResult.pointsAwarded > 0) {
