@@ -1,4 +1,5 @@
 import type { Location, Goal, VocabWord, GameState, NPC, Pet } from '../engine/types.js';
+import { getObjectState } from '../engine/game-state.js';
 
 // ============================================================================
 // LOCATIONS
@@ -364,7 +365,9 @@ export const goals: Goal[] = [
     hint: 'Try "Apago el despertador" (I turn off the alarm)',
     checkComplete: (state: GameState) => {
       const alarm = state.location.objects.find((o) => o.id === 'alarm_clock');
-      return alarm ? !alarm.state.ringing : true;
+      if (!alarm) return true;
+      const effectiveState = getObjectState(state, alarm);
+      return !effectiveState.ringing;
     },
     nextGoalId: 'go_to_bathroom',
   },

@@ -244,8 +244,7 @@ export function printGoalComplete(goal: Goal): void {
 }
 
 export function printPointsAwarded(points: number, leveledUp: boolean, newLevel: number): void {
-  const multiplierNote = points > 15 ? ' (grammar bonus!)' : '';
-  console.log(`   ${COLORS.cyan}+${points} points${multiplierNote}${COLORS.reset}`);
+  console.log(`   ${COLORS.cyan}+${points} points${COLORS.reset}`);
 
   if (leveledUp) {
     console.log(`   ${COLORS.green}🎊 LEVEL UP! Now level ${newLevel}${COLORS.reset}`);

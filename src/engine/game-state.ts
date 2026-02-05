@@ -235,12 +235,9 @@ export function formatTime(time: { hour: number; minute: number }): string {
 // PROGRESSION SYSTEM HELPERS
 // ============================================================================
 
-// Calculate grammar multiplier based on score
-export function getGrammarMultiplier(grammarScore: number): number {
-  if (grammarScore >= 90) return 1.5;
-  if (grammarScore >= 70) return 1.0;
-  if (grammarScore >= 50) return 0.75;
-  return 0.5;
+// Grammar multiplier - disabled per user request
+export function getGrammarMultiplier(_grammarScore: number): number {
+  return 1.0;  // No grammar bonus
 }
 
 // Award points and check for level up
