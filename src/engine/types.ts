@@ -28,6 +28,9 @@ export interface GameState {
 
   // Audio
   audioEnabled: boolean;
+
+  // Profile for vocabulary tracking
+  profile?: string;
 }
 
 export interface LocationProgress {

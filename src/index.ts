@@ -13,6 +13,8 @@ export interface GameOptions {
   skipGoals?: boolean;     // Start with no goals
   standing?: boolean;      // Start standing (not in bed)
   module?: string;         // Start a specific module (e.g., 'restaurant')
+  noAudio?: boolean;       // Disable text-to-speech
+  profile?: string;        // Use a named profile for vocabulary tracking
 }
 
 // Parse command line args
@@ -40,6 +42,11 @@ function parseArgs(): GameOptions {
     } else if (arg === '--module' && next) {
       result.module = next;
       i++;
+    } else if (arg === '--no-audio') {
+      result.noAudio = true;
+    } else if (arg === '--profile' && next) {
+      result.profile = next;
+      i++;
     } else if (arg === '--help') {
       console.log(`
 Usage: npm start -- [options]
@@ -51,6 +58,8 @@ Options:
   --skip-goals             Start with no goals
   --standing               Start standing (not in bed)
   --module <name>          Start a specific module (e.g., 'restaurant', 'clinic', 'bank', 'park', 'gym', 'market')
+  --no-audio               Disable text-to-speech
+  --profile <name>         Use a named profile for vocabulary tracking (e.g., 'friend' uses vocabulary-progress-friend.json)
   --help                   Show this help message
 
 Examples:

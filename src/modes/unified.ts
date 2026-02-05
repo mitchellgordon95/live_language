@@ -126,7 +126,9 @@ function getClient(): Anthropic {
   return client;
 }
 
-const SAVE_FILE = 'vocabulary-progress.json';
+function getSaveFile(profile?: string): string {
+  return profile ? `vocabulary-progress-${profile}.json` : 'vocabulary-progress.json';
+}
 
 // Ordered action for compound commands
 interface Action {
@@ -182,6 +184,7 @@ interface UnifiedAIResponse {
     spanish: string;
     english: string;
     wantsItem?: string;
+    actionText?: string; // Spanish description of NPC's physical action (e.g., "El mesero pone los tacos en la mesa")
   };
   petResponse?: {
     petId: string;
@@ -340,7 +343,7 @@ RESPOND WITH ONLY VALID JSON:
   "message": "What happened, in English (e.g., 'You get up, go to the kitchen, and open the refrigerator.')",
   "needsChanges": { "hunger": 10, "energy": -5 },
   "goalComplete": ["goal_id"],
-  "npcResponse": { "npcId": "roommate", "spanish": "...", "english": "...", "wantsItem": "eggs" },
+  "npcResponse": { "npcId": "roommate", "spanish": "...", "english": "...", "wantsItem": "eggs", "actionText": "Carlos te da una palmada en el hombro" },
   "npcActions": [
     { "npcId": "waiter", "type": "add_object", "locationId": "restaurant_table", "object": { "id": "my_sopa", "spanishName": "la sopa", "englishName": "soup", "actions": ["EAT"], "consumable": true, "needsEffect": { "hunger": 30 } } }
   ]
@@ -379,6 +382,13 @@ WHEN TO USE npcActions:
 - Vendor sells item → give_item to add to player inventory
 - Doctor gives prescription → give_item or add_object
 IMPORTANT: When an NPC brings something to the player, use add_object to make it appear!
+
+NPC ACTION TEXT: When an NPC performs a physical action (seating, delivering food, giving items, etc.), include "actionText" in npcResponse describing what they do in Spanish. Examples:
+- Host seats player → actionText: "El anfitrión te lleva a una mesa junto a la ventana"
+- Waiter brings food → actionText: "El mesero pone los tacos en la mesa"
+- Doctor gives prescription → actionText: "El doctor te entrega la receta"
+- Vendor hands over items → actionText: "Doña María te da las manzanas"
+Only include actionText when the NPC does something physical, not for pure dialogue.
 
 ORDER MATTERS! Put actions in the sequence they should execute:
 - "me levanto y apago el despertador" → position first, then turn_off
@@ -1010,6 +1020,9 @@ function printResults(response: UnifiedAIResponse, state: GameState): void {
   if (response.npcResponse?.spanish && response.npcResponse?.npcId) {
     const npc = response.npcResponse;
     console.log(`   ${COLORS.cyan}💬 ${npc.npcId}:${COLORS.reset} "${npc.spanish}"`);
+    if (npc.actionText) {
+      console.log(`   ${COLORS.dim}*${npc.actionText}*${COLORS.reset}`);
+    }
     // NPC response takes priority for TTS
     textToSpeak = npc.spanish;
     console.log();
@@ -1046,10 +1059,11 @@ function printResults(response: UnifiedAIResponse, state: GameState): void {
   console.log();
 }
 
-function loadVocabulary(): VocabularyProgress {
+function loadVocabulary(profile?: string): VocabularyProgress {
+  const saveFile = getSaveFile(profile);
   try {
-    if (fs.existsSync(SAVE_FILE)) {
-      return JSON.parse(fs.readFileSync(SAVE_FILE, 'utf-8'));
+    if (fs.existsSync(saveFile)) {
+      return JSON.parse(fs.readFileSync(saveFile, 'utf-8'));
     }
   } catch (error) {
     console.error('Could not load vocabulary:', error);
@@ -1057,9 +1071,10 @@ function loadVocabulary(): VocabularyProgress {
   return createInitialVocabulary();
 }
 
-function saveVocabulary(vocab: VocabularyProgress): void {
+function saveVocabulary(vocab: VocabularyProgress, profile?: string): void {
+  const saveFile = getSaveFile(profile);
   try {
-    fs.writeFileSync(SAVE_FILE, JSON.stringify(vocab, null, 2));
+    fs.writeFileSync(saveFile, JSON.stringify(vocab, null, 2));
   } catch (error) {
     console.error('Could not save vocabulary:', error);
   }
@@ -1152,10 +1167,13 @@ export interface GameOptions {
   skipGoals?: boolean;
   standing?: boolean;
   module?: string;  // 'restaurant' starts at restaurant_entrance with restaurant goals
+  noAudio?: boolean;  // Disable text-to-speech
+  profile?: string;   // Use a named profile for vocabulary tracking
 }
 
 export async function runUnifiedMode(options: GameOptions = {}): Promise<void> {
-  const existingVocab = loadVocabulary();
+  const profile = options.profile;
+  const existingVocab = loadVocabulary(profile);
 
   // Handle module selection (overrides startLocation and startGoal)
   let effectiveStartLocation = options.startLocation;
@@ -1206,6 +1224,16 @@ export async function runUnifiedMode(options: GameOptions = {}): Promise<void> {
   // Override starting position if requested
   if (forceStanding || options.startLocation) {
     gameState = { ...gameState, playerPosition: 'standing' };
+  }
+
+  // Disable audio if requested
+  if (options.noAudio) {
+    gameState = { ...gameState, audioEnabled: false };
+  }
+
+  // Store profile in game state for vocabulary saving
+  if (profile) {
+    gameState = { ...gameState, profile };
   }
 
   clearScreen();
@@ -1342,7 +1370,7 @@ async function runScriptMode(scriptFile: string, initialState: GameState): Promi
     await new Promise(resolve => setTimeout(resolve, 500));
   }
 
-  saveVocabulary(gameState.vocabulary);
+  saveVocabulary(gameState.vocabulary, gameState.profile);
   console.log('\n📜 Script complete! Vocabulary saved.');
 }
 
@@ -1396,7 +1424,7 @@ async function runInteractiveMode(initialState: GameState): Promise<void> {
       switch (trimmedInput.toLowerCase()) {
         case '/quit':
         case '/exit':
-          saveVocabulary(gameState.vocabulary);
+          saveVocabulary(gameState.vocabulary, gameState.profile);
           console.log('\n¡Hasta luego! Vocabulary saved.');
           process.exit(0);
         case '/help':
@@ -1522,7 +1550,7 @@ async function runInteractiveMode(initialState: GameState): Promise<void> {
   });
 
   rl.on('close', () => {
-    saveVocabulary(gameState.vocabulary);
+    saveVocabulary(gameState.vocabulary, gameState.profile);
     console.log('\n¡Hasta luego! Vocabulary saved.');
     process.exit(0);
   });

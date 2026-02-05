@@ -117,8 +117,10 @@ As you play, note anywhere the experience is confusing:
 
 ### 4. Run Tests
 ```bash
-DEBUG_UNIFIED=1 npm start -- --module {module} --script test-{module}.txt
+DEBUG_UNIFIED=1 npm start -- --module {module} --script test-{module}.txt --no-audio
 ```
+
+**Always use `--no-audio`** to disable text-to-speech during automated testing.
 
 Watch for:
 - "valid": false when it should be true
