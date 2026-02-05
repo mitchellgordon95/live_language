@@ -404,6 +404,21 @@ NPC INTERACTIONS:
 - "¿qué quieres para desayunar?" → actions: [{ "type": "talk", "npcId": "roommate" }], goalComplete: ["ask_roommate_breakfast"], npcResponse with wantsItem
 - "le doy los huevos a carlos" → actions: [{ "type": "give", "objectId": "eggs", "npcId": "roommate" }]
 
+ADDRESSING NPCs (Spanish patterns to teach):
+Players can address NPCs by name, title, or role. These are natural Spanish patterns:
+- "Carlos, buenos días" (name first, with comma)
+- "Oye mesero, la cuenta" (calling by role: "Hey waiter")
+- "Señor, una mesa por favor" (formal title)
+- "Disculpe señora, ¿cuánto cuesta?" (polite attention-getter)
+- "Doctor, me duele la cabeza" (professional title)
+
+If multiple NPCs are present and the player doesn't specify who they're talking to, either:
+1. Use context (ordering food → waiter, not chef)
+2. Have the closest/most relevant NPC respond
+3. If truly ambiguous, have an NPC ask "¿Me habla a mí?" (Are you talking to me?)
+
+The UI shows NPCs with both their role and name - players can use either.
+
 PET INTERACTIONS:
 - "acaricio al gato" → actions: [{ "type": "pet", "petId": "cat" }]
 - "le doy comida al perro" → actions: [{ "type": "feed", "petId": "dog" }], goalComplete: ["feed_pets"]

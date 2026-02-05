@@ -389,6 +389,11 @@ export function printVocab(state: GameState): void {
 // Thresholds for display (import from vocabulary would create circular dep)
 const THRESHOLDS = { totalUsesToKnow: 5 };
 
+// Extract addressable form from Spanish name (strip article)
+function getAddressableForm(spanishName: string): string {
+  return spanishName.replace(/^(el|la|los|las)\s+/i, '');
+}
+
 export function printNPCsAndPets(state: GameState): void {
   const npcsHere = getNPCsInLocation(state.location.id);
   const petsHere = getPetsInLocation(state.location.id, state.petLocations);
@@ -400,7 +405,8 @@ export function printNPCsAndPets(state: GameState): void {
       const npcState = state.npcState[npc.id];
       let status = '';
       if (npcState?.mood) status = ` ${COLORS.dim}(${npcState.mood})${COLORS.reset}`;
-      console.log(`  • ${COLORS.cyan}${npc.name.spanish}${COLORS.reset} ${COLORS.dim}(${npc.name.english})${COLORS.reset}${status}`);
+      const addressAs = getAddressableForm(npc.name.spanish);
+      console.log(`  • ${COLORS.cyan}${npc.name.spanish}${COLORS.reset} ${COLORS.dim}(${npc.name.english})${COLORS.reset}${status} ${COLORS.dim}- "${addressAs}"${COLORS.reset}`);
     }
 
     for (const pet of petsHere) {
