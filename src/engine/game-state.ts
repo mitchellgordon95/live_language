@@ -29,7 +29,7 @@ export function getBuildingForLocation(locationId: string): BuildingName {
 
 // Level thresholds
 export function getPointsForLevel(level: number): number {
-  return level * 500;  // Level 1 = 500, Level 2 = 1000, etc.
+  return level * 150;  // Level 1 = 150, Level 2 = 300, etc.
 }
 
 // Building unlock levels
