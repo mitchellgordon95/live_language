@@ -364,10 +364,10 @@ export const goals: Goal[] = [
     description: 'The alarm is still ringing! Turn it off.',
     hint: 'Try "Apago el despertador" (I turn off the alarm)',
     checkComplete: (state: GameState) => {
-      const alarm = state.location.objects.find((o) => o.id === 'alarm_clock');
-      if (!alarm) return true;
-      const effectiveState = getObjectState(state, alarm);
-      return !effectiveState.ringing;
+      // Check objectStates directly - don't rely on being in bedroom
+      const alarmState = state.objectStates['alarm_clock'];
+      // Alarm starts ringing, so if we've set ringing to false, it's off
+      return alarmState?.ringing === false;
     },
     nextGoalId: 'go_to_bathroom',
   },

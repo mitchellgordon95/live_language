@@ -81,11 +81,13 @@ export function printObjects(state: GameState): void {
 
   if (state.location.exits.length > 0) {
     console.log();
+    const currentBuilding = getBuildingForLocation(state.location.id);
     const exitLabels = state.location.exits.map((e) => {
-      const building = getBuildingForLocation(e.to);
-      const locked = !isBuildingUnlocked(state, building);
+      const targetBuilding = getBuildingForLocation(e.to);
+      // Only show lock if going to a DIFFERENT building that's locked
+      const locked = targetBuilding !== currentBuilding && !isBuildingUnlocked(state, targetBuilding);
       if (locked) {
-        const requiredLevel = BUILDING_UNLOCK_LEVELS[building];
+        const requiredLevel = BUILDING_UNLOCK_LEVELS[targetBuilding];
         return `${e.name.spanish} ${COLORS.yellow}🔒L${requiredLevel}${COLORS.dim}`;
       }
       return e.name.spanish;

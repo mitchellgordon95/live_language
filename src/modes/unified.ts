@@ -207,6 +207,10 @@ function buildPrompt(state: GameState): string {
     ? `Current goal: ${state.currentGoal.title}\nGoal ID: ${state.currentGoal.id}`
     : 'No current goal';
 
+  const completedGoalsDesc = state.completedGoals.length > 0
+    ? state.completedGoals.join(', ')
+    : '(none)';
+
   // NPCs in current location
   const npcsHere = getNPCsInLocation(state.location.id);
   const npcsDesc = npcsHere.length > 0
@@ -265,7 +269,8 @@ Needs (0-100, higher is better):
 - hygiene: ${state.needs.hygiene}
 - bladder: ${state.needs.bladder}
 
-${goalDesc}`;
+${goalDesc}
+Completed goals: ${completedGoalsDesc}`;
 }
 
 const SYSTEM_PROMPT = `You are the game engine for a Spanish language learning life simulation. The player types commands in Spanish to control their character.
@@ -624,8 +629,8 @@ function applyEffects(state: GameState, response: UnifiedAIResponse): ApplyEffec
         if (action.locationId && locations[action.locationId]) {
           const targetBuilding = getBuildingForLocation(action.locationId);
 
-          // Check if building is unlocked
-          if (!isBuildingUnlocked(newState, targetBuilding)) {
+          // Check if building is unlocked - only when ENTERING a new building from outside
+          if (targetBuilding !== oldBuilding && !isBuildingUnlocked(newState, targetBuilding)) {
             buildingBlocked = targetBuilding;
             // Don't award points for blocked action
             totalActionPoints -= actionPoints;
@@ -742,6 +747,14 @@ function applyEffects(state: GameState, response: UnifiedAIResponse): ApplyEffec
         ...newState,
         completedGoals: [...newState.completedGoals, ...goals],
       };
+
+      // Handle goals that should automatically move the player
+      for (const goalId of goals) {
+        if (goalId === 'seated_by_host' && locations['restaurant_table']) {
+          // Host seats player at table
+          newState = { ...newState, location: locations['restaurant_table'] };
+        }
+      }
     }
   }
 
