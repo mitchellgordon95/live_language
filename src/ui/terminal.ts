@@ -66,7 +66,8 @@ export function printLocation(state: GameState): void {
 export function printObjects(state: GameState): void {
   console.log(`${COLORS.bold}You see:${COLORS.reset}`);
 
-  const visibleObjects = state.location.objects.filter((obj) => {
+  // Combine static location objects with dynamically added objects
+  const staticObjects = state.location.objects.filter((obj) => {
     const objState = getObjectState(state, obj);
     // Hide items in closed fridge
     if (objState.inFridge) {
@@ -74,8 +75,15 @@ export function printObjects(state: GameState): void {
       const fridgeState = fridge ? getObjectState(state, fridge) : {};
       return fridgeState.open;
     }
+    // Hide generic placeholder objects (ordered_food, ordered_drink) - they're replaced by actual items
+    if (obj.id === 'ordered_food' || obj.id === 'ordered_drink') {
+      return false;
+    }
     return true;
   });
+
+  const dynamicObjects = state.dynamicObjects?.[state.location.id] || [];
+  const visibleObjects = [...staticObjects, ...dynamicObjects];
 
   for (const obj of visibleObjects) {
     const objState = getObjectState(state, obj);

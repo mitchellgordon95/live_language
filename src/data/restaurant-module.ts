@@ -354,7 +354,12 @@ export const restaurantGoals: Goal[] = [
     title: 'Enter the restaurant',
     description: 'You\'ve arrived at a restaurant. Go inside and get a table.',
     hint: 'Try "Entro en el restaurante" (I enter the restaurant)',
-    checkComplete: (state: GameState) => state.location.id === 'restaurant_entrance',
+    checkComplete: (state: GameState) => {
+      // Complete if at entrance, table, or already seated (NPC action may move player before this check)
+      return state.location.id === 'restaurant_entrance' ||
+             state.location.id === 'restaurant_table' ||
+             state.completedGoals.includes('seated_by_host');
+    },
     nextGoalId: 'restaurant_get_seated',
   },
   {

@@ -141,11 +141,20 @@ interface Action {
 // NPC-initiated actions that affect game state
 interface NPCAction {
   npcId: string;
-  type: 'give_item' | 'take_item' | 'change_object' | 'move_player';
-  objectId?: string;       // For change_object
+  type: 'add_object' | 'remove_object' | 'give_item' | 'take_item' | 'change_object' | 'move_player';
+  objectId?: string;       // For change_object, remove_object
   itemId?: string;         // For give_item/take_item
   changes?: Record<string, unknown>;  // For change_object - state changes to apply
-  locationId?: string;     // For move_player
+  locationId?: string;     // For move_player, add_object
+  // For add_object - define the object to add:
+  object?: {
+    id: string;
+    spanishName: string;
+    englishName: string;
+    actions?: string[];      // e.g., ["EAT", "TAKE"]
+    consumable?: boolean;
+    needsEffect?: { hunger?: number; energy?: number; hygiene?: number; bladder?: number };
+  };
 }
 
 interface UnifiedAIResponse {
@@ -183,16 +192,24 @@ interface UnifiedAIResponse {
 }
 
 function buildPrompt(state: GameState): string {
-  const objectsDesc = state.location.objects
-    .filter(obj => {
-      const objState = getObjectState(state, obj);
-      if (objState.inFridge) {
-        const fridge = state.location.objects.find(o => o.id === 'refrigerator');
-        const fridgeState = fridge ? getObjectState(state, fridge) : {};
-        return fridgeState.open;
-      }
-      return true;
-    })
+  // Combine static location objects with dynamically added objects (from NPCs)
+  const staticObjects = state.location.objects.filter(obj => {
+    // Hide generic placeholder objects - they're replaced by actual delivered items
+    if (obj.id === 'ordered_food' || obj.id === 'ordered_drink') {
+      return false;
+    }
+    const objState = getObjectState(state, obj);
+    if (objState.inFridge) {
+      const fridge = state.location.objects.find(o => o.id === 'refrigerator');
+      const fridgeState = fridge ? getObjectState(state, fridge) : {};
+      return fridgeState.open;
+    }
+    return true;
+  });
+  const dynamicObjects = state.dynamicObjects?.[state.location.id] || [];
+  const allObjects = [...staticObjects, ...dynamicObjects];
+
+  const objectsDesc = allObjects
     .map(obj => {
       const objState = getObjectState(state, obj);
       let desc = `- ${obj.id}: "${obj.name.spanish}" (${obj.name.english})`;
@@ -325,7 +342,7 @@ RESPOND WITH ONLY VALID JSON:
   "goalComplete": ["goal_id"],
   "npcResponse": { "npcId": "roommate", "spanish": "...", "english": "...", "wantsItem": "eggs" },
   "npcActions": [
-    { "npcId": "waiter", "type": "change_object", "objectId": "ordered_food", "changes": { "delivered": true, "itemName": "sopa" } }
+    { "npcId": "waiter", "type": "add_object", "locationId": "restaurant_table", "object": { "id": "my_sopa", "spanishName": "la sopa", "englishName": "soup", "actions": ["EAT"], "consumable": true, "needsEffect": { "hunger": 30 } } }
   ]
 }
 
@@ -346,20 +363,22 @@ ACTIONS (put them in the order they should happen):
 - { "type": "talk", "npcId": "roommate" } - talk to someone
 - { "type": "give", "objectId": "eggs", "npcId": "roommate" } - give item to NPC
 
-NPC ACTIONS - NPCs can take actions that affect the game world in response to player requests:
-- { "npcId": "waiter", "type": "change_object", "objectId": "ordered_food", "changes": { "ordered": true, "delivered": true, "itemName": "sopa del dia" } } - NPC changes object state (waiter delivers food)
-- { "npcId": "waiter", "type": "change_object", "objectId": "bill", "changes": { "delivered": true, "total": 150 } } - NPC brings the bill
-- { "npcId": "host", "type": "move_player", "locationId": "restaurant_table" } - NPC moves player (host seats player)
-- { "npcId": "vendor", "type": "give_item", "itemId": "manzanas" } - NPC gives item to player
-- { "npcId": "cashier", "type": "take_item", "itemId": "money" } - NPC takes item from player
+NPC ACTIONS - NPCs can add/remove objects, give items, or move the player:
+- { "npcId": "waiter", "type": "add_object", "locationId": "restaurant_table", "object": { "id": "my_sopa", "spanishName": "la sopa del día", "englishName": "soup of the day", "actions": ["EAT"], "consumable": true, "needsEffect": { "hunger": 30 } } } - waiter brings food
+- { "npcId": "waiter", "type": "add_object", "locationId": "restaurant_table", "object": { "id": "my_drink", "spanishName": "el agua", "englishName": "water", "actions": ["DRINK"], "consumable": true } } - waiter brings drink
+- { "npcId": "waiter", "type": "change_object", "objectId": "bill", "changes": { "delivered": true, "total": 150 } } - waiter brings bill
+- { "npcId": "host", "type": "move_player", "locationId": "restaurant_table" } - host seats player
+- { "npcId": "vendor", "type": "give_item", "itemId": "manzanas" } - vendor gives item to player inventory
+- { "npcId": "waiter", "type": "remove_object", "objectId": "my_sopa" } - waiter clears empty plate
 
 WHEN TO USE npcActions:
-- Waiter takes food order → npcActions: [{ change ordered_food.ordered=true, delivered=true, itemName="..." }]
-- Waiter brings bill → npcActions: [{ change bill.delivered=true, total=price }]
-- Host seats player → npcActions: [{ move_player to restaurant_table }]
-- Vendor sells item → npcActions: [{ give_item itemId }]
-- Doctor gives prescription → npcActions: [{ change prescription.delivered=true }]
-IMPORTANT: When an NPC does something for the player (not just talks), include npcActions!
+- Waiter takes drink order → add_object with the drink (agua, limonada, cerveza, etc.)
+- Waiter takes food order → add_object with the food (pollo asado, tacos, enchiladas, etc.)
+- Waiter brings bill → change_object on bill with delivered=true
+- Host seats player → move_player to restaurant_table
+- Vendor sells item → give_item to add to player inventory
+- Doctor gives prescription → give_item or add_object
+IMPORTANT: When an NPC brings something to the player, use add_object to make it appear!
 
 ORDER MATTERS! Put actions in the sequence they should execute:
 - "me levanto y apago el despertador" → position first, then turn_off
@@ -466,15 +485,18 @@ RESTAURANT NPCs:
 
 RESTAURANT INTERACTIONS:
 - "buenas noches" or "una mesa para uno, por favor" at entrance → actions: [{ "type": "talk", "npcId": "host" }], goalComplete: ["seated_by_host"], npcResponse from host, npcActions: [{ "npcId": "host", "type": "move_player", "locationId": "restaurant_table" }]
-- "quiero una limonada" or "quisiera agua" → actions: [{ "type": "talk", "npcId": "waiter" }], goalComplete: ["ordered_drink"], npcResponse from waiter, npcActions: [{ "npcId": "waiter", "type": "change_object", "objectId": "ordered_drink", "changes": { "ordered": true, "delivered": true, "itemName": "limonada" } }]
+- "quiero una limonada" → actions: [{ "type": "talk", "npcId": "waiter" }], goalComplete: ["ordered_drink"], npcResponse from waiter, npcActions: [{ "npcId": "waiter", "type": "add_object", "locationId": "restaurant_table", "object": { "id": "my_limonada", "spanishName": "la limonada", "englishName": "lemonade", "actions": ["DRINK"], "consumable": true, "needsEffect": { "hunger": 5 } } }]
+- "quisiera agua" → actions: [{ "type": "talk", "npcId": "waiter" }], goalComplete: ["ordered_drink"], npcResponse from waiter, npcActions: [{ "npcId": "waiter", "type": "add_object", "locationId": "restaurant_table", "object": { "id": "my_agua", "spanishName": "el agua", "englishName": "water", "actions": ["DRINK"], "consumable": true } }]
 - "abro el menu" or "miro el menu" or "leo el menu" → actions: [{ "type": "open", "objectId": "menu" }], goalComplete: ["read_menu"]
   IMPORTANT: When player opens/reads the menu, your message MUST include the menu contents:
   "You open the menu and see: BEBIDAS: agua (gratis), refresco ($25), limonada ($30), cerveza ($45), vino ($65), cafe ($35). ENTRADAS: sopa del dia ($55), ensalada ($50), guacamole ($60). PLATOS: pollo asado ($120), carne asada ($150), pescado ($140), tacos ($95), enchiladas ($105), hamburguesa ($100). POSTRES: flan ($50), helado ($45), churros ($40)."
-- "quiero el pollo" or "quisiera los tacos" → actions: [{ "type": "talk", "npcId": "waiter" }], goalComplete: ["ordered_food"], npcResponse from waiter, npcActions: [{ "npcId": "waiter", "type": "change_object", "objectId": "ordered_food", "changes": { "ordered": true, "delivered": true, "itemName": "pollo asado" } }]
-- "como el pollo" or "como la comida" → actions: [{ "type": "eat", "objectId": "ordered_food" }], goalComplete: ["ate_meal"], needsChanges: { hunger: 40 }
+- "quiero el pollo asado" → actions: [{ "type": "talk", "npcId": "waiter" }], goalComplete: ["ordered_food"], npcResponse from waiter, npcActions: [{ "npcId": "waiter", "type": "add_object", "locationId": "restaurant_table", "object": { "id": "my_pollo", "spanishName": "el pollo asado", "englishName": "grilled chicken", "actions": ["EAT"], "consumable": true, "needsEffect": { "hunger": 40 } } }]
+- "quisiera los tacos" → actions: [{ "type": "talk", "npcId": "waiter" }], goalComplete: ["ordered_food"], npcResponse from waiter, npcActions: [{ "npcId": "waiter", "type": "add_object", "locationId": "restaurant_table", "object": { "id": "my_tacos", "spanishName": "los tacos", "englishName": "tacos", "actions": ["EAT"], "consumable": true, "needsEffect": { "hunger": 35 } } }]
+- "como el pollo" or "como los tacos" → actions: [{ "type": "eat", "objectId": "my_pollo" or "my_tacos" (use the actual delivered food ID) }], goalComplete: ["ate_meal"], needsChanges: { hunger: 40 }
 - "la cuenta, por favor" → actions: [{ "type": "talk", "npcId": "waiter" }], goalComplete: ["asked_for_bill"], npcResponse from waiter, npcActions: [{ "npcId": "waiter", "type": "change_object", "objectId": "bill", "changes": { "delivered": true, "total": 150 } }]
 - "pago la cuenta" → actions: [{ "type": "use", "objectId": "bill" }], goalComplete: ["paid_bill"]
 - "donde esta el bano?" or "voy al bano" → Player can go to restaurant_bathroom
+NOTE: When player orders food/drink, use add_object with an ID like "my_pollo", "my_tacos", "my_limonada", etc. The ID should match what they ordered!
 
 KEY SPANISH FOR ORDERING (teach these patterns):
 - "Quiero..." (I want...) - direct but acceptable
@@ -706,6 +728,43 @@ function applyNPCActions(state: GameState, actions: NPCAction[]): GameState {
           };
         }
         break;
+
+      case 'add_object':
+        // NPC adds an object to a location (e.g., waiter brings food to table)
+        if (action.locationId && action.object) {
+          const newObj = {
+            id: action.object.id,
+            name: { spanish: action.object.spanishName, english: action.object.englishName },
+            state: {},
+            actions: (action.object.actions || ['LOOK']) as ('OPEN' | 'CLOSE' | 'TAKE' | 'PUT' | 'TURN_ON' | 'TURN_OFF' | 'EAT' | 'DRINK' | 'USE' | 'COOK' | 'LOOK' | 'DRESS' | 'PREPARE')[],
+            consumable: action.object.consumable,
+            needsEffect: action.object.needsEffect,
+          };
+          const existing = newState.dynamicObjects[action.locationId] || [];
+          newState = {
+            ...newState,
+            dynamicObjects: {
+              ...newState.dynamicObjects,
+              [action.locationId]: [...existing, newObj],
+            },
+          };
+        }
+        break;
+
+      case 'remove_object':
+        // NPC removes an object from current location (e.g., waiter clears plates)
+        if (action.objectId) {
+          const locationId = newState.location.id;
+          const existing = newState.dynamicObjects[locationId] || [];
+          newState = {
+            ...newState,
+            dynamicObjects: {
+              ...newState.dynamicObjects,
+              [locationId]: existing.filter(obj => obj.id !== action.objectId),
+            },
+          };
+        }
+        break;
     }
   }
 
@@ -818,6 +877,18 @@ function applyEffects(state: GameState, response: UnifiedAIResponse): ApplyEffec
             ...newState,
             inventory: newState.inventory.filter(i => i.id !== action.objectId),
           };
+          // Also remove from dynamic objects if it's a delivered item (food/drink from waiter)
+          const locationId = newState.location.id;
+          const dynamicObjs = newState.dynamicObjects?.[locationId] || [];
+          if (dynamicObjs.some(obj => obj.id === action.objectId)) {
+            newState = {
+              ...newState,
+              dynamicObjects: {
+                ...newState.dynamicObjects,
+                [locationId]: dynamicObjs.filter(obj => obj.id !== action.objectId),
+              },
+            };
+          }
         }
         break;
 
@@ -863,8 +934,6 @@ function applyEffects(state: GameState, response: UnifiedAIResponse): ApplyEffec
         ...newState,
         completedGoals: [...newState.completedGoals, ...goals],
       };
-
-      // Note: Player movement from goals (like being seated by host) is now handled via npcActions
     }
   }
 

@@ -60,6 +60,39 @@ This is where you find the real bugs:
 - What happens if you undo something after completing its goal?
 - Can you break the goal chain by doing things out of order?
 
+**NPC Interactions (CRITICAL - test thoroughly):**
+NPCs can now add/remove objects from the game world. Verify these work correctly:
+
+- **Ordering food/drinks:** When you order, does the item actually appear in "You see"?
+  - Order "quiero los tacos" → should see "los tacos" in object list
+  - Order "quisiera una cerveza" → should see "la cerveza" in object list
+  - The item should have the correct Spanish/English name
+
+- **Consuming delivered items:** Can you eat/drink what was delivered?
+  - After ordering tacos, can you "como los tacos"?
+  - Does hunger actually increase after eating?
+  - Does the item disappear after being consumed?
+
+- **Host seating:** Does the host move you to the table?
+  - Say "buenas noches, una mesa por favor" → should move to restaurant_table
+  - Check that location changes correctly
+
+- **Bill delivery:** Does the waiter bring the bill?
+  - Ask "la cuenta por favor" → bill should show as delivered
+  - Should be able to pay with "pago la cuenta"
+
+- **Object persistence:** Do delivered items persist if you leave and return?
+  - Order food, go to bathroom, come back - is food still there?
+
+- **Multiple orders:** Can you order multiple things?
+  - Order drink, then order food - both should be visible
+
+Report any issues where:
+- NPC says they're bringing something but it doesn't appear
+- Item appears with wrong name or wrong language
+- Can't interact with delivered items
+- Items disappear unexpectedly
+
 ### 3. UX Quality Review
 As you play, note anywhere the experience is confusing:
 

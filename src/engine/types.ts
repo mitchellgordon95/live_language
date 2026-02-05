@@ -14,6 +14,7 @@ export interface GameState {
   petLocations: Record<string, string>;  // { cat: 'living_room', dog: 'kitchen' }
   npcState: Record<string, NPCState>;
   objectStates: Record<string, ObjectState>;  // Persists object state across location changes
+  dynamicObjects: Record<string, GameObject[]>;  // locationId -> objects added by NPCs
 
   // Progression system
   points: number;

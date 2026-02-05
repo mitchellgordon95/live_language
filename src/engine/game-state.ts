@@ -95,6 +95,7 @@ export function createInitialState(
       roommate: { mood: 'sleepy' },
     },
     objectStates: {},
+    dynamicObjects: {},  // Objects added by NPCs (locationId -> objects)
 
     // Progression system
     points: 0,
