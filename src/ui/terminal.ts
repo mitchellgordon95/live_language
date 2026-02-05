@@ -1,7 +1,20 @@
 import type { GameState, AIUnderstandingResult, ActionResult, Goal, Intent } from '../engine/types.js';
-import { formatTime, getObjectState, getPointsForLevel, getBuildingForLocation, isBuildingUnlocked, BUILDING_UNLOCK_LEVELS } from '../engine/game-state.js';
+import { formatTime, getObjectState, getPointsForLevel, getBuildingForLocation, isBuildingUnlocked, BUILDING_UNLOCK_LEVELS, type BuildingName } from '../engine/game-state.js';
 import { getWordIdFromObject, getFamiliaritySummary, getObjectLabel } from '../engine/vocabulary.js';
-import { getNPCsInLocation, getPetsInLocation } from '../data/home-basics.js';
+import { npcs as homeNPCs, pets, getPetsInLocation } from '../data/home-basics.js';
+import { restaurantNPCs } from '../data/restaurant-module.js';
+import { clinicNPCs } from '../data/clinic-module.js';
+import { gymNPCs } from '../data/gym-module.js';
+import { parkNpcs } from '../data/park-module.js';
+import { marketNPCs } from '../data/market-module.js';
+import { bankNPCs } from '../data/bank-module.js';
+
+// Combined NPC lookup across all modules
+const allNPCs = [...homeNPCs, ...restaurantNPCs, ...clinicNPCs, ...gymNPCs, ...parkNpcs, ...marketNPCs, ...bankNPCs];
+
+function getNPCsInLocation(locationId: string) {
+  return allNPCs.filter(npc => npc.location === locationId);
+}
 
 const COLORS = {
   reset: '\x1b[0m',
@@ -19,10 +32,24 @@ export function clearScreen(): void {
   console.clear();
 }
 
-export function printHeader(): void {
+const BUILDING_DISPLAY_NAMES: Record<BuildingName, string> = {
+  home: 'Home',
+  street: 'Street',
+  restaurant: 'Restaurant',
+  market: 'Market',
+  park: 'Park',
+  gym: 'Gym',
+  clinic: 'Clinic',
+  bank: 'Bank',
+};
+
+export function printHeader(state?: GameState): void {
+  const moduleName = state
+    ? BUILDING_DISPLAY_NAMES[getBuildingForLocation(state.location.id)]
+    : 'Home';
   console.log(`
 ${COLORS.cyan}═══════════════════════════════════════════════════════${COLORS.reset}
-${COLORS.bold}  LANGUAGE LIFE SIM - Home Basics${COLORS.reset}
+${COLORS.bold}  LANGUAGE LIFE SIM - ${moduleName}${COLORS.reset}
 ${COLORS.cyan}═══════════════════════════════════════════════════════${COLORS.reset}
 `);
 }

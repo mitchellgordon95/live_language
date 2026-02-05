@@ -121,6 +121,7 @@ export const fruitStand: Location = {
     { to: 'market_entrance', name: { spanish: 'la entrada', english: 'entrance' } },
     { to: 'vegetable_stand', name: { spanish: 'el puesto de verduras', english: 'vegetable stand' } },
     { to: 'meat_counter', name: { spanish: 'la carniceria', english: 'meat counter' } },
+    { to: 'market_checkout', name: { spanish: 'la caja', english: 'checkout' } },
   ],
 };
 
@@ -201,6 +202,7 @@ export const vegetableStand: Location = {
     { to: 'market_entrance', name: { spanish: 'la entrada', english: 'entrance' } },
     { to: 'fruit_stand', name: { spanish: 'el puesto de frutas', english: 'fruit stand' } },
     { to: 'meat_counter', name: { spanish: 'la carniceria', english: 'meat counter' } },
+    { to: 'market_checkout', name: { spanish: 'la caja', english: 'checkout' } },
   ],
 };
 

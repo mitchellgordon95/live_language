@@ -923,7 +923,7 @@ export async function runUnifiedMode(options: GameOptions = {}): Promise<void> {
   }
 
   clearScreen();
-  printHeader();
+  printHeader(gameState);
   printWelcome();
   printSeparator();
   printGameState(gameState);
@@ -956,7 +956,7 @@ async function runScriptMode(scriptFile: string, initialState: GameState): Promi
       if (command === '/quit' || command === '/exit') break;
       if (command === '/status') {
         clearScreen();
-        printHeader();
+        printHeader(gameState);
         printGameState(gameState);
       }
       continue;
@@ -1093,7 +1093,7 @@ async function runInteractiveMode(initialState: GameState): Promise<void> {
           break;
         case '/status':
           clearScreen();
-          printHeader();
+          printHeader(gameState);
           printGameState(gameState);
           break;
         default:

@@ -191,6 +191,7 @@ export const weightRoom: Location = {
   exits: [
     { to: 'training_floor', name: { spanish: 'la zona de entrenamiento', english: 'training floor' } },
     { to: 'cardio_zone', name: { spanish: 'la zona de cardio', english: 'cardio zone' } },
+    { to: 'stretching_area', name: { spanish: 'la zona de estiramiento', english: 'stretching area' } },
     { to: 'locker_room', name: { spanish: 'el vestuario', english: 'locker room' } },
   ],
 };
