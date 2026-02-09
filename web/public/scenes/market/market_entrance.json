@@ -1,0 +1,31 @@
+{
+  "image": "market_entrance.png",
+  "width": 1024,
+  "height": 1024,
+  "objects": {
+    "market_sign": {
+      "x": 49,
+      "y": 45,
+      "w": 52,
+      "h": 44
+    },
+    "shopping_basket": {
+      "x": 36,
+      "y": 62,
+      "w": 16,
+      "h": 22
+    },
+    "shopping_cart": {
+      "x": 50,
+      "y": 53,
+      "w": 19,
+      "h": 23
+    },
+    "market_directory": {
+      "x": 69,
+      "y": 51,
+      "w": 11,
+      "h": 28
+    }
+  }
+}

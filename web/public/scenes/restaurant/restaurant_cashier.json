@@ -1,0 +1,25 @@
+{
+  "image": "restaurant_cashier.png",
+  "width": 1024,
+  "height": 1024,
+  "objects": {
+    "cash_register": {
+      "x": 37.5,
+      "y": 47,
+      "w": 31,
+      "h": 20
+    },
+    "card_reader": {
+      "x": 62,
+      "y": 45,
+      "w": 12,
+      "h": 10
+    },
+    "tip_jar": {
+      "x": 75.5,
+      "y": 45.5,
+      "w": 11,
+      "h": 17
+    }
+  }
+}

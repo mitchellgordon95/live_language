@@ -1,0 +1,25 @@
+{
+  "image": "restaurant_kitchen.png",
+  "width": 1024,
+  "height": 1024,
+  "objects": {
+    "kitchen_stove": {
+      "x": 30,
+      "y": 55,
+      "w": 61,
+      "h": 40
+    },
+    "prep_counter": {
+      "x": 71,
+      "y": 70,
+      "w": 58,
+      "h": 50
+    },
+    "order_tickets": {
+      "x": 62,
+      "y": 25,
+      "w": 67,
+      "h": 10
+    }
+  }
+}

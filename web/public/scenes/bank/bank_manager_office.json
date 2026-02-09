@@ -1,0 +1,43 @@
+{
+  "image": "bank_manager_office.png",
+  "width": 1024,
+  "height": 1024,
+  "objects": {
+    "manager_desk": {
+      "x": 53,
+      "y": 60,
+      "w": 70,
+      "h": 49
+    },
+    "visitor_chairs": {
+      "x": 75,
+      "y": 79,
+      "w": 30,
+      "h": 27
+    },
+    "account_documents": {
+      "x": 33,
+      "y": 46,
+      "w": 12,
+      "h": 13
+    },
+    "loan_application": {
+      "x": 54,
+      "y": 46,
+      "w": 16,
+      "h": 13
+    },
+    "business_cards": {
+      "x": 40,
+      "y": 60,
+      "w": 9,
+      "h": 5
+    },
+    "office_plant": {
+      "x": 18,
+      "y": 35,
+      "w": 25,
+      "h": 70
+    }
+  }
+}

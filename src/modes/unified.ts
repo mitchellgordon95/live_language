@@ -33,8 +33,6 @@ import type { LanguageConfig } from '../languages/types.js';
 
 // Handle transitioning to a new building - load goals and update state
 function handleBuildingTransition(state: GameState, newBuilding: BuildingName): GameState {
-  printBuildingEntered(newBuilding);
-
   // Load saved progress for this building
   const progress = loadLocationProgress(state, newBuilding);
 
@@ -116,7 +114,7 @@ interface NPCAction {
   };
 }
 
-interface UnifiedAIResponse {
+export interface UnifiedAIResponse {
   // Language learning
   understood: boolean;
   grammar: {
@@ -437,7 +435,7 @@ function applyNPCActions(state: GameState, actions: NPCAction[]): GameState {
 }
 
 // Result of applying effects, including progression info
-interface ApplyEffectsResult {
+export interface ApplyEffectsResult {
   state: GameState;
   pointsAwarded: number;
   leveledUp: boolean;
@@ -652,6 +650,92 @@ function applyEffects(state: GameState, response: UnifiedAIResponse): ApplyEffec
   };
 }
 
+// --- Exported turn processing for web server and terminal ---
+
+export interface TurnResult {
+  newState: GameState;
+  response: UnifiedAIResponse;
+  effectsResult: ApplyEffectsResult | null;
+  goalsCompleted: Goal[];
+}
+
+/**
+ * Process a single game turn: AI input → effects → vocabulary → goals.
+ * Used by both terminal mode and the web server.
+ */
+export async function processTurn(
+  input: string,
+  state: GameState,
+  languageConfig: LanguageConfig,
+): Promise<TurnResult> {
+  // Set active language for processInput's system prompt
+  activeLanguage = languageConfig;
+
+  const response = await processInput(input, state);
+
+  let newState = state;
+  let effectsResult: ApplyEffectsResult | null = null;
+  const goalsCompleted: Goal[] = [];
+
+  if (response.valid) {
+    effectsResult = applyEffects(newState, response);
+    newState = effectsResult.state;
+
+    // Track vocabulary
+    if (response.understood && response.grammar.score >= 80) {
+      const wordsUsed = extractWordsFromText(input, newState.vocabulary);
+      for (const wordId of wordsUsed) {
+        newState = {
+          ...newState,
+          vocabulary: recordWordUse(newState.vocabulary, wordId, true),
+        };
+      }
+    }
+  } else {
+    newState = { ...newState, failedCurrentGoal: true };
+  }
+
+  // Handle building transition
+  if (effectsResult?.buildingChanged && effectsResult.newBuilding) {
+    newState = handleBuildingTransition(newState, effectsResult.newBuilding);
+  }
+
+  // Collect goals completed by AI response
+  if (response.goalComplete) {
+    const completedIds = Array.isArray(response.goalComplete)
+      ? response.goalComplete
+      : [response.goalComplete];
+    for (const goalId of completedIds) {
+      const goal = getGoalByIdCombined(goalId);
+      if (goal) goalsCompleted.push(goal);
+    }
+  }
+
+  // Advance through satisfied goals
+  while (newState.currentGoal && newState.currentGoal.checkComplete(newState)) {
+    const completedGoal = newState.currentGoal;
+    const wasAlreadyComplete = newState.completedGoals.includes(completedGoal.id);
+    if (!goalsCompleted.some(g => g.id === completedGoal.id) && !wasAlreadyComplete) {
+      goalsCompleted.push(completedGoal);
+    }
+    if (completedGoal.nextGoalId) {
+      const nextGoal = getGoalByIdCombined(completedGoal.nextGoalId);
+      newState = {
+        ...newState,
+        completedGoals: wasAlreadyComplete
+          ? newState.completedGoals
+          : [...newState.completedGoals, completedGoal.id],
+        currentGoal: nextGoal || null,
+        failedCurrentGoal: false,
+      };
+    } else {
+      break;
+    }
+  }
+
+  return { newState, response, effectsResult, goalsCompleted };
+}
+
 function printResults(response: UnifiedAIResponse, state: GameState): void {
   const COLORS = {
     reset: '\x1b[0m',
@@ -714,7 +798,7 @@ function printResults(response: UnifiedAIResponse, state: GameState): void {
   console.log();
 }
 
-function loadVocabulary(profile?: string): VocabularyProgress {
+export function loadVocabulary(profile?: string): VocabularyProgress {
   const saveFile = getSaveFile(profile);
   try {
     if (fs.existsSync(saveFile)) {
@@ -726,7 +810,7 @@ function loadVocabulary(profile?: string): VocabularyProgress {
   return createInitialVocabulary();
 }
 
-function saveVocabulary(vocab: VocabularyProgress, profile?: string): void {
+export function saveVocabulary(vocab: VocabularyProgress, profile?: string): void {
   const saveFile = getSaveFile(profile);
   try {
     fs.writeFileSync(saveFile, JSON.stringify(vocab, null, 2));
@@ -897,6 +981,30 @@ export async function runUnifiedMode(options: GameOptions = {}, languageConfig?:
   await runInteractiveMode(gameState);
 }
 
+// Terminal-specific rendering of a turn result
+function renderTurnResult(result: TurnResult, gameState: GameState): void {
+  printResults(result.response, gameState);
+
+  if (result.effectsResult && result.effectsResult.pointsAwarded > 0) {
+    printPointsAwarded(result.effectsResult.pointsAwarded, result.effectsResult.leveledUp, gameState.level);
+  }
+
+  if (result.effectsResult?.buildingChanged && result.effectsResult.newBuilding) {
+    printBuildingEntered(result.effectsResult.newBuilding);
+  }
+
+  if (result.effectsResult?.buildingBlocked) {
+    printBuildingLocked(result.effectsResult.buildingBlocked, BUILDING_UNLOCK_LEVELS[result.effectsResult.buildingBlocked]);
+  }
+
+  for (const goal of result.goalsCompleted) {
+    printGoalComplete(goal);
+  }
+
+  printSeparator();
+  printGameState(gameState);
+}
+
 async function runScriptMode(scriptFile: string, initialState: GameState): Promise<void> {
   let gameState = initialState;
 
@@ -933,86 +1041,12 @@ async function runScriptMode(scriptFile: string, initialState: GameState): Promi
     console.log(`> ${command}\n`);
     process.stdout.write('\x1b[2mThinking...\x1b[0m');
 
-    const response = await processInput(command, gameState);
+    const result = await processTurn(command, gameState, activeLanguage);
 
     process.stdout.write('\r' + ' '.repeat(20) + '\r');
 
-    let effectsResult: ApplyEffectsResult | null = null;
-
-    if (response.valid) {
-      effectsResult = applyEffects(gameState, response);
-      gameState = effectsResult.state;
-
-      // Track vocabulary
-      if (response.understood && response.grammar.score >= 80) {
-        const wordsUsed = extractWordsFromText(command, gameState.vocabulary);
-        for (const wordId of wordsUsed) {
-          gameState = {
-            ...gameState,
-            vocabulary: recordWordUse(gameState.vocabulary, wordId, true),
-          };
-        }
-      }
-    }
-
-    printResults(response, gameState);
-
-    // Show points awarded
-    if (effectsResult && effectsResult.pointsAwarded > 0) {
-      printPointsAwarded(effectsResult.pointsAwarded, effectsResult.leveledUp, gameState.level);
-    }
-
-    // Handle building transition
-    if (effectsResult?.buildingChanged && effectsResult.newBuilding) {
-      gameState = handleBuildingTransition(gameState, effectsResult.newBuilding);
-    }
-
-    // Show if building was blocked
-    if (effectsResult?.buildingBlocked) {
-      printBuildingLocked(effectsResult.buildingBlocked, BUILDING_UNLOCK_LEVELS[effectsResult.buildingBlocked]);
-    }
-
-    // Track goals we've already shown completion for (to avoid double-printing)
-    const alreadyPrinted = new Set<string>();
-
-    // Show immediate feedback for goals completed out of order
-    if (response.goalComplete) {
-      const completedIds = Array.isArray(response.goalComplete)
-        ? response.goalComplete
-        : [response.goalComplete];
-      for (const goalId of completedIds) {
-        const goal = getGoalByIdCombined(goalId);
-        if (goal) {
-          printGoalComplete(goal);
-          alreadyPrinted.add(goalId);
-        }
-      }
-    }
-
-    // Advance through satisfied goals (only print if newly completed, not previously)
-    while (gameState.currentGoal && gameState.currentGoal.checkComplete(gameState)) {
-      const completedGoal = gameState.currentGoal;
-      const wasAlreadyComplete = gameState.completedGoals.includes(completedGoal.id);
-      if (!alreadyPrinted.has(completedGoal.id) && !wasAlreadyComplete) {
-        printGoalComplete(completedGoal);
-      }
-      if (completedGoal.nextGoalId) {
-        const nextGoal = getGoalByIdCombined(completedGoal.nextGoalId);
-        gameState = {
-          ...gameState,
-          completedGoals: wasAlreadyComplete
-            ? gameState.completedGoals
-            : [...gameState.completedGoals, completedGoal.id],
-          currentGoal: nextGoal || null,
-          failedCurrentGoal: false,
-        };
-      } else {
-        break;
-      }
-    }
-
-    printSeparator();
-    printGameState(gameState);
+    gameState = result.newState;
+    renderTurnResult(result, gameState);
 
     await new Promise(resolve => setTimeout(resolve, 500));
   }
@@ -1112,87 +1146,12 @@ async function runInteractiveMode(initialState: GameState): Promise<void> {
     console.log();
     process.stdout.write('\x1b[2mThinking...\x1b[0m');
 
-    const response = await processInput(trimmedInput, gameState);
+    const result = await processTurn(trimmedInput, gameState, activeLanguage);
 
     process.stdout.write('\r' + ' '.repeat(20) + '\r');
 
-    let effectsResult: ApplyEffectsResult | null = null;
-
-    if (response.valid) {
-      effectsResult = applyEffects(gameState, response);
-      gameState = effectsResult.state;
-
-      if (response.understood && response.grammar.score >= 80) {
-        const wordsUsed = extractWordsFromText(trimmedInput, gameState.vocabulary);
-        for (const wordId of wordsUsed) {
-          gameState = {
-            ...gameState,
-            vocabulary: recordWordUse(gameState.vocabulary, wordId, true),
-          };
-        }
-      }
-    } else {
-      gameState = { ...gameState, failedCurrentGoal: true };
-    }
-
-    printResults(response, gameState);
-
-    // Show points awarded
-    if (effectsResult && effectsResult.pointsAwarded > 0) {
-      printPointsAwarded(effectsResult.pointsAwarded, effectsResult.leveledUp, gameState.level);
-    }
-
-    // Handle building transition
-    if (effectsResult?.buildingChanged && effectsResult.newBuilding) {
-      gameState = handleBuildingTransition(gameState, effectsResult.newBuilding);
-    }
-
-    // Show if building was blocked
-    if (effectsResult?.buildingBlocked) {
-      printBuildingLocked(effectsResult.buildingBlocked, BUILDING_UNLOCK_LEVELS[effectsResult.buildingBlocked]);
-    }
-
-    // Track goals we've already shown completion for (to avoid double-printing)
-    const alreadyPrinted = new Set<string>();
-
-    // Show immediate feedback for goals completed
-    if (response.goalComplete) {
-      const completedIds = Array.isArray(response.goalComplete)
-        ? response.goalComplete
-        : [response.goalComplete];
-      for (const goalId of completedIds) {
-        const goal = getGoalByIdCombined(goalId);
-        if (goal) {
-          printGoalComplete(goal);
-          alreadyPrinted.add(goalId);
-        }
-      }
-    }
-
-    // Advance through satisfied goals (only print if newly completed, not previously)
-    while (gameState.currentGoal && gameState.currentGoal.checkComplete(gameState)) {
-      const completedGoal = gameState.currentGoal;
-      const wasAlreadyComplete = gameState.completedGoals.includes(completedGoal.id);
-      if (!alreadyPrinted.has(completedGoal.id) && !wasAlreadyComplete) {
-        printGoalComplete(completedGoal);
-      }
-      if (completedGoal.nextGoalId) {
-        const nextGoal = getGoalByIdCombined(completedGoal.nextGoalId);
-        gameState = {
-          ...gameState,
-          completedGoals: wasAlreadyComplete
-            ? gameState.completedGoals
-            : [...gameState.completedGoals, completedGoal.id],
-          currentGoal: nextGoal || null,
-          failedCurrentGoal: false,
-        };
-      } else {
-        break;
-      }
-    }
-
-    printSeparator();
-    printGameState(gameState);
+    gameState = result.newState;
+    renderTurnResult(result, gameState);
     printPrompt();
   });
 

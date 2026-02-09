@@ -1,0 +1,67 @@
+{
+  "image": "exam_room.png",
+  "width": 1024,
+  "height": 1024,
+  "objects": {
+    "exam_table": {
+      "x": 57,
+      "y": 53,
+      "w": 60,
+      "h": 70
+    },
+    "blood_pressure_monitor": {
+      "x": 22,
+      "y": 40,
+      "w": 12,
+      "h": 12
+    },
+    "stethoscope": {
+      "x": 25,
+      "y": 50,
+      "w": 11,
+      "h": 16
+    },
+    "scale": {
+      "x": 18,
+      "y": 75,
+      "w": 13,
+      "h": 12
+    },
+    "thermometer": {
+      "x": 29,
+      "y": 87,
+      "w": 8,
+      "h": 2
+    },
+    "tongue_depressor": {
+      "x": 39,
+      "y": 81,
+      "w": 6,
+      "h": 11
+    },
+    "medical_chart": {
+      "x": 62,
+      "y": 89,
+      "w": 17,
+      "h": 10
+    },
+    "prescription_pad": {
+      "x": 49,
+      "y": 87,
+      "w": 10,
+      "h": 6
+    },
+    "prescription": {
+      "x": 49,
+      "y": 87,
+      "w": 9,
+      "h": 5
+    },
+    "anatomy_poster": {
+      "x": 80,
+      "y": 30,
+      "w": 20,
+      "h": 40
+    }
+  }
+}

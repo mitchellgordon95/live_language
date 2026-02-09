@@ -1,0 +1,55 @@
+{
+  "image": "bank_waiting_area.png",
+  "width": 1024,
+  "height": 1024,
+  "objects": {
+    "number_dispenser": {
+      "x": 10.8,
+      "y": 60,
+      "w": 7.5,
+      "h": 40
+    },
+    "waiting_chairs": {
+      "x": 44.5,
+      "y": 56.5,
+      "w": 45,
+      "h": 29
+    },
+    "queue_display": {
+      "x": 50,
+      "y": 25,
+      "w": 60,
+      "h": 14
+    },
+    "bank_brochures": {
+      "x": 86,
+      "y": 36.5,
+      "w": 18,
+      "h": 39
+    },
+    "water_cooler": {
+      "x": 80.5,
+      "y": 76.5,
+      "w": 13,
+      "h": 33
+    },
+    "deposit_forms": {
+      "x": 38,
+      "y": 88,
+      "w": 22,
+      "h": 10
+    },
+    "withdrawal_forms": {
+      "x": 19.5,
+      "y": 88,
+      "w": 11,
+      "h": 10
+    },
+    "pens": {
+      "x": 63,
+      "y": 83.5,
+      "w": 10,
+      "h": 13
+    }
+  }
+}

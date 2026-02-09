@@ -1,0 +1,43 @@
+{
+  "image": "clinic_reception.png",
+  "width": 1024,
+  "height": 1024,
+  "objects": {
+    "reception_desk": {
+      "x": 52,
+      "y": 55.5,
+      "w": 62,
+      "h": 35
+    },
+    "registration_form": {
+      "x": 32,
+      "y": 64.5,
+      "w": 8,
+      "h": 7
+    },
+    "health_insurance_card": {
+      "x": 40,
+      "y": 63.5,
+      "w": 4,
+      "h": 3
+    },
+    "pen": {
+      "x": 45.5,
+      "y": 57.5,
+      "w": 3,
+      "h": 15
+    },
+    "clinic_brochure": {
+      "x": 65,
+      "y": 58.5,
+      "w": 6,
+      "h": 13
+    },
+    "appointment_sign": {
+      "x": 73,
+      "y": 56.5,
+      "w": 6,
+      "h": 13
+    }
+  }
+}

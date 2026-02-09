@@ -1,0 +1,43 @@
+{
+  "image": "restaurant_bathroom.png",
+  "width": 1024,
+  "height": 1024,
+  "objects": {
+    "restaurant_toilet": {
+      "x": 20,
+      "y": 70,
+      "w": 30,
+      "h": 50
+    },
+    "restaurant_sink": {
+      "x": 50,
+      "y": 45,
+      "w": 16,
+      "h": 10
+    },
+    "restaurant_mirror": {
+      "x": 45,
+      "y": 20,
+      "w": 30,
+      "h": 30
+    },
+    "paper_towels": {
+      "x": 75,
+      "y": 45,
+      "w": 10,
+      "h": 10
+    },
+    "hand_dryer": {
+      "x": 85,
+      "y": 55,
+      "w": 14,
+      "h": 26
+    },
+    "soap_dispenser": {
+      "x": 40,
+      "y": 45,
+      "w": 4,
+      "h": 10
+    }
+  }
+}

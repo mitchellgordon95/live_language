@@ -1,0 +1,302 @@
+/**
+ * Server-only bridge to the game engine.
+ * Uses dynamic imports with webpackIgnore to load the compiled game engine
+ * from the parent project's dist/ directory at runtime (Node.js resolves it).
+ */
+import 'server-only';
+import { join } from 'path';
+import { readFileSync, existsSync } from 'fs';
+import type { GameView, TurnResultView, ObjectCoords, SceneInfo } from './types';
+
+// Path to compiled game engine
+const ENGINE_ROOT = join(process.cwd(), '..', 'dist');
+
+// Cached engine modules
+let engine: {
+  processTurn: (...args: unknown[]) => Promise<unknown>;
+  loadVocabulary: (profile?: string) => unknown;
+  saveVocabulary: (vocab: unknown, profile?: string) => void;
+  createInitialState: (...args: unknown[]) => unknown;
+  getGoalByIdCombined: (id: string) => unknown;
+  getStartGoalForBuilding: (building: string) => unknown;
+  getModuleByName: (name: string) => unknown;
+  allLocations: Record<string, unknown>;
+  getLanguage: (id: string) => unknown;
+  getDefaultLanguage: () => string;
+  getAvailableLanguages: () => string[];
+  getNPCsInLocation: (locationId: string) => unknown[];
+  getVocabStage: (vocab: unknown, objectId: string) => string;
+} | null = null;
+
+async function getEngine() {
+  if (engine) return engine;
+
+  // Load dotenv from parent project
+  const dotenvPath = join(process.cwd(), '..', '.env.local');
+  const dotenv = await import(/* webpackIgnore: true */ 'dotenv');
+  dotenv.config({ path: dotenvPath });
+
+  const [unified, gameStateMod, registryMod, languagesMod, vocabMod] = await Promise.all([
+    import(/* webpackIgnore: true */ join(ENGINE_ROOT, 'modes', 'unified.js')),
+    import(/* webpackIgnore: true */ join(ENGINE_ROOT, 'engine', 'game-state.js')),
+    import(/* webpackIgnore: true */ join(ENGINE_ROOT, 'data', 'module-registry.js')),
+    import(/* webpackIgnore: true */ join(ENGINE_ROOT, 'languages', 'index.js')),
+    import(/* webpackIgnore: true */ join(ENGINE_ROOT, 'engine', 'vocabulary.js')),
+  ]);
+
+  engine = {
+    processTurn: unified.processTurn,
+    loadVocabulary: unified.loadVocabulary,
+    saveVocabulary: unified.saveVocabulary,
+    createInitialState: gameStateMod.createInitialState,
+    getGoalByIdCombined: registryMod.getGoalById,
+    getStartGoalForBuilding: registryMod.getStartGoalForBuilding,
+    getModuleByName: registryMod.getModuleByName,
+    allLocations: registryMod.allLocations,
+    getNPCsInLocation: registryMod.getNPCsInLocation,
+    getLanguage: languagesMod.getLanguage,
+    getDefaultLanguage: languagesMod.getDefaultLanguage,
+    getAvailableLanguages: languagesMod.getAvailableLanguages,
+    getVocabStage: (vocab: unknown, objectId: string) => {
+      const v = vocab as { words: Record<string, { stage: string }> };
+      return v.words[objectId]?.stage || 'new';
+    },
+  };
+
+  return engine;
+}
+
+// --- Session Management ---
+
+interface GameSession {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  state: any; // GameState from engine
+  languageId: string;
+}
+
+const sessions = new Map<string, GameSession>();
+
+function generateSessionId(): string {
+  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+}
+
+// --- Public API ---
+
+export async function initGame(options: {
+  module?: string;
+  language?: string;
+}): Promise<GameView> {
+  const eng = await getEngine();
+
+  const languageId = options.language || eng.getDefaultLanguage();
+  const languageConfig = eng.getLanguage(languageId);
+  if (!languageConfig) {
+    throw new Error(`Unknown language: ${languageId}. Available: ${eng.getAvailableLanguages().join(', ')}`);
+  }
+
+  const vocab = eng.loadVocabulary();
+
+  // Determine start location and goal from module
+  let startLocationId = 'bedroom';
+  let startGoalId: string | undefined;
+  let forceStanding = false;
+
+  if (options.module) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mod = eng.getModuleByName(options.module) as any;
+    if (mod) {
+      startLocationId = mod.startLocationId;
+      startGoalId = mod.startGoalId;
+      forceStanding = mod.name !== 'home';
+    }
+  }
+
+  const startLocation = eng.allLocations[startLocationId] || eng.allLocations['bedroom'];
+  let startGoal = eng.getStartGoalForBuilding('home');
+  if (startGoalId) {
+    startGoal = eng.getGoalByIdCombined(startGoalId) || startGoal;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let state = eng.createInitialState(startLocation, startGoal, vocab) as any;
+
+  if (forceStanding || options.module) {
+    state = { ...state, playerPosition: 'standing' };
+  }
+
+  // Disable audio in web mode
+  state = { ...state, audioEnabled: false };
+
+  const sessionId = generateSessionId();
+  sessions.set(sessionId, { state, languageId });
+
+  return buildGameView(sessionId, state, null);
+}
+
+export async function playTurn(sessionId: string, input: string): Promise<GameView> {
+  const eng = await getEngine();
+  const session = sessions.get(sessionId);
+  if (!session) {
+    throw new Error('Session not found. Start a new game.');
+  }
+
+  const languageConfig = eng.getLanguage(session.languageId);
+  if (!languageConfig) {
+    throw new Error(`Language config not found: ${session.languageId}`);
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const result = await eng.processTurn(input, session.state, languageConfig) as any;
+
+  session.state = result.newState;
+  sessions.set(sessionId, session);
+
+  // Save vocabulary periodically
+  eng.saveVocabulary(session.state.vocabulary, session.state.profile);
+
+  const turnResult = buildTurnResultView(result);
+  return buildGameView(sessionId, session.state, turnResult);
+}
+
+// --- Scene Manifest Loading ---
+
+interface SceneManifest {
+  image: string;
+  objects: Record<string, ObjectCoords>;
+}
+
+const manifestCache = new Map<string, SceneManifest | null>();
+
+function loadManifest(module: string, locationId: string): SceneManifest | null {
+  const key = `${module}/${locationId}`;
+  if (manifestCache.has(key)) return manifestCache.get(key)!;
+
+  const scenesDir = join(process.cwd(), 'public', 'scenes', module);
+  const manifestPath = join(scenesDir, `${locationId}.json`);
+
+  if (!existsSync(manifestPath)) {
+    manifestCache.set(key, null);
+    return null;
+  }
+
+  try {
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8')) as SceneManifest;
+    manifestCache.set(key, manifest);
+    return manifest;
+  } catch {
+    manifestCache.set(key, null);
+    return null;
+  }
+}
+
+// Map location IDs to their module name for scene lookup
+const LOCATION_TO_MODULE: Record<string, string> = {
+  bedroom: 'home', bathroom: 'home', kitchen: 'home', living_room: 'home', street: 'home',
+  restaurant_entrance: 'restaurant', restaurant_table: 'restaurant', restaurant_kitchen: 'restaurant',
+  restaurant_cashier: 'restaurant', restaurant_bathroom: 'restaurant',
+  market_entrance: 'market', fruit_stand: 'market', vegetable_stand: 'market',
+  meat_counter: 'market', market_checkout: 'market',
+  gym_entrance: 'gym', stretching_area: 'gym', training_floor: 'gym',
+  weight_room: 'gym', cardio_zone: 'gym', locker_room: 'gym',
+  park_entrance: 'park', main_path: 'park', fountain_area: 'park',
+  garden: 'park', playground: 'park', kiosk: 'park',
+  clinic_reception: 'clinic', waiting_room: 'clinic', exam_room: 'clinic', pharmacy: 'clinic',
+  bank_entrance: 'bank', bank_waiting_area: 'bank', bank_teller_window: 'bank', bank_manager_office: 'bank',
+};
+
+// --- View Model Builders ---
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function buildGameView(sessionId: string, state: any, turnResult: TurnResultView | null): GameView {
+  const locationId = state.location.id;
+  const module = LOCATION_TO_MODULE[locationId] || 'home';
+  const manifest = loadManifest(module, locationId);
+
+  // Build objects list with vocab stages and coordinates
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const objects = (state.location.objects || []).map((obj: any) => ({
+    id: obj.id,
+    name: obj.name,
+    vocabStage: getVocabStageForObject(state.vocabulary, obj.id),
+    coords: manifest?.objects?.[obj.id] || undefined,
+  }));
+
+  // Add dynamic objects (no coordinates — they weren't in the generated image)
+  const dynamicObjs = state.dynamicObjects?.[locationId] || [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const obj of dynamicObjs as any[]) {
+    objects.push({
+      id: obj.id,
+      name: obj.name,
+      vocabStage: 'new' as const,
+    });
+  }
+
+  // Scene info
+  const scene: SceneInfo | null = manifest
+    ? { image: manifest.image, module }
+    : null;
+
+  // Points to next level: 150 * level
+  const pointsToNextLevel = 150 * state.level;
+
+  return {
+    sessionId,
+    locationId,
+    locationName: state.location.name,
+    objects,
+    npcs: [], // TODO: populate from getNPCsInLocation
+    needs: state.needs,
+    goal: state.currentGoal ? {
+      id: state.currentGoal.id,
+      title: state.currentGoal.title,
+      hint: state.currentGoal.hint || '',
+    } : null,
+    inventory: state.inventory,
+    level: state.level,
+    points: state.points,
+    pointsToNextLevel,
+    completedGoals: state.completedGoals,
+    scene,
+    turnResult,
+  };
+}
+
+function getVocabStageForObject(vocabulary: { words: Record<string, { stage: string }> }, objectId: string): 'new' | 'learning' | 'known' {
+  const word = vocabulary?.words?.[objectId];
+  if (!word) return 'new';
+  return word.stage as 'new' | 'learning' | 'known';
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function buildTurnResultView(result: any): TurnResultView {
+  const response = result.response;
+  return {
+    valid: response.valid,
+    message: response.message || '',
+    invalidReason: response.invalidReason,
+    grammarScore: response.grammar?.score ?? 0,
+    grammarIssues: (response.grammar?.issues || []).map((issue: { type: string; original: string; corrected: string; explanation: string }) => ({
+      type: issue.type,
+      original: issue.original,
+      corrected: issue.corrected,
+      explanation: issue.explanation,
+    })),
+    targetModel: response.spanishModel || '',
+    npcResponse: response.npcResponse ? {
+      npcName: response.npcResponse.npcId,
+      target: response.npcResponse.spanish || '',
+      native: response.npcResponse.english || '',
+      actionText: response.npcResponse.actionText,
+    } : null,
+    pointsAwarded: result.effectsResult?.pointsAwarded || 0,
+    leveledUp: result.effectsResult?.leveledUp || false,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    goalsCompleted: (result.goalsCompleted || []).map((g: any) => g.title || g.id),
+  };
+}
+
+export function getAvailableModules(): string[] {
+  // Hard-coded for now; could load from engine
+  return ['home', 'restaurant', 'market', 'gym', 'park', 'clinic', 'bank'];
+}

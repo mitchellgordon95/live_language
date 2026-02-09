@@ -1,0 +1,43 @@
+{
+  "image": "cardio_zone.png",
+  "width": 1024,
+  "height": 1024,
+  "objects": {
+    "treadmill": {
+      "x": 45,
+      "y": 80,
+      "w": 40,
+      "h": 30
+    },
+    "stationary_bike": {
+      "x": 30,
+      "y": 65,
+      "w": 25,
+      "h": 30
+    },
+    "elliptical": {
+      "x": 55,
+      "y": 50,
+      "w": 35,
+      "h": 45
+    },
+    "rowing_machine": {
+      "x": 25,
+      "y": 40,
+      "w": 35,
+      "h": 25
+    },
+    "tv_screen": {
+      "x": 75,
+      "y": 25,
+      "w": 35,
+      "h": 20
+    },
+    "fan": {
+      "x": 85,
+      "y": 55,
+      "w": 20,
+      "h": 25
+    }
+  }
+}

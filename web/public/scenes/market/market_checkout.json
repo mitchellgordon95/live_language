@@ -1,0 +1,37 @@
+{
+  "image": "market_checkout.png",
+  "width": 1024,
+  "height": 1024,
+  "objects": {
+    "cash_register": {
+      "x": 25,
+      "y": 53,
+      "w": 20,
+      "h": 22
+    },
+    "conveyor_belt": {
+      "x": 66.5,
+      "y": 39,
+      "w": 43,
+      "h": 22
+    },
+    "shopping_bags": {
+      "x": 35.5,
+      "y": 78.5,
+      "w": 23,
+      "h": 23
+    },
+    "receipt": {
+      "x": 60.5,
+      "y": 63.5,
+      "w": 33,
+      "h": 29
+    },
+    "card_reader": {
+      "x": 46,
+      "y": 49,
+      "w": 8,
+      "h": 6
+    }
+  }
+}
