@@ -184,6 +184,23 @@ export interface ActionResult {
   wordsUsed?: string[];  // Words the player successfully used in this action
 }
 
+// Module definition - each module exports one of these
+export interface ModuleDefinition {
+  name: string;
+  displayName: string;
+  locations: Record<string, Location>;
+  npcs: NPC[];
+  goals: Goal[];
+  vocabulary: VocabWord[];
+  startLocationId: string;
+  startGoalId: string;
+  locationIds: string[];
+  unlockLevel: number;
+  promptInstructions: string;
+  pets?: Pet[];
+  getPetsInLocation?: (locationId: string, petLocations: Record<string, string>) => Pet[];
+}
+
 // Vocabulary familiarity tracking
 
 export type FamiliarityStage = 'new' | 'learning' | 'known';

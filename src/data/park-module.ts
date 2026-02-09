@@ -1,4 +1,4 @@
-import type { Location, Goal, VocabWord, GameState, NPC } from '../engine/types.js';
+import type { Location, Goal, VocabWord, GameState, NPC, ModuleDefinition } from '../engine/types.js';
 
 // ============================================================================
 // PARK LOCATIONS
@@ -717,3 +717,17 @@ KEY SPANISH FOR WEATHER (teach these patterns):
 - "Hace + noun" - Hace sol (it's sunny), Hace frio (it's cold), Hace calor (it's hot)
 - "Esta + adjective" - Esta nublado (it's cloudy), Esta lloviendo (it's raining)
 - Present progressive: "estar + gerund" - Estoy caminando (I am walking), Esta comiendo (he/she is eating)`;
+
+export const parkModule: ModuleDefinition = {
+  name: 'park',
+  displayName: 'Park',
+  locations: parkLocations,
+  npcs: parkNpcs,
+  goals: parkGoals,
+  vocabulary: parkVocabulary,
+  startLocationId: 'park_entrance',
+  startGoalId: 'arrive_at_park',
+  locationIds: Object.keys(parkLocations),
+  unlockLevel: 3,
+  promptInstructions,
+};

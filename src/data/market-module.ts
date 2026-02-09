@@ -1,4 +1,4 @@
-import type { Location, Goal, VocabWord, GameState, NPC } from '../engine/types.js';
+import type { Location, Goal, VocabWord, GameState, NPC, ModuleDefinition } from '../engine/types.js';
 
 // ============================================================================
 // MARKET LOCATIONS
@@ -857,3 +857,17 @@ KEY SPANISH FOR MARKET (teach these patterns):
 - "Aquel/Aquella" (That over there - far from both)
 - "Un kilo de..." / "Medio kilo de..." (A kilo of... / Half kilo of...)
 - "Mas fresco/grande/barato que..." (Fresher/bigger/cheaper than...)`;
+
+export const marketModule: ModuleDefinition = {
+  name: 'market',
+  displayName: 'Market',
+  locations: marketLocations,
+  npcs: marketNPCs,
+  goals: marketGoals,
+  vocabulary: marketVocabulary,
+  startLocationId: 'market_entrance',
+  startGoalId: 'market_explore',
+  locationIds: Object.keys(marketLocations),
+  unlockLevel: 3,
+  promptInstructions,
+};

@@ -1,4 +1,4 @@
-import type { Location, Goal, VocabWord, GameState, NPC } from '../engine/types.js';
+import type { Location, Goal, VocabWord, GameState, NPC, ModuleDefinition } from '../engine/types.js';
 
 // ============================================================================
 // CLINIC LOCATIONS
@@ -708,3 +708,17 @@ KEY SPANISH FOR MEDICAL VISITS (teach these patterns):
 - "Tengo..." (I have...) - "Tengo fiebre" (I have a fever), "Tengo tos" (I have a cough)
 - "No me siento bien" (I don't feel well)
 - Formal commands (usted): "Abra" (Open), "Respire" (Breathe), "Saque" (Stick out)`;
+
+export const clinicModule: ModuleDefinition = {
+  name: 'clinic',
+  displayName: 'Clinic',
+  locations: clinicLocations,
+  npcs: clinicNPCs,
+  goals: clinicGoals,
+  vocabulary: clinicVocabulary,
+  startLocationId: 'clinic_reception',
+  startGoalId: 'clinic_arrive',
+  locationIds: Object.keys(clinicLocations),
+  unlockLevel: 5,
+  promptInstructions,
+};

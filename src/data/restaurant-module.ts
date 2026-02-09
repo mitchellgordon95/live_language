@@ -1,4 +1,4 @@
-import type { Location, Goal, VocabWord, GameState, NPC } from '../engine/types.js';
+import type { Location, Goal, VocabWord, GameState, NPC, ModuleDefinition } from '../engine/types.js';
 
 // ============================================================================
 // RESTAURANT LOCATIONS
@@ -639,3 +639,17 @@ KEY SPANISH FOR ORDERING (teach these patterns):
 - "Me trae...?" (Can you bring me...?)
 - "sin" (without) - "sin cebolla" (without onion)
 - "con" (with) - "con arroz" (with rice)`;
+
+export const restaurantModule: ModuleDefinition = {
+  name: 'restaurant',
+  displayName: 'Restaurant',
+  locations: restaurantLocations,
+  npcs: restaurantNPCs,
+  goals: restaurantGoals,
+  vocabulary: restaurantVocabulary,
+  startLocationId: 'restaurant_entrance',
+  startGoalId: 'restaurant_enter',
+  locationIds: Object.keys(restaurantLocations),
+  unlockLevel: 2,
+  promptInstructions,
+};

@@ -1,4 +1,4 @@
-import type { Location, Goal, VocabWord, GameState, NPC, Pet } from '../engine/types.js';
+import type { Location, Goal, VocabWord, GameState, NPC, Pet, ModuleDefinition } from '../engine/types.js';
 import { getObjectState } from '../engine/game-state.js';
 
 // ============================================================================
@@ -581,3 +581,19 @@ NPC PERSONALITIES:
 - Carlos (roommate): Sleepy, friendly, casual speech. In the morning, wants coffee or breakfast (eggs, toast).
 - Luna (cat): Independent, aloof. Responds with purring or ignoring.
 - Max (dog): Excited, eager. Responds with tail wagging and barking.`;
+
+export const homeModule: ModuleDefinition = {
+  name: 'home',
+  displayName: 'Home',
+  locations,
+  npcs,
+  goals,
+  vocabulary,
+  startLocationId: 'bedroom',
+  startGoalId: 'wake_up',
+  locationIds: Object.keys(locations).filter(id => id !== 'street'),
+  unlockLevel: 1,
+  promptInstructions,
+  pets,
+  getPetsInLocation,
+};

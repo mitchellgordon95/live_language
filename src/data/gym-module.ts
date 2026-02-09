@@ -1,6 +1,6 @@
 // /Users/mitchg/Desktop/language/src/data/gym-module.ts
 
-import type { Location, Goal, VocabWord, GameState, NPC } from '../engine/types.js';
+import type { Location, Goal, VocabWord, GameState, NPC, ModuleDefinition } from '../engine/types.js';
 
 // ============================================================================
 // GYM LOCATIONS
@@ -750,3 +750,17 @@ KEY SPANISH FOR GYM (teach these patterns):
 - Frequency: "tres veces a la semana" (three times a week), "cada dia" (every day)
 - Body parts: "los brazos" (arms), "las piernas" (legs), "el pecho" (chest)
 - Exercise terms: "las repeticiones" (reps), "las series" (sets), "el descanso" (rest)`;
+
+export const gymModule: ModuleDefinition = {
+  name: 'gym',
+  displayName: 'Gym',
+  locations: gymLocations,
+  npcs: gymNPCs,
+  goals: gymGoals,
+  vocabulary: gymVocabulary,
+  startLocationId: 'gym_entrance',
+  startGoalId: 'gym_check_in',
+  locationIds: Object.keys(gymLocations),
+  unlockLevel: 5,
+  promptInstructions,
+};

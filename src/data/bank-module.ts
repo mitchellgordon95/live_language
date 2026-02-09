@@ -1,4 +1,4 @@
-import type { Location, Goal, VocabWord, GameState, NPC } from '../engine/types.js';
+import type { Location, Goal, VocabWord, GameState, NPC, ModuleDefinition } from '../engine/types.js';
 
 // ============================================================================
 // BANK LOCATIONS
@@ -565,3 +565,17 @@ KEY SPANISH FOR BANKING (teach these patterns):
 - "El saldo" (balance), "El deposito" (deposit), "El retiro" (withdrawal)
 - "El recibo" / "El comprobante" (receipt)
 - Formal "usted" forms: "tiene", "desea", "puede"`;
+
+export const bankModule: ModuleDefinition = {
+  name: 'bank',
+  displayName: 'Bank',
+  locations: bankLocations,
+  npcs: bankNPCs,
+  goals: bankGoals,
+  vocabulary: bankVocabulary,
+  startLocationId: 'bank_entrance',
+  startGoalId: 'bank_enter_greet',
+  locationIds: Object.keys(bankLocations),
+  unlockLevel: 7,
+  promptInstructions,
+};
