@@ -105,13 +105,13 @@ export function findObject(
   return state.location.objects.find((obj) => obj.id === objectId);
 }
 
-export function findObjectBySpanishName(
+export function findObjectByTargetName(
   state: GameState,
-  spanishName: string
+  targetName: string
 ): GameObject | undefined {
-  const normalized = spanishName.toLowerCase().trim();
+  const normalized = targetName.toLowerCase().trim();
   return state.location.objects.find((obj) => {
-    const objName = obj.name.spanish.toLowerCase();
+    const objName = obj.name.target.toLowerCase();
     return objName === normalized || objName.includes(normalized) || normalized.includes(objName);
   });
 }

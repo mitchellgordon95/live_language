@@ -1,4 +1,4 @@
-import type { Location, Goal, VocabWord, GameState, NPC, ModuleDefinition } from '../engine/types.js';
+import type { Location, Goal, VocabWord, GameState, NPC, ModuleDefinition } from '../../../engine/types.js';
 
 // ============================================================================
 // RESTAURANT LOCATIONS
@@ -6,85 +6,85 @@ import type { Location, Goal, VocabWord, GameState, NPC, ModuleDefinition } from
 
 export const restaurantEntrance: Location = {
   id: 'restaurant_entrance',
-  name: { spanish: 'la entrada del restaurante', english: 'restaurant entrance' },
+  name: { target: 'la entrada del restaurante', native: 'restaurant entrance' },
   objects: [
     {
       id: 'host_stand',
-      name: { spanish: 'el podio del anfitrion', english: 'host stand' },
+      name: { target: 'el podio del anfitrion', native: 'host stand' },
       state: {},
       actions: ['LOOK'],
     },
     {
       id: 'waiting_bench',
-      name: { spanish: 'el banco de espera', english: 'waiting bench' },
+      name: { target: 'el banco de espera', native: 'waiting bench' },
       state: {},
       actions: [],
     },
     {
       id: 'restaurant_menu_display',
-      name: { spanish: 'el menu en la vitrina', english: 'menu display' },
+      name: { target: 'el menu en la vitrina', native: 'menu display' },
       state: {},
       actions: ['LOOK'],
     },
     {
       id: 'coat_rack',
-      name: { spanish: 'el perchero', english: 'coat rack' },
+      name: { target: 'el perchero', native: 'coat rack' },
       state: {},
       actions: ['USE'],
     },
   ],
   exits: [
-    { to: 'restaurant_table', name: { spanish: 'las mesas', english: 'dining area' } },
-    { to: 'street', name: { spanish: 'la calle', english: 'street' } },
+    { to: 'restaurant_table', name: { target: 'las mesas', native: 'dining area' } },
+    { to: 'street', name: { target: 'la calle', native: 'street' } },
   ],
 };
 
 export const restaurantTable: Location = {
   id: 'restaurant_table',
-  name: { spanish: 'la mesa', english: 'your table' },
+  name: { target: 'la mesa', native: 'your table' },
   objects: [
     {
       id: 'menu',
-      name: { spanish: 'el menu', english: 'menu' },
+      name: { target: 'el menu', native: 'menu' },
       state: { open: false, read: false },
       actions: ['OPEN', 'CLOSE', 'LOOK'],
     },
     {
       id: 'table_plate',
-      name: { spanish: 'el plato', english: 'plate' },
+      name: { target: 'el plato', native: 'plate' },
       state: { hasFood: false, foodItem: null },
       actions: ['LOOK'],
     },
     {
       id: 'water_glass',
-      name: { spanish: 'el vaso de agua', english: 'water glass' },
+      name: { target: 'el vaso de agua', native: 'water glass' },
       state: { filled: true },
       actions: ['DRINK'],
       consumable: true,
     },
     {
       id: 'wine_glass',
-      name: { spanish: 'la copa de vino', english: 'wine glass' },
+      name: { target: 'la copa de vino', native: 'wine glass' },
       state: { filled: false },
       actions: ['DRINK'],
       consumable: true,
     },
     {
       id: 'napkin',
-      name: { spanish: 'la servilleta', english: 'napkin' },
+      name: { target: 'la servilleta', native: 'napkin' },
       state: {},
       actions: ['USE', 'TAKE'],
       takeable: true,
     },
     {
       id: 'silverware',
-      name: { spanish: 'los cubiertos', english: 'silverware' },
+      name: { target: 'los cubiertos', native: 'silverware' },
       state: {},
       actions: ['USE'],
     },
     {
       id: 'bread_basket',
-      name: { spanish: 'la cesta de pan', english: 'bread basket' },
+      name: { target: 'la cesta de pan', native: 'bread basket' },
       state: { hasBread: true },
       actions: ['TAKE', 'EAT'],
       consumable: true,
@@ -93,7 +93,7 @@ export const restaurantTable: Location = {
     // Orderable food items - initially not present, appear when delivered
     {
       id: 'ordered_food',
-      name: { spanish: 'la comida', english: 'food' },
+      name: { target: 'la comida', native: 'food' },
       state: { ordered: false, delivered: false, eaten: false, itemName: null },
       actions: ['EAT'],
       consumable: true,
@@ -101,7 +101,7 @@ export const restaurantTable: Location = {
     },
     {
       id: 'ordered_drink',
-      name: { spanish: 'la bebida', english: 'drink' },
+      name: { target: 'la bebida', native: 'drink' },
       state: { ordered: false, delivered: false, drunk: false, itemName: null },
       actions: ['DRINK'],
       consumable: true,
@@ -109,123 +109,123 @@ export const restaurantTable: Location = {
     },
     {
       id: 'bill',
-      name: { spanish: 'la cuenta', english: 'the bill' },
+      name: { target: 'la cuenta', native: 'the bill' },
       state: { requested: false, delivered: false, paid: false, total: 0 },
       actions: ['LOOK', 'USE'],
     },
   ],
   exits: [
-    { to: 'restaurant_entrance', name: { spanish: 'la entrada', english: 'entrance' } },
-    { to: 'restaurant_kitchen', name: { spanish: 'la cocina', english: 'kitchen' } },
-    { to: 'restaurant_cashier', name: { spanish: 'la caja', english: 'cashier' } },
-    { to: 'restaurant_bathroom', name: { spanish: 'el bano', english: 'bathroom' } },
+    { to: 'restaurant_entrance', name: { target: 'la entrada', native: 'entrance' } },
+    { to: 'restaurant_kitchen', name: { target: 'la cocina', native: 'kitchen' } },
+    { to: 'restaurant_cashier', name: { target: 'la caja', native: 'cashier' } },
+    { to: 'restaurant_bathroom', name: { target: 'el bano', native: 'bathroom' } },
   ],
 };
 
 export const restaurantKitchen: Location = {
   id: 'restaurant_kitchen',
-  name: { spanish: 'la cocina', english: 'kitchen' },
+  name: { target: 'la cocina', native: 'kitchen' },
   objects: [
     {
       id: 'kitchen_stove',
-      name: { spanish: 'la estufa', english: 'stove' },
+      name: { target: 'la estufa', native: 'stove' },
       state: { on: true },
       actions: ['LOOK'],
     },
     {
       id: 'prep_counter',
-      name: { spanish: 'el mostrador', english: 'prep counter' },
+      name: { target: 'el mostrador', native: 'prep counter' },
       state: {},
       actions: ['LOOK'],
     },
     {
       id: 'order_tickets',
-      name: { spanish: 'los pedidos', english: 'order tickets' },
+      name: { target: 'los pedidos', native: 'order tickets' },
       state: { count: 3 },
       actions: ['LOOK'],
     },
   ],
   exits: [
-    { to: 'restaurant_table', name: { spanish: 'el comedor', english: 'dining room' } },
+    { to: 'restaurant_table', name: { target: 'el comedor', native: 'dining room' } },
   ],
 };
 
 export const restaurantCashier: Location = {
   id: 'restaurant_cashier',
-  name: { spanish: 'la caja', english: 'cashier' },
+  name: { target: 'la caja', native: 'cashier' },
   objects: [
     {
       id: 'cash_register',
-      name: { spanish: 'la caja registradora', english: 'cash register' },
+      name: { target: 'la caja registradora', native: 'cash register' },
       state: {},
       actions: ['LOOK', 'USE'],
     },
     {
       id: 'card_reader',
-      name: { spanish: 'el lector de tarjetas', english: 'card reader' },
+      name: { target: 'el lector de tarjetas', native: 'card reader' },
       state: {},
       actions: ['USE'],
     },
     {
       id: 'tip_jar',
-      name: { spanish: 'el frasco de propinas', english: 'tip jar' },
+      name: { target: 'el frasco de propinas', native: 'tip jar' },
       state: {},
       actions: ['USE'],
     },
   ],
   exits: [
-    { to: 'restaurant_table', name: { spanish: 'el comedor', english: 'dining room' } },
-    { to: 'restaurant_entrance', name: { spanish: 'la entrada', english: 'entrance' } },
+    { to: 'restaurant_table', name: { target: 'el comedor', native: 'dining room' } },
+    { to: 'restaurant_entrance', name: { target: 'la entrada', native: 'entrance' } },
   ],
 };
 
 export const restaurantBathroom: Location = {
   id: 'restaurant_bathroom',
-  name: { spanish: 'el bano', english: 'bathroom' },
+  name: { target: 'el bano', native: 'bathroom' },
   objects: [
     {
       id: 'restaurant_toilet',
-      name: { spanish: 'el inodoro', english: 'toilet' },
+      name: { target: 'el inodoro', native: 'toilet' },
       state: {},
       actions: ['USE'],
       needsEffect: { bladder: 50 },
     },
     {
       id: 'restaurant_sink',
-      name: { spanish: 'el lavabo', english: 'sink' },
+      name: { target: 'el lavabo', native: 'sink' },
       state: { on: false },
       actions: ['USE', 'TURN_ON', 'TURN_OFF'],
       needsEffect: { hygiene: 10 },
     },
     {
       id: 'restaurant_mirror',
-      name: { spanish: 'el espejo', english: 'mirror' },
+      name: { target: 'el espejo', native: 'mirror' },
       state: {},
       actions: ['LOOK'],
     },
     {
       id: 'paper_towels',
-      name: { spanish: 'las toallas de papel', english: 'paper towels' },
+      name: { target: 'las toallas de papel', native: 'paper towels' },
       state: {},
       actions: ['USE', 'TAKE'],
       takeable: true,
     },
     {
       id: 'hand_dryer',
-      name: { spanish: 'el secador de manos', english: 'hand dryer' },
+      name: { target: 'el secador de manos', native: 'hand dryer' },
       state: { on: false },
       actions: ['USE', 'TURN_ON'],
     },
     {
       id: 'soap_dispenser',
-      name: { spanish: 'el dispensador de jabon', english: 'soap dispenser' },
+      name: { target: 'el dispensador de jabon', native: 'soap dispenser' },
       state: {},
       actions: ['USE'],
       needsEffect: { hygiene: 5 },
     },
   ],
   exits: [
-    { to: 'restaurant_table', name: { spanish: 'el comedor', english: 'dining room' } },
+    { to: 'restaurant_table', name: { target: 'el comedor', native: 'dining room' } },
   ],
 };
 
@@ -243,47 +243,47 @@ export const restaurantLocations: Record<string, Location> = {
 
 export interface MenuItem {
   id: string;
-  name: { spanish: string; english: string };
+  name: { target: string; native: string };
   price: number;  // in "pesos" or generic currency
   category: 'appetizer' | 'main' | 'dessert' | 'drink' | 'side';
-  description?: { spanish: string; english: string };
+  description?: { target: string; native: string };
 }
 
 export const menuItems: MenuItem[] = [
   // DRINKS (Bebidas)
-  { id: 'agua', name: { spanish: 'el agua', english: 'water' }, price: 0, category: 'drink' },
-  { id: 'refresco', name: { spanish: 'el refresco', english: 'soda' }, price: 25, category: 'drink' },
-  { id: 'limonada', name: { spanish: 'la limonada', english: 'lemonade' }, price: 30, category: 'drink' },
-  { id: 'cerveza', name: { spanish: 'la cerveza', english: 'beer' }, price: 45, category: 'drink' },
-  { id: 'vino_tinto', name: { spanish: 'el vino tinto', english: 'red wine' }, price: 65, category: 'drink' },
-  { id: 'vino_blanco', name: { spanish: 'el vino blanco', english: 'white wine' }, price: 65, category: 'drink' },
-  { id: 'cafe', name: { spanish: 'el cafe', english: 'coffee' }, price: 35, category: 'drink' },
+  { id: 'agua', name: { target: 'el agua', native: 'water' }, price: 0, category: 'drink' },
+  { id: 'refresco', name: { target: 'el refresco', native: 'soda' }, price: 25, category: 'drink' },
+  { id: 'limonada', name: { target: 'la limonada', native: 'lemonade' }, price: 30, category: 'drink' },
+  { id: 'cerveza', name: { target: 'la cerveza', native: 'beer' }, price: 45, category: 'drink' },
+  { id: 'vino_tinto', name: { target: 'el vino tinto', native: 'red wine' }, price: 65, category: 'drink' },
+  { id: 'vino_blanco', name: { target: 'el vino blanco', native: 'white wine' }, price: 65, category: 'drink' },
+  { id: 'cafe', name: { target: 'el cafe', native: 'coffee' }, price: 35, category: 'drink' },
 
   // APPETIZERS (Entradas)
-  { id: 'sopa', name: { spanish: 'la sopa del dia', english: 'soup of the day' }, price: 55, category: 'appetizer' },
-  { id: 'ensalada', name: { spanish: 'la ensalada', english: 'salad' }, price: 50, category: 'appetizer' },
-  { id: 'guacamole', name: { spanish: 'el guacamole', english: 'guacamole' }, price: 60, category: 'appetizer' },
-  { id: 'nachos', name: { spanish: 'los nachos', english: 'nachos' }, price: 70, category: 'appetizer' },
+  { id: 'sopa', name: { target: 'la sopa del dia', native: 'soup of the day' }, price: 55, category: 'appetizer' },
+  { id: 'ensalada', name: { target: 'la ensalada', native: 'salad' }, price: 50, category: 'appetizer' },
+  { id: 'guacamole', name: { target: 'el guacamole', native: 'guacamole' }, price: 60, category: 'appetizer' },
+  { id: 'nachos', name: { target: 'los nachos', native: 'nachos' }, price: 70, category: 'appetizer' },
 
   // MAIN COURSES (Platos principales)
-  { id: 'pollo', name: { spanish: 'el pollo asado', english: 'roasted chicken' }, price: 120, category: 'main' },
-  { id: 'carne', name: { spanish: 'la carne asada', english: 'grilled beef' }, price: 150, category: 'main' },
-  { id: 'pescado', name: { spanish: 'el pescado', english: 'fish' }, price: 140, category: 'main' },
-  { id: 'tacos', name: { spanish: 'los tacos', english: 'tacos' }, price: 95, category: 'main' },
-  { id: 'enchiladas', name: { spanish: 'las enchiladas', english: 'enchiladas' }, price: 105, category: 'main' },
-  { id: 'arroz_con_pollo', name: { spanish: 'el arroz con pollo', english: 'rice with chicken' }, price: 110, category: 'main' },
-  { id: 'hamburguesa', name: { spanish: 'la hamburguesa', english: 'hamburger' }, price: 100, category: 'main' },
+  { id: 'pollo', name: { target: 'el pollo asado', native: 'roasted chicken' }, price: 120, category: 'main' },
+  { id: 'carne', name: { target: 'la carne asada', native: 'grilled beef' }, price: 150, category: 'main' },
+  { id: 'pescado', name: { target: 'el pescado', native: 'fish' }, price: 140, category: 'main' },
+  { id: 'tacos', name: { target: 'los tacos', native: 'tacos' }, price: 95, category: 'main' },
+  { id: 'enchiladas', name: { target: 'las enchiladas', native: 'enchiladas' }, price: 105, category: 'main' },
+  { id: 'arroz_con_pollo', name: { target: 'el arroz con pollo', native: 'rice with chicken' }, price: 110, category: 'main' },
+  { id: 'hamburguesa', name: { target: 'la hamburguesa', native: 'hamburger' }, price: 100, category: 'main' },
 
   // SIDES (Acompañamientos)
-  { id: 'arroz', name: { spanish: 'el arroz', english: 'rice' }, price: 25, category: 'side' },
-  { id: 'frijoles', name: { spanish: 'los frijoles', english: 'beans' }, price: 25, category: 'side' },
-  { id: 'papas_fritas', name: { spanish: 'las papas fritas', english: 'french fries' }, price: 35, category: 'side' },
+  { id: 'arroz', name: { target: 'el arroz', native: 'rice' }, price: 25, category: 'side' },
+  { id: 'frijoles', name: { target: 'los frijoles', native: 'beans' }, price: 25, category: 'side' },
+  { id: 'papas_fritas', name: { target: 'las papas fritas', native: 'french fries' }, price: 35, category: 'side' },
 
   // DESSERTS (Postres)
-  { id: 'flan', name: { spanish: 'el flan', english: 'flan' }, price: 50, category: 'dessert' },
-  { id: 'helado', name: { spanish: 'el helado', english: 'ice cream' }, price: 45, category: 'dessert' },
-  { id: 'pastel', name: { spanish: 'el pastel de chocolate', english: 'chocolate cake' }, price: 55, category: 'dessert' },
-  { id: 'churros', name: { spanish: 'los churros', english: 'churros' }, price: 40, category: 'dessert' },
+  { id: 'flan', name: { target: 'el flan', native: 'flan' }, price: 50, category: 'dessert' },
+  { id: 'helado', name: { target: 'el helado', native: 'ice cream' }, price: 45, category: 'dessert' },
+  { id: 'pastel', name: { target: 'el pastel de chocolate', native: 'chocolate cake' }, price: 55, category: 'dessert' },
+  { id: 'churros', name: { target: 'los churros', native: 'churros' }, price: 40, category: 'dessert' },
 ];
 
 // Helper to get menu by category
@@ -303,19 +303,19 @@ export function getItemPrice(itemId: string): number {
 export const restaurantNPCs: NPC[] = [
   {
     id: 'host',
-    name: { spanish: 'el anfitrion', english: 'host' },
+    name: { target: 'el anfitrion', native: 'host' },
     location: 'restaurant_entrance',
     personality: 'Professional and welcoming. Greets customers and seats them. Speaks formally with "usted". Will ask "Mesa para cuantos?" (Table for how many?) and guide player to their table.',
   },
   {
     id: 'waiter',
-    name: { spanish: 'el mesero', english: 'waiter' },
+    name: { target: 'el mesero', native: 'waiter' },
     location: 'restaurant_table',
     personality: 'Friendly and attentive waiter named Diego. Takes orders politely. Uses both formal "usted" and friendly tone. Will suggest specials, ask about drinks first, then food. Key phrases: "Que desea tomar?" (What would you like to drink?), "Ya decidio?" (Have you decided?), "Algo mas?" (Anything else?), "Enseguida" (Right away).',
   },
   {
     id: 'chef',
-    name: { spanish: 'el chef', english: 'chef' },
+    name: { target: 'el chef', native: 'chef' },
     location: 'restaurant_kitchen',
     personality: 'Busy and passionate chef named Rosa. Speaks quickly and uses cooking terms. Can be seen through kitchen window. Occasionally comes out to check on diners. Proud of the food.',
   },
@@ -468,149 +468,149 @@ export function getRestaurantStartGoal(): Goal {
 
 export const restaurantVocabulary: VocabWord[] = [
   // Restaurant locations
-  { spanish: 'el restaurante', english: 'restaurant', category: 'noun', gender: 'masculine' },
-  { spanish: 'la entrada', english: 'entrance', category: 'noun', gender: 'feminine' },
-  { spanish: 'la mesa', english: 'table', category: 'noun', gender: 'feminine' },
-  { spanish: 'la caja', english: 'cashier/register', category: 'noun', gender: 'feminine' },
-  { spanish: 'el comedor', english: 'dining room', category: 'noun', gender: 'masculine' },
+  { target: 'el restaurante', native: 'restaurant', category: 'noun', gender: 'masculine' },
+  { target: 'la entrada', native: 'entrance', category: 'noun', gender: 'feminine' },
+  { target: 'la mesa', native: 'table', category: 'noun', gender: 'feminine' },
+  { target: 'la caja', native: 'cashier/register', category: 'noun', gender: 'feminine' },
+  { target: 'el comedor', native: 'dining room', category: 'noun', gender: 'masculine' },
 
   // Table items
-  { spanish: 'el menu', english: 'menu', category: 'noun', gender: 'masculine' },
-  { spanish: 'el plato', english: 'plate', category: 'noun', gender: 'masculine' },
-  { spanish: 'el vaso', english: 'glass', category: 'noun', gender: 'masculine' },
-  { spanish: 'la copa', english: 'wine glass', category: 'noun', gender: 'feminine' },
-  { spanish: 'la servilleta', english: 'napkin', category: 'noun', gender: 'feminine' },
-  { spanish: 'los cubiertos', english: 'silverware', category: 'noun', gender: 'masculine' },
-  { spanish: 'el tenedor', english: 'fork', category: 'noun', gender: 'masculine' },
-  { spanish: 'el cuchillo', english: 'knife', category: 'noun', gender: 'masculine' },
-  { spanish: 'la cuchara', english: 'spoon', category: 'noun', gender: 'feminine' },
-  { spanish: 'la cuenta', english: 'bill/check', category: 'noun', gender: 'feminine' },
-  { spanish: 'la propina', english: 'tip', category: 'noun', gender: 'feminine' },
+  { target: 'el menu', native: 'menu', category: 'noun', gender: 'masculine' },
+  { target: 'el plato', native: 'plate', category: 'noun', gender: 'masculine' },
+  { target: 'el vaso', native: 'glass', category: 'noun', gender: 'masculine' },
+  { target: 'la copa', native: 'wine glass', category: 'noun', gender: 'feminine' },
+  { target: 'la servilleta', native: 'napkin', category: 'noun', gender: 'feminine' },
+  { target: 'los cubiertos', native: 'silverware', category: 'noun', gender: 'masculine' },
+  { target: 'el tenedor', native: 'fork', category: 'noun', gender: 'masculine' },
+  { target: 'el cuchillo', native: 'knife', category: 'noun', gender: 'masculine' },
+  { target: 'la cuchara', native: 'spoon', category: 'noun', gender: 'feminine' },
+  { target: 'la cuenta', native: 'bill/check', category: 'noun', gender: 'feminine' },
+  { target: 'la propina', native: 'tip', category: 'noun', gender: 'feminine' },
 
   // People
-  { spanish: 'el mesero', english: 'waiter', category: 'noun', gender: 'masculine' },
-  { spanish: 'la mesera', english: 'waitress', category: 'noun', gender: 'feminine' },
-  { spanish: 'el camarero', english: 'waiter (Spain)', category: 'noun', gender: 'masculine' },
-  { spanish: 'el anfitrion', english: 'host', category: 'noun', gender: 'masculine' },
-  { spanish: 'el chef', english: 'chef', category: 'noun', gender: 'masculine' },
+  { target: 'el mesero', native: 'waiter', category: 'noun', gender: 'masculine' },
+  { target: 'la mesera', native: 'waitress', category: 'noun', gender: 'feminine' },
+  { target: 'el camarero', native: 'waiter (Spain)', category: 'noun', gender: 'masculine' },
+  { target: 'el anfitrion', native: 'host', category: 'noun', gender: 'masculine' },
+  { target: 'el chef', native: 'chef', category: 'noun', gender: 'masculine' },
 
   // Drinks
-  { spanish: 'el agua', english: 'water', category: 'noun', gender: 'feminine' },
-  { spanish: 'el refresco', english: 'soda', category: 'noun', gender: 'masculine' },
-  { spanish: 'la limonada', english: 'lemonade', category: 'noun', gender: 'feminine' },
-  { spanish: 'la cerveza', english: 'beer', category: 'noun', gender: 'feminine' },
-  { spanish: 'el vino', english: 'wine', category: 'noun', gender: 'masculine' },
-  { spanish: 'el vino tinto', english: 'red wine', category: 'noun', gender: 'masculine' },
-  { spanish: 'el vino blanco', english: 'white wine', category: 'noun', gender: 'masculine' },
-  { spanish: 'el cafe', english: 'coffee', category: 'noun', gender: 'masculine' },
+  { target: 'el agua', native: 'water', category: 'noun', gender: 'feminine' },
+  { target: 'el refresco', native: 'soda', category: 'noun', gender: 'masculine' },
+  { target: 'la limonada', native: 'lemonade', category: 'noun', gender: 'feminine' },
+  { target: 'la cerveza', native: 'beer', category: 'noun', gender: 'feminine' },
+  { target: 'el vino', native: 'wine', category: 'noun', gender: 'masculine' },
+  { target: 'el vino tinto', native: 'red wine', category: 'noun', gender: 'masculine' },
+  { target: 'el vino blanco', native: 'white wine', category: 'noun', gender: 'masculine' },
+  { target: 'el cafe', native: 'coffee', category: 'noun', gender: 'masculine' },
 
   // Food categories
-  { spanish: 'las bebidas', english: 'drinks', category: 'noun', gender: 'feminine' },
-  { spanish: 'las entradas', english: 'appetizers', category: 'noun', gender: 'feminine' },
-  { spanish: 'los platos principales', english: 'main courses', category: 'noun', gender: 'masculine' },
-  { spanish: 'los postres', english: 'desserts', category: 'noun', gender: 'masculine' },
+  { target: 'las bebidas', native: 'drinks', category: 'noun', gender: 'feminine' },
+  { target: 'las entradas', native: 'appetizers', category: 'noun', gender: 'feminine' },
+  { target: 'los platos principales', native: 'main courses', category: 'noun', gender: 'masculine' },
+  { target: 'los postres', native: 'desserts', category: 'noun', gender: 'masculine' },
 
   // Food items
-  { spanish: 'la sopa', english: 'soup', category: 'noun', gender: 'feminine' },
-  { spanish: 'la ensalada', english: 'salad', category: 'noun', gender: 'feminine' },
-  { spanish: 'el guacamole', english: 'guacamole', category: 'noun', gender: 'masculine' },
-  { spanish: 'los nachos', english: 'nachos', category: 'noun', gender: 'masculine' },
-  { spanish: 'el pollo', english: 'chicken', category: 'noun', gender: 'masculine' },
-  { spanish: 'la carne', english: 'beef/meat', category: 'noun', gender: 'feminine' },
-  { spanish: 'el pescado', english: 'fish', category: 'noun', gender: 'masculine' },
-  { spanish: 'los tacos', english: 'tacos', category: 'noun', gender: 'masculine' },
-  { spanish: 'las enchiladas', english: 'enchiladas', category: 'noun', gender: 'feminine' },
-  { spanish: 'el arroz', english: 'rice', category: 'noun', gender: 'masculine' },
-  { spanish: 'los frijoles', english: 'beans', category: 'noun', gender: 'masculine' },
-  { spanish: 'las papas fritas', english: 'french fries', category: 'noun', gender: 'feminine' },
-  { spanish: 'la hamburguesa', english: 'hamburger', category: 'noun', gender: 'feminine' },
-  { spanish: 'el flan', english: 'flan', category: 'noun', gender: 'masculine' },
-  { spanish: 'el helado', english: 'ice cream', category: 'noun', gender: 'masculine' },
-  { spanish: 'el pastel', english: 'cake', category: 'noun', gender: 'masculine' },
-  { spanish: 'los churros', english: 'churros', category: 'noun', gender: 'masculine' },
+  { target: 'la sopa', native: 'soup', category: 'noun', gender: 'feminine' },
+  { target: 'la ensalada', native: 'salad', category: 'noun', gender: 'feminine' },
+  { target: 'el guacamole', native: 'guacamole', category: 'noun', gender: 'masculine' },
+  { target: 'los nachos', native: 'nachos', category: 'noun', gender: 'masculine' },
+  { target: 'el pollo', native: 'chicken', category: 'noun', gender: 'masculine' },
+  { target: 'la carne', native: 'beef/meat', category: 'noun', gender: 'feminine' },
+  { target: 'el pescado', native: 'fish', category: 'noun', gender: 'masculine' },
+  { target: 'los tacos', native: 'tacos', category: 'noun', gender: 'masculine' },
+  { target: 'las enchiladas', native: 'enchiladas', category: 'noun', gender: 'feminine' },
+  { target: 'el arroz', native: 'rice', category: 'noun', gender: 'masculine' },
+  { target: 'los frijoles', native: 'beans', category: 'noun', gender: 'masculine' },
+  { target: 'las papas fritas', native: 'french fries', category: 'noun', gender: 'feminine' },
+  { target: 'la hamburguesa', native: 'hamburger', category: 'noun', gender: 'feminine' },
+  { target: 'el flan', native: 'flan', category: 'noun', gender: 'masculine' },
+  { target: 'el helado', native: 'ice cream', category: 'noun', gender: 'masculine' },
+  { target: 'el pastel', native: 'cake', category: 'noun', gender: 'masculine' },
+  { target: 'los churros', native: 'churros', category: 'noun', gender: 'masculine' },
 
   // KEY VERBS - Ordering & Requesting
-  { spanish: 'quiero', english: 'I want', category: 'verb' },
-  { spanish: 'quieres', english: 'you want (informal)', category: 'verb' },
-  { spanish: 'quiere', english: 'he/she/you(formal) wants', category: 'verb' },
-  { spanish: 'queremos', english: 'we want', category: 'verb' },
-  { spanish: 'quisiera', english: 'I would like (polite)', category: 'verb' },
-  { spanish: 'pido', english: 'I order/ask for', category: 'verb' },
-  { spanish: 'pides', english: 'you order (informal)', category: 'verb' },
-  { spanish: 'pide', english: 'he/she orders', category: 'verb' },
-  { spanish: 'pedimos', english: 'we order', category: 'verb' },
+  { target: 'quiero', native: 'I want', category: 'verb' },
+  { target: 'quieres', native: 'you want (informal)', category: 'verb' },
+  { target: 'quiere', native: 'he/she/you(formal) wants', category: 'verb' },
+  { target: 'queremos', native: 'we want', category: 'verb' },
+  { target: 'quisiera', native: 'I would like (polite)', category: 'verb' },
+  { target: 'pido', native: 'I order/ask for', category: 'verb' },
+  { target: 'pides', native: 'you order (informal)', category: 'verb' },
+  { target: 'pide', native: 'he/she orders', category: 'verb' },
+  { target: 'pedimos', native: 'we order', category: 'verb' },
 
   // Payment & Service verbs
-  { spanish: 'pago', english: 'I pay', category: 'verb' },
-  { spanish: 'pagas', english: 'you pay', category: 'verb' },
-  { spanish: 'paga', english: 'he/she pays', category: 'verb' },
-  { spanish: 'traigo', english: 'I bring', category: 'verb' },
-  { spanish: 'traes', english: 'you bring', category: 'verb' },
-  { spanish: 'trae', english: 'he/she brings', category: 'verb' },
-  { spanish: 'dejo', english: 'I leave (tip)', category: 'verb' },
+  { target: 'pago', native: 'I pay', category: 'verb' },
+  { target: 'pagas', native: 'you pay', category: 'verb' },
+  { target: 'paga', native: 'he/she pays', category: 'verb' },
+  { target: 'traigo', native: 'I bring', category: 'verb' },
+  { target: 'traes', native: 'you bring', category: 'verb' },
+  { target: 'trae', native: 'he/she brings', category: 'verb' },
+  { target: 'dejo', native: 'I leave (tip)', category: 'verb' },
 
   // Request structures
-  { spanish: 'me trae...?', english: 'can you bring me...?', category: 'verb' },
-  { spanish: 'me puede traer...?', english: 'can you bring me...?', category: 'verb' },
-  { spanish: 'podria traerme...?', english: 'could you bring me...? (formal)', category: 'verb' },
+  { target: 'me trae...?', native: 'can you bring me...?', category: 'verb' },
+  { target: 'me puede traer...?', native: 'can you bring me...?', category: 'verb' },
+  { target: 'podria traerme...?', native: 'could you bring me...? (formal)', category: 'verb' },
 
   // Polite phrases
-  { spanish: 'por favor', english: 'please', category: 'other' },
-  { spanish: 'gracias', english: 'thank you', category: 'other' },
-  { spanish: 'muchas gracias', english: 'thank you very much', category: 'other' },
-  { spanish: 'de nada', english: 'you\'re welcome', category: 'other' },
-  { spanish: 'disculpe', english: 'excuse me (formal)', category: 'other' },
-  { spanish: 'perdon', english: 'sorry/pardon', category: 'other' },
-  { spanish: 'buenas noches', english: 'good evening', category: 'other' },
-  { spanish: 'buenas tardes', english: 'good afternoon', category: 'other' },
+  { target: 'por favor', native: 'please', category: 'other' },
+  { target: 'gracias', native: 'thank you', category: 'other' },
+  { target: 'muchas gracias', native: 'thank you very much', category: 'other' },
+  { target: 'de nada', native: 'you\'re welcome', category: 'other' },
+  { target: 'disculpe', native: 'excuse me (formal)', category: 'other' },
+  { target: 'perdon', native: 'sorry/pardon', category: 'other' },
+  { target: 'buenas noches', native: 'good evening', category: 'other' },
+  { target: 'buenas tardes', native: 'good afternoon', category: 'other' },
 
   // Restaurant phrases
-  { spanish: 'una mesa para uno', english: 'a table for one', category: 'other' },
-  { spanish: 'una mesa para dos', english: 'a table for two', category: 'other' },
-  { spanish: 'la cuenta, por favor', english: 'the bill, please', category: 'other' },
-  { spanish: 'que recomienda?', english: 'what do you recommend?', category: 'other' },
-  { spanish: 'que tiene...?', english: 'what does ... have?', category: 'other' },
-  { spanish: 'cuanto cuesta?', english: 'how much does it cost?', category: 'other' },
-  { spanish: 'cuanto es?', english: 'how much is it?', category: 'other' },
-  { spanish: 'esta delicioso!', english: 'it\'s delicious!', category: 'other' },
-  { spanish: 'muy rico!', english: 'very tasty!', category: 'other' },
+  { target: 'una mesa para uno', native: 'a table for one', category: 'other' },
+  { target: 'una mesa para dos', native: 'a table for two', category: 'other' },
+  { target: 'la cuenta, por favor', native: 'the bill, please', category: 'other' },
+  { target: 'que recomienda?', native: 'what do you recommend?', category: 'other' },
+  { target: 'que tiene...?', native: 'what does ... have?', category: 'other' },
+  { target: 'cuanto cuesta?', native: 'how much does it cost?', category: 'other' },
+  { target: 'cuanto es?', native: 'how much is it?', category: 'other' },
+  { target: 'esta delicioso!', native: 'it\'s delicious!', category: 'other' },
+  { target: 'muy rico!', native: 'very tasty!', category: 'other' },
 
   // Modifiers
-  { spanish: 'sin', english: 'without', category: 'other' },
-  { spanish: 'con', english: 'with', category: 'other' },
-  { spanish: 'mas', english: 'more', category: 'other' },
-  { spanish: 'menos', english: 'less', category: 'other' },
-  { spanish: 'otro', english: 'another (masc)', category: 'adjective' },
-  { spanish: 'otra', english: 'another (fem)', category: 'adjective' },
+  { target: 'sin', native: 'without', category: 'other' },
+  { target: 'con', native: 'with', category: 'other' },
+  { target: 'mas', native: 'more', category: 'other' },
+  { target: 'menos', native: 'less', category: 'other' },
+  { target: 'otro', native: 'another (masc)', category: 'adjective' },
+  { target: 'otra', native: 'another (fem)', category: 'adjective' },
 
   // Common modifications
-  { spanish: 'sin cebolla', english: 'without onion', category: 'other' },
-  { spanish: 'sin picante', english: 'not spicy', category: 'other' },
-  { spanish: 'bien cocido', english: 'well done', category: 'adjective' },
-  { spanish: 'termino medio', english: 'medium', category: 'other' },
+  { target: 'sin cebolla', native: 'without onion', category: 'other' },
+  { target: 'sin picante', native: 'not spicy', category: 'other' },
+  { target: 'bien cocido', native: 'well done', category: 'adjective' },
+  { target: 'termino medio', native: 'medium', category: 'other' },
 
   // Numbers for prices (key ones)
-  { spanish: 'cien', english: 'one hundred', category: 'other' },
-  { spanish: 'cincuenta', english: 'fifty', category: 'other' },
-  { spanish: 'veinticinco', english: 'twenty-five', category: 'other' },
+  { target: 'cien', native: 'one hundred', category: 'other' },
+  { target: 'cincuenta', native: 'fifty', category: 'other' },
+  { target: 'veinticinco', native: 'twenty-five', category: 'other' },
 
   // Adjectives
-  { spanish: 'delicioso', english: 'delicious', category: 'adjective' },
-  { spanish: 'rico', english: 'tasty/rich', category: 'adjective' },
-  { spanish: 'caliente', english: 'hot', category: 'adjective' },
-  { spanish: 'frio', english: 'cold', category: 'adjective' },
-  { spanish: 'picante', english: 'spicy', category: 'adjective' },
+  { target: 'delicioso', native: 'delicious', category: 'adjective' },
+  { target: 'rico', native: 'tasty/rich', category: 'adjective' },
+  { target: 'caliente', native: 'hot', category: 'adjective' },
+  { target: 'frio', native: 'cold', category: 'adjective' },
+  { target: 'picante', native: 'spicy', category: 'adjective' },
 
   // Bathroom vocabulary
-  { spanish: 'el bano', english: 'bathroom', category: 'noun', gender: 'masculine' },
-  { spanish: 'el inodoro', english: 'toilet', category: 'noun', gender: 'masculine' },
-  { spanish: 'el lavabo', english: 'sink', category: 'noun', gender: 'masculine' },
-  { spanish: 'el espejo', english: 'mirror', category: 'noun', gender: 'masculine' },
-  { spanish: 'el jabon', english: 'soap', category: 'noun', gender: 'masculine' },
-  { spanish: 'las toallas', english: 'towels', category: 'noun', gender: 'feminine' },
-  { spanish: 'las toallas de papel', english: 'paper towels', category: 'noun', gender: 'feminine' },
-  { spanish: 'el secador de manos', english: 'hand dryer', category: 'noun', gender: 'masculine' },
-  { spanish: 'donde esta el bano?', english: 'where is the bathroom?', category: 'other' },
+  { target: 'el bano', native: 'bathroom', category: 'noun', gender: 'masculine' },
+  { target: 'el inodoro', native: 'toilet', category: 'noun', gender: 'masculine' },
+  { target: 'el lavabo', native: 'sink', category: 'noun', gender: 'masculine' },
+  { target: 'el espejo', native: 'mirror', category: 'noun', gender: 'masculine' },
+  { target: 'el jabon', native: 'soap', category: 'noun', gender: 'masculine' },
+  { target: 'las toallas', native: 'towels', category: 'noun', gender: 'feminine' },
+  { target: 'las toallas de papel', native: 'paper towels', category: 'noun', gender: 'feminine' },
+  { target: 'el secador de manos', native: 'hand dryer', category: 'noun', gender: 'masculine' },
+  { target: 'donde esta el bano?', native: 'where is the bathroom?', category: 'other' },
 ];
 
 export const promptInstructions = `RESTAURANT NPCs:

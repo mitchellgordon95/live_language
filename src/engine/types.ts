@@ -46,16 +46,21 @@ export interface NPCState {
   wantsItem?: string;  // What they asked for (e.g., 'eggs', 'coffee')
 }
 
+export interface BilingualText {
+  target: string;   // Target language (e.g., Spanish, Mandarin)
+  native: string;   // Native language (e.g., English)
+}
+
 export interface NPC {
   id: string;
-  name: { spanish: string; english: string };
+  name: BilingualText;
   location: string;
   personality: string;
 }
 
 export interface Pet {
   id: string;
-  name: { spanish: string; english: string };
+  name: BilingualText;
   defaultLocation: string;
   personality: string;
 }
@@ -74,19 +79,19 @@ export interface GameTime {
 
 export interface Location {
   id: string;
-  name: { spanish: string; english: string };
+  name: BilingualText;
   objects: GameObject[];
   exits: Exit[];
 }
 
 export interface Exit {
   to: string;        // location id
-  name: { spanish: string; english: string };
+  name: BilingualText;
 }
 
 export interface GameObject {
   id: string;
-  name: { spanish: string; english: string };
+  name: BilingualText;
   state: ObjectState;
   actions: ActionType[];
   takeable?: boolean;
@@ -119,7 +124,7 @@ export type ActionType =
 
 export interface Item {
   id: string;
-  name: { spanish: string; english: string };
+  name: BilingualText;
   consumable?: boolean;
   needsEffect?: Partial<Needs>;
 }
@@ -134,10 +139,13 @@ export interface Goal {
 }
 
 export interface VocabWord {
-  spanish: string;
-  english: string;
+  target: string;
+  native: string;
   category: 'noun' | 'verb' | 'adjective' | 'other';
   gender?: 'masculine' | 'feminine';
+  // Mandarin-specific
+  pinyin?: string;
+  tones?: number[];
 }
 
 // AI Understanding types
@@ -170,7 +178,7 @@ export interface GrammarIssue {
 
 export interface AIResponse {
   successMessage: string;
-  spanishModel: string;
+  targetModel: string;
 }
 
 // Action execution types
@@ -207,8 +215,8 @@ export type FamiliarityStage = 'new' | 'learning' | 'known';
 
 export interface WordFamiliarity {
   wordId: string;              // Base word identifier (e.g., "refrigerator", "open")
-  spanishForms: string[];      // All Spanish forms ("nevera", "la nevera", "refrigerador")
-  englishForm: string;         // English translation
+  targetForms: string[];       // Target language forms ("nevera", "la nevera")
+  nativeForm: string;          // Native language translation
 
   timesUsedCorrectly: number;  // Player used this word successfully
   timesSeenInContext: number;  // Word appeared in scene/response

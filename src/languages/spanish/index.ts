@@ -1,0 +1,48 @@
+import type { LanguageConfig } from '../types.js';
+import { SPANISH_SYSTEM_PROMPT } from './prompt.js';
+import { stripArticles, findObjectByName } from './helpers.js';
+import { homeModule } from './modules/home.js';
+import { restaurantModule } from './modules/restaurant.js';
+import { clinicModule } from './modules/clinic.js';
+import { gymModule } from './modules/gym.js';
+import { parkModule } from './modules/park.js';
+import { marketModule } from './modules/market.js';
+import { bankModule } from './modules/bank.js';
+import { street } from './modules/home.js';
+
+export const spanishConfig: LanguageConfig = {
+  id: 'spanish',
+  displayName: 'Spanish',
+  nativeLanguage: 'english',
+  coreSystemPrompt: SPANISH_SYSTEM_PROMPT,
+  ttsVoice: 'Paulina',
+  aiFields: {
+    targetModel: 'spanishModel',
+    npcTargetField: 'spanish',
+    objectTargetName: 'spanishName',
+  },
+  stripArticles,
+  findObjectByName,
+  modules: [
+    homeModule,
+    {
+      name: 'street',
+      displayName: 'Street',
+      locations: { street },
+      npcs: [],
+      goals: [],
+      vocabulary: [],
+      startLocationId: 'street',
+      startGoalId: '',
+      locationIds: ['street'],
+      unlockLevel: 1,
+      promptInstructions: '',
+    },
+    restaurantModule,
+    marketModule,
+    parkModule,
+    gymModule,
+    clinicModule,
+    bankModule,
+  ],
+};

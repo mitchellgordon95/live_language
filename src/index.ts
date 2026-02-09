@@ -6,6 +6,7 @@ dotenv.config({ path: '.env.local' });
 
 import { runUnifiedMode } from './modes/unified.js';
 import { getModuleNames } from './data/module-registry.js';
+import { getLanguage, getAvailableLanguages, getDefaultLanguage } from './languages/index.js';
 
 export interface GameOptions {
   scriptFile?: string;
@@ -16,6 +17,7 @@ export interface GameOptions {
   module?: string;         // Start a specific module (e.g., 'restaurant')
   noAudio?: boolean;       // Disable text-to-speech
   profile?: string;        // Use a named profile for vocabulary tracking
+  language?: string;       // Target language (e.g., 'spanish', 'mandarin')
 }
 
 // Parse command line args
@@ -45,6 +47,9 @@ function parseArgs(): GameOptions {
       i++;
     } else if (arg === '--no-audio') {
       result.noAudio = true;
+    } else if (arg === '--language' && next) {
+      result.language = next;
+      i++;
     } else if (arg === '--profile' && next) {
       result.profile = next;
       i++;
@@ -60,6 +65,7 @@ Options:
   --standing               Start standing (not in bed)
   --module <name>          Start a specific module (${getModuleNames().join(', ')})
   --no-audio               Disable text-to-speech
+  --language <name>        Target language (${getAvailableLanguages().join(', ')}) [default: ${getDefaultLanguage()}]
   --profile <name>         Use a named profile for vocabulary tracking (e.g., 'friend' uses vocabulary-progress-friend.json)
   --help                   Show this help message
 
@@ -78,7 +84,16 @@ ${getModuleNames().map(m => `  npm start -- --module ${m}`).join('\n')}
 
 async function main(): Promise<void> {
   const options = parseArgs();
-  await runUnifiedMode(options);
+
+  // Resolve language config
+  const languageId = options.language || getDefaultLanguage();
+  const languageConfig = getLanguage(languageId);
+  if (!languageConfig) {
+    console.error(`Unknown language: ${languageId}. Available: ${getAvailableLanguages().join(', ')}`);
+    process.exit(1);
+  }
+
+  await runUnifiedMode(options, languageConfig);
 }
 
 main().catch(console.error);

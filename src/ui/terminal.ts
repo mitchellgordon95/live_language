@@ -1,7 +1,7 @@
 import type { GameState, AIUnderstandingResult, ActionResult, Goal, Intent } from '../engine/types.js';
 import { formatTime, getObjectState, getPointsForLevel, getBuildingForLocation, isBuildingUnlocked, BUILDING_UNLOCK_LEVELS } from '../engine/game-state.js';
 import { getWordIdFromObject, getFamiliaritySummary, getObjectLabel } from '../engine/vocabulary.js';
-import { pets, getPetsInLocation } from '../data/home-basics.js';
+import { pets, getPetsInLocation } from '../languages/spanish/modules/home.js';
 import { getNPCsInLocation, getDisplayName } from '../data/module-registry.js';
 
 const COLORS = {
@@ -35,7 +35,7 @@ export function printLocation(state: GameState): void {
   const loc = state.location;
   const position = state.playerPosition === 'in_bed' ? ' (in bed)' : '';
 
-  console.log(`${COLORS.blue}📍 Location:${COLORS.reset} ${loc.name.english} - ${loc.name.spanish}${position}`);
+  console.log(`${COLORS.blue}📍 Location:${COLORS.reset} ${loc.name.native} - ${loc.name.target}${position}`);
   console.log(`${COLORS.dim}⏰ Time: ${formatTime(state.time)}${COLORS.reset}`);
   console.log();
 }
@@ -100,9 +100,9 @@ export function printObjects(state: GameState): void {
       const locked = targetBuilding !== currentBuilding && !isBuildingUnlocked(state, targetBuilding);
       if (locked) {
         const requiredLevel = BUILDING_UNLOCK_LEVELS[targetBuilding];
-        return `${e.name.spanish} ${COLORS.yellow}🔒L${requiredLevel}${COLORS.dim}`;
+        return `${e.name.target} ${COLORS.yellow}🔒L${requiredLevel}${COLORS.dim}`;
       }
-      return e.name.spanish;
+      return e.name.target;
     });
     console.log(`${COLORS.dim}Exits: ${exitLabels.join(', ')}${COLORS.reset}`);
   }
@@ -147,16 +147,16 @@ export function printGoal(goal: Goal | null, showHint: boolean): void {
 
 export function printAvailableVerbs(state: GameState): void {
   // Collect verbs relevant to current context
-  const verbs: { spanish: string; english: string; wordId: string }[] = [];
+  const verbs: { target: string; native: string; wordId: string }[] = [];
 
   // Position-based verbs
   if (state.playerPosition === 'in_bed') {
-    verbs.push({ spanish: 'me levanto', english: 'I get up', wordId: 'i_get_up' });
-    verbs.push({ spanish: 'me despierto', english: 'I wake up', wordId: 'i_wake_up' });
+    verbs.push({ target: 'me levanto', native: 'I get up', wordId: 'i_get_up' });
+    verbs.push({ target: 'me despierto', native: 'I wake up', wordId: 'i_wake_up' });
   }
 
   // Location-based verbs
-  verbs.push({ spanish: 'voy a...', english: 'I go to...', wordId: 'i_go' });
+  verbs.push({ target: 'voy a...', native: 'I go to...', wordId: 'i_go' });
 
   // Object-based verbs
   const hasOpenable = state.location.objects.some(o => o.actions.includes('OPEN'));
@@ -165,31 +165,31 @@ export function printAvailableVerbs(state: GameState): void {
   const hasEdible = state.location.objects.some(o => o.consumable);
 
   if (hasOpenable) {
-    verbs.push({ spanish: 'abro', english: 'I open', wordId: 'i_open' });
-    verbs.push({ spanish: 'cierro', english: 'I close', wordId: 'i_close' });
+    verbs.push({ target: 'abro', native: 'I open', wordId: 'i_open' });
+    verbs.push({ target: 'cierro', native: 'I close', wordId: 'i_close' });
   }
   if (hasToggleable) {
-    verbs.push({ spanish: 'enciendo', english: 'I turn on', wordId: 'i_turn_on' });
-    verbs.push({ spanish: 'apago', english: 'I turn off', wordId: 'i_turn_off' });
+    verbs.push({ target: 'enciendo', native: 'I turn on', wordId: 'i_turn_on' });
+    verbs.push({ target: 'apago', native: 'I turn off', wordId: 'i_turn_off' });
   }
   if (hasTakeable) {
-    verbs.push({ spanish: 'tomo', english: 'I take', wordId: 'i_take_drink' });
+    verbs.push({ target: 'tomo', native: 'I take', wordId: 'i_take_drink' });
   }
   if (hasEdible) {
-    verbs.push({ spanish: 'como', english: 'I eat', wordId: 'i_eat' });
-    verbs.push({ spanish: 'bebo', english: 'I drink', wordId: 'i_drink' });
+    verbs.push({ target: 'como', native: 'I eat', wordId: 'i_eat' });
+    verbs.push({ target: 'bebo', native: 'I drink', wordId: 'i_drink' });
   }
 
   // Bathroom-specific
   if (state.location.id === 'bathroom') {
-    verbs.push({ spanish: 'me ducho', english: 'I shower', wordId: 'i_shower' });
-    verbs.push({ spanish: 'me cepillo', english: 'I brush', wordId: 'i_brush' });
-    verbs.push({ spanish: 'uso', english: 'I use', wordId: 'i_use' });
+    verbs.push({ target: 'me ducho', native: 'I shower', wordId: 'i_shower' });
+    verbs.push({ target: 'me cepillo', native: 'I brush', wordId: 'i_brush' });
+    verbs.push({ target: 'uso', native: 'I use', wordId: 'i_use' });
   }
 
   // Kitchen-specific
   if (state.location.id === 'kitchen') {
-    verbs.push({ spanish: 'cocino', english: 'I cook', wordId: 'i_cook' });
+    verbs.push({ target: 'cocino', native: 'I cook', wordId: 'i_cook' });
   }
 
   // NPC/Pet interactions
@@ -197,13 +197,13 @@ export function printAvailableVerbs(state: GameState): void {
   const petsHere = getPetsInLocation(state.location.id, state.petLocations);
 
   if (npcsHere.length > 0) {
-    verbs.push({ spanish: 'hablo con', english: 'I talk to', wordId: 'i_talk_to' });
-    verbs.push({ spanish: 'le doy', english: 'I give', wordId: 'i_give' });
+    verbs.push({ target: 'hablo con', native: 'I talk to', wordId: 'i_talk_to' });
+    verbs.push({ target: 'le doy', native: 'I give', wordId: 'i_give' });
   }
 
   if (petsHere.length > 0) {
-    verbs.push({ spanish: 'acaricio', english: 'I pet', wordId: 'i_pet' });
-    verbs.push({ spanish: 'le doy comida', english: 'I feed', wordId: 'i_feed' });
+    verbs.push({ target: 'acaricio', native: 'I pet', wordId: 'i_pet' });
+    verbs.push({ target: 'le doy comida', native: 'I feed', wordId: 'i_feed' });
   }
 
   console.log(`${COLORS.dim}Verbs: ${verbs.map(v => {
@@ -211,11 +211,11 @@ export function printAvailableVerbs(state: GameState): void {
     const stage = word?.stage || 'new';
 
     if (stage === 'new') {
-      return `${v.spanish} (${v.english})`;
+      return `${v.target} (${v.native})`;
     } else if (stage === 'learning') {
-      return `${v.spanish}${COLORS.cyan}◐${COLORS.reset}${COLORS.dim}`;
+      return `${v.target}${COLORS.cyan}◐${COLORS.reset}${COLORS.dim}`;
     } else {
-      return `${v.spanish}${COLORS.green}●${COLORS.reset}${COLORS.dim}`;
+      return `${v.target}${COLORS.green}●${COLORS.reset}${COLORS.dim}`;
     }
   }).join(', ')}${COLORS.reset}`);
   console.log();
@@ -224,7 +224,7 @@ export function printAvailableVerbs(state: GameState): void {
 export function printInventory(state: GameState): void {
   if (state.inventory.length === 0) return;
 
-  console.log(`${COLORS.dim}🎒 Inventory: ${state.inventory.map((i) => i.name.spanish).join(', ')}${COLORS.reset}`);
+  console.log(`${COLORS.dim}🎒 Inventory: ${state.inventory.map((i) => i.name.target).join(', ')}${COLORS.reset}`);
   console.log();
 }
 
@@ -249,7 +249,7 @@ export function printResults(
   // Show grammar feedback
   if (understanding.understood) {
     if (understanding.grammar.score === 100) {
-      console.log(`   ${COLORS.green}Perfect! ⭐${COLORS.reset} ${COLORS.dim}"${understanding.response.spanishModel}"${COLORS.reset}`);
+      console.log(`   ${COLORS.green}Perfect! ⭐${COLORS.reset} ${COLORS.dim}"${understanding.response.targetModel}"${COLORS.reset}`);
     } else if (understanding.grammar.issues.length > 0) {
       const issue = understanding.grammar.issues[0];
       console.log(`   ${COLORS.yellow}📝 Tip:${COLORS.reset} "${issue.corrected}" is more natural`);
@@ -336,7 +336,7 @@ export function printVocab(state: GameState): void {
   if (knownWords.length > 0) {
     console.log(`${COLORS.green}Known words:${COLORS.reset}`);
     for (const word of knownWords) {
-      console.log(`  ${COLORS.green}●${COLORS.reset} ${word.spanishForms[0]}`);
+      console.log(`  ${COLORS.green}●${COLORS.reset} ${word.targetForms[0]}`);
     }
     console.log();
   }
@@ -345,7 +345,7 @@ export function printVocab(state: GameState): void {
     console.log(`${COLORS.cyan}Learning:${COLORS.reset}`);
     for (const word of learningWords) {
       const progress = `${word.timesUsedCorrectly}/${THRESHOLDS.totalUsesToKnow} uses`;
-      console.log(`  ${COLORS.cyan}◐${COLORS.reset} ${word.spanishForms[0]} (${word.englishForm}) - ${progress}`);
+      console.log(`  ${COLORS.cyan}◐${COLORS.reset} ${word.targetForms[0]} (${word.nativeForm}) - ${progress}`);
     }
     console.log();
   }
@@ -370,12 +370,12 @@ export function printNPCsAndPets(state: GameState): void {
       const npcState = state.npcState[npc.id];
       let status = '';
       if (npcState?.mood) status = ` ${COLORS.dim}(${npcState.mood})${COLORS.reset}`;
-      const addressAs = getAddressableForm(npc.name.spanish);
-      console.log(`  • ${COLORS.cyan}${npc.name.spanish}${COLORS.reset} ${COLORS.dim}(${npc.name.english})${COLORS.reset}${status} ${COLORS.dim}- "${addressAs}"${COLORS.reset}`);
+      const addressAs = getAddressableForm(npc.name.target);
+      console.log(`  • ${COLORS.cyan}${npc.name.target}${COLORS.reset} ${COLORS.dim}(${npc.name.native})${COLORS.reset}${status} ${COLORS.dim}- "${addressAs}"${COLORS.reset}`);
     }
 
     for (const pet of petsHere) {
-      console.log(`  • ${pet.name.spanish} ${COLORS.dim}(${pet.name.english})${COLORS.reset}`);
+      console.log(`  • ${pet.name.target} ${COLORS.dim}(${pet.name.native})${COLORS.reset}`);
     }
 
     console.log();

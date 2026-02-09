@@ -1,5 +1,5 @@
-import type { Location, Goal, VocabWord, GameState, NPC, Pet, ModuleDefinition } from '../engine/types.js';
-import { getObjectState } from '../engine/game-state.js';
+import type { Location, Goal, VocabWord, GameState, NPC, Pet, ModuleDefinition } from '../../../engine/types.js';
+import { getObjectState } from '../../../engine/game-state.js';
 
 // ============================================================================
 // LOCATIONS
@@ -7,152 +7,152 @@ import { getObjectState } from '../engine/game-state.js';
 
 export const bedroom: Location = {
   id: 'bedroom',
-  name: { spanish: 'el dormitorio', english: 'bedroom' },
+  name: { target: 'el dormitorio', native: 'bedroom' },
   objects: [
     {
       id: 'bed',
-      name: { spanish: 'la cama', english: 'bed' },
+      name: { target: 'la cama', native: 'bed' },
       state: {},
       actions: [],
     },
     {
       id: 'alarm_clock',
-      name: { spanish: 'el despertador', english: 'alarm clock' },
+      name: { target: 'el despertador', native: 'alarm clock' },
       state: { ringing: true, on: true },
       actions: ['TURN_OFF'],
     },
     {
       id: 'window',
-      name: { spanish: 'la ventana', english: 'window' },
+      name: { target: 'la ventana', native: 'window' },
       state: { open: false },
       actions: ['OPEN', 'CLOSE'],
     },
     {
       id: 'lamp',
-      name: { spanish: 'la lámpara', english: 'lamp' },
+      name: { target: 'la lámpara', native: 'lamp' },
       state: { on: false },
       actions: ['TURN_ON', 'TURN_OFF'],
     },
     {
       id: 'closet',
-      name: { spanish: 'el armario', english: 'closet' },
+      name: { target: 'el armario', native: 'closet' },
       state: { open: false },
       actions: ['OPEN', 'CLOSE'],
     },
   ],
   exits: [
-    { to: 'bathroom', name: { spanish: 'el baño', english: 'bathroom' } },
-    { to: 'kitchen', name: { spanish: 'la cocina', english: 'kitchen' } },
-    { to: 'living_room', name: { spanish: 'la sala', english: 'living room' } },
+    { to: 'bathroom', name: { target: 'el baño', native: 'bathroom' } },
+    { to: 'kitchen', name: { target: 'la cocina', native: 'kitchen' } },
+    { to: 'living_room', name: { target: 'la sala', native: 'living room' } },
   ],
 };
 
 export const bathroom: Location = {
   id: 'bathroom',
-  name: { spanish: 'el baño', english: 'bathroom' },
+  name: { target: 'el baño', native: 'bathroom' },
   objects: [
     {
       id: 'sink',
-      name: { spanish: 'el lavabo', english: 'sink' },
+      name: { target: 'el lavabo', native: 'sink' },
       state: {},
       actions: ['USE'],
     },
     {
       id: 'mirror',
-      name: { spanish: 'el espejo', english: 'mirror' },
+      name: { target: 'el espejo', native: 'mirror' },
       state: {},
       actions: [],
     },
     {
       id: 'toilet',
-      name: { spanish: 'el inodoro', english: 'toilet' },
+      name: { target: 'el inodoro', native: 'toilet' },
       state: {},
       actions: ['USE'],
     },
     {
       id: 'shower',
-      name: { spanish: 'la ducha', english: 'shower' },
+      name: { target: 'la ducha', native: 'shower' },
       state: { on: false },
       actions: ['USE'],
     },
     {
       id: 'toothbrush',
-      name: { spanish: 'el cepillo de dientes', english: 'toothbrush' },
+      name: { target: 'el cepillo de dientes', native: 'toothbrush' },
       state: {},
       actions: ['USE'],
     },
     {
       id: 'towel',
-      name: { spanish: 'la toalla', english: 'towel' },
+      name: { target: 'la toalla', native: 'towel' },
       state: {},
       actions: ['USE', 'TAKE'],
       takeable: true,
     },
     {
       id: 'soap',
-      name: { spanish: 'el jabón', english: 'soap' },
+      name: { target: 'el jabón', native: 'soap' },
       state: {},
       actions: ['USE'],
     },
   ],
   exits: [
-    { to: 'bedroom', name: { spanish: 'el dormitorio', english: 'bedroom' } },
-    { to: 'kitchen', name: { spanish: 'la cocina', english: 'kitchen' } },
-    { to: 'living_room', name: { spanish: 'la sala', english: 'living room' } },
+    { to: 'bedroom', name: { target: 'el dormitorio', native: 'bedroom' } },
+    { to: 'kitchen', name: { target: 'la cocina', native: 'kitchen' } },
+    { to: 'living_room', name: { target: 'la sala', native: 'living room' } },
   ],
 };
 
 export const kitchen: Location = {
   id: 'kitchen',
-  name: { spanish: 'la cocina', english: 'kitchen' },
+  name: { target: 'la cocina', native: 'kitchen' },
   objects: [
     {
       id: 'refrigerator',
-      name: { spanish: 'la nevera', english: 'refrigerator' },
+      name: { target: 'la nevera', native: 'refrigerator' },
       state: { open: false, contains: ['milk', 'eggs', 'butter', 'juice'] },
       actions: ['OPEN', 'CLOSE'],
     },
     {
       id: 'stove',
-      name: { spanish: 'la estufa', english: 'stove' },
+      name: { target: 'la estufa', native: 'stove' },
       state: { on: false },
       actions: ['TURN_ON', 'TURN_OFF', 'COOK'],
     },
     {
       id: 'table',
-      name: { spanish: 'la mesa', english: 'table' },
+      name: { target: 'la mesa', native: 'table' },
       state: {},
       actions: [],
     },
     {
       id: 'chair',
-      name: { spanish: 'la silla', english: 'chair' },
+      name: { target: 'la silla', native: 'chair' },
       state: {},
       actions: [],
     },
     {
       id: 'coffee_maker',
-      name: { spanish: 'la cafetera', english: 'coffee maker' },
+      name: { target: 'la cafetera', native: 'coffee maker' },
       state: { on: false },
       actions: ['TURN_ON', 'TURN_OFF'],
     },
     {
       id: 'cup',
-      name: { spanish: 'la taza', english: 'cup' },
+      name: { target: 'la taza', native: 'cup' },
       state: {},
       actions: ['TAKE'],
       takeable: true,
     },
     {
       id: 'plate',
-      name: { spanish: 'el plato', english: 'plate' },
+      name: { target: 'el plato', native: 'plate' },
       state: {},
       actions: ['TAKE'],
       takeable: true,
     },
     {
       id: 'pan',
-      name: { spanish: 'la sartén', english: 'pan' },
+      name: { target: 'la sartén', native: 'pan' },
       state: {},
       actions: ['TAKE', 'USE'],
       takeable: true,
@@ -160,7 +160,7 @@ export const kitchen: Location = {
     // Food items (inside fridge, shown when fridge is open)
     {
       id: 'milk',
-      name: { spanish: 'la leche', english: 'milk' },
+      name: { target: 'la leche', native: 'milk' },
       state: { inFridge: true },
       actions: ['TAKE', 'DRINK'],
       takeable: true,
@@ -169,14 +169,14 @@ export const kitchen: Location = {
     },
     {
       id: 'eggs',
-      name: { spanish: 'los huevos', english: 'eggs' },
+      name: { target: 'los huevos', native: 'eggs' },
       state: { inFridge: true },
       actions: ['TAKE', 'COOK'],
       takeable: true,
     },
     {
       id: 'bread',
-      name: { spanish: 'el pan', english: 'bread' },
+      name: { target: 'el pan', native: 'bread' },
       state: {},
       actions: ['TAKE', 'EAT'],
       takeable: true,
@@ -185,14 +185,14 @@ export const kitchen: Location = {
     },
     {
       id: 'butter',
-      name: { spanish: 'la mantequilla', english: 'butter' },
+      name: { target: 'la mantequilla', native: 'butter' },
       state: { inFridge: true },
       actions: ['TAKE', 'USE'],
       takeable: true,
     },
     {
       id: 'coffee',
-      name: { spanish: 'el café', english: 'coffee' },
+      name: { target: 'el café', native: 'coffee' },
       state: {},
       actions: ['DRINK'],
       consumable: true,
@@ -200,7 +200,7 @@ export const kitchen: Location = {
     },
     {
       id: 'water',
-      name: { spanish: 'el agua', english: 'water' },
+      name: { target: 'el agua', native: 'water' },
       state: {},
       actions: ['DRINK'],
       consumable: true,
@@ -208,7 +208,7 @@ export const kitchen: Location = {
     },
     {
       id: 'juice',
-      name: { spanish: 'el jugo', english: 'juice' },
+      name: { target: 'el jugo', native: 'juice' },
       state: { inFridge: true },
       actions: ['TAKE', 'DRINK'],
       takeable: true,
@@ -217,87 +217,87 @@ export const kitchen: Location = {
     },
   ],
   exits: [
-    { to: 'bedroom', name: { spanish: 'el dormitorio', english: 'bedroom' } },
-    { to: 'bathroom', name: { spanish: 'el baño', english: 'bathroom' } },
-    { to: 'living_room', name: { spanish: 'la sala', english: 'living room' } },
+    { to: 'bedroom', name: { target: 'el dormitorio', native: 'bedroom' } },
+    { to: 'bathroom', name: { target: 'el baño', native: 'bathroom' } },
+    { to: 'living_room', name: { target: 'la sala', native: 'living room' } },
   ],
 };
 
 export const livingRoom: Location = {
   id: 'living_room',
-  name: { spanish: 'la sala', english: 'living room' },
+  name: { target: 'la sala', native: 'living room' },
   objects: [
     {
       id: 'couch',
-      name: { spanish: 'el sofá', english: 'couch' },
+      name: { target: 'el sofá', native: 'couch' },
       state: {},
       actions: [],
     },
     {
       id: 'tv',
-      name: { spanish: 'la televisión', english: 'TV' },
+      name: { target: 'la televisión', native: 'TV' },
       state: { on: false },
       actions: ['TURN_ON', 'TURN_OFF'],
     },
     {
       id: 'coffee_table',
-      name: { spanish: 'la mesa de centro', english: 'coffee table' },
+      name: { target: 'la mesa de centro', native: 'coffee table' },
       state: {},
       actions: [],
     },
     {
       id: 'bookshelf',
-      name: { spanish: 'la estantería', english: 'bookshelf' },
+      name: { target: 'la estantería', native: 'bookshelf' },
       state: {},
       actions: ['LOOK'],
     },
     {
       id: 'remote',
-      name: { spanish: 'el control remoto', english: 'remote control' },
+      name: { target: 'el control remoto', native: 'remote control' },
       state: {},
       actions: ['TAKE', 'USE'],
       takeable: true,
     },
     {
       id: 'pet_food',
-      name: { spanish: 'la comida para mascotas', english: 'pet food' },
+      name: { target: 'la comida para mascotas', native: 'pet food' },
       state: {},
       actions: ['TAKE'],
       takeable: true,
     },
   ],
   exits: [
-    { to: 'bedroom', name: { spanish: 'el dormitorio', english: 'bedroom' } },
-    { to: 'kitchen', name: { spanish: 'la cocina', english: 'kitchen' } },
-    { to: 'street', name: { spanish: 'la calle', english: 'street' } },
+    { to: 'bedroom', name: { target: 'el dormitorio', native: 'bedroom' } },
+    { to: 'kitchen', name: { target: 'la cocina', native: 'kitchen' } },
+    { to: 'street', name: { target: 'la calle', native: 'street' } },
   ],
 };
 
 export const street: Location = {
   id: 'street',
-  name: { spanish: 'la calle', english: 'street' },
+  name: { target: 'la calle', native: 'street' },
   objects: [
     {
       id: 'streetlamp',
-      name: { spanish: 'la farola', english: 'streetlamp' },
+      name: { target: 'la farola', native: 'streetlamp' },
       state: { on: true },
       actions: ['LOOK'],
     },
     {
       id: 'bench',
-      name: { spanish: 'el banco', english: 'bench' },
+      name: { target: 'el banco', native: 'bench' },
       state: {},
       actions: [],
     },
   ],
   exits: [
-    { to: 'living_room', name: { spanish: 'la casa', english: 'home' } },
-    { to: 'restaurant_entrance', name: { spanish: 'el restaurante', english: 'restaurant' } },
-    { to: 'clinic_reception', name: { spanish: 'la clinica', english: 'clinic' } },
-    { to: 'gym_entrance', name: { spanish: 'el gimnasio', english: 'gym' } },
-    { to: 'market_entrance', name: { spanish: 'el mercado', english: 'market' } },
-    { to: 'park_entrance', name: { spanish: 'el parque', english: 'park' } },
-    { to: 'bank_entrance', name: { spanish: 'el banco', english: 'bank' } },
+    { to: 'living_room', name: { target: 'la casa', native: 'home' } },
+    { to: 'restaurant_entrance', name: { target: 'el restaurante', native: 'restaurant' } },
+    { to: 'clinic_reception', name: { target: 'la clinica', native: 'clinic' } },
+    { to: 'gym_entrance', name: { target: 'el gimnasio', native: 'gym' } },
+    { to: 'market_entrance', name: { target: 'el mercado', native: 'market' } },
+    { to: 'park_entrance', name: { target: 'el parque', native: 'park' } },
+    { to: 'bank_entrance', name: { target: 'el banco', native: 'bank' } },
   ],
 };
 
@@ -316,7 +316,7 @@ export const locations: Record<string, Location> = {
 export const npcs: NPC[] = [
   {
     id: 'roommate',
-    name: { spanish: 'Carlos', english: 'Carlos' },
+    name: { target: 'Carlos', native: 'Carlos' },
     location: 'living_room',
     personality: 'Sleepy but friendly roommate. Just woke up, sitting on the couch. Wants coffee or breakfast. Speaks casually.',
   },
@@ -325,13 +325,13 @@ export const npcs: NPC[] = [
 export const pets: Pet[] = [
   {
     id: 'cat',
-    name: { spanish: 'el gato', english: 'cat' },
+    name: { target: 'el gato', native: 'cat' },
     defaultLocation: 'living_room',
     personality: 'Independent and aloof. Occasionally affectionate. Named Luna.',
   },
   {
     id: 'dog',
-    name: { spanish: 'el perro', english: 'dog' },
+    name: { target: 'el perro', native: 'dog' },
     defaultLocation: 'living_room',
     personality: 'Excited and hungry. Always wants attention and food. Named Max.',
   },
@@ -478,94 +478,94 @@ export function getStartGoal(): Goal {
 
 export const vocabulary: VocabWord[] = [
   // Rooms
-  { spanish: 'el dormitorio', english: 'bedroom', category: 'noun', gender: 'masculine' },
-  { spanish: 'el baño', english: 'bathroom', category: 'noun', gender: 'masculine' },
-  { spanish: 'la cocina', english: 'kitchen', category: 'noun', gender: 'feminine' },
+  { target: 'el dormitorio', native: 'bedroom', category: 'noun', gender: 'masculine' },
+  { target: 'el baño', native: 'bathroom', category: 'noun', gender: 'masculine' },
+  { target: 'la cocina', native: 'kitchen', category: 'noun', gender: 'feminine' },
 
   // Bedroom objects
-  { spanish: 'la cama', english: 'bed', category: 'noun', gender: 'feminine' },
-  { spanish: 'la ventana', english: 'window', category: 'noun', gender: 'feminine' },
-  { spanish: 'la lámpara', english: 'lamp', category: 'noun', gender: 'feminine' },
-  { spanish: 'el armario', english: 'closet', category: 'noun', gender: 'masculine' },
-  { spanish: 'el despertador', english: 'alarm clock', category: 'noun', gender: 'masculine' },
+  { target: 'la cama', native: 'bed', category: 'noun', gender: 'feminine' },
+  { target: 'la ventana', native: 'window', category: 'noun', gender: 'feminine' },
+  { target: 'la lámpara', native: 'lamp', category: 'noun', gender: 'feminine' },
+  { target: 'el armario', native: 'closet', category: 'noun', gender: 'masculine' },
+  { target: 'el despertador', native: 'alarm clock', category: 'noun', gender: 'masculine' },
 
   // Bathroom objects
-  { spanish: 'el lavabo', english: 'sink', category: 'noun', gender: 'masculine' },
-  { spanish: 'el espejo', english: 'mirror', category: 'noun', gender: 'masculine' },
-  { spanish: 'la ducha', english: 'shower', category: 'noun', gender: 'feminine' },
-  { spanish: 'el cepillo de dientes', english: 'toothbrush', category: 'noun', gender: 'masculine' },
-  { spanish: 'la toalla', english: 'towel', category: 'noun', gender: 'feminine' },
-  { spanish: 'el jabón', english: 'soap', category: 'noun', gender: 'masculine' },
+  { target: 'el lavabo', native: 'sink', category: 'noun', gender: 'masculine' },
+  { target: 'el espejo', native: 'mirror', category: 'noun', gender: 'masculine' },
+  { target: 'la ducha', native: 'shower', category: 'noun', gender: 'feminine' },
+  { target: 'el cepillo de dientes', native: 'toothbrush', category: 'noun', gender: 'masculine' },
+  { target: 'la toalla', native: 'towel', category: 'noun', gender: 'feminine' },
+  { target: 'el jabón', native: 'soap', category: 'noun', gender: 'masculine' },
 
   // Kitchen objects
-  { spanish: 'la nevera', english: 'refrigerator', category: 'noun', gender: 'feminine' },
-  { spanish: 'la estufa', english: 'stove', category: 'noun', gender: 'feminine' },
-  { spanish: 'la mesa', english: 'table', category: 'noun', gender: 'feminine' },
-  { spanish: 'la silla', english: 'chair', category: 'noun', gender: 'feminine' },
-  { spanish: 'la taza', english: 'cup', category: 'noun', gender: 'feminine' },
-  { spanish: 'el plato', english: 'plate', category: 'noun', gender: 'masculine' },
-  { spanish: 'la sartén', english: 'pan', category: 'noun', gender: 'feminine' },
+  { target: 'la nevera', native: 'refrigerator', category: 'noun', gender: 'feminine' },
+  { target: 'la estufa', native: 'stove', category: 'noun', gender: 'feminine' },
+  { target: 'la mesa', native: 'table', category: 'noun', gender: 'feminine' },
+  { target: 'la silla', native: 'chair', category: 'noun', gender: 'feminine' },
+  { target: 'la taza', native: 'cup', category: 'noun', gender: 'feminine' },
+  { target: 'el plato', native: 'plate', category: 'noun', gender: 'masculine' },
+  { target: 'la sartén', native: 'pan', category: 'noun', gender: 'feminine' },
 
   // Food
-  { spanish: 'la leche', english: 'milk', category: 'noun', gender: 'feminine' },
-  { spanish: 'los huevos', english: 'eggs', category: 'noun', gender: 'masculine' },
-  { spanish: 'el pan', english: 'bread', category: 'noun', gender: 'masculine' },
-  { spanish: 'la mantequilla', english: 'butter', category: 'noun', gender: 'feminine' },
-  { spanish: 'el café', english: 'coffee', category: 'noun', gender: 'masculine' },
-  { spanish: 'el agua', english: 'water', category: 'noun', gender: 'feminine' }, // feminine despite el
-  { spanish: 'el jugo', english: 'juice', category: 'noun', gender: 'masculine' },
+  { target: 'la leche', native: 'milk', category: 'noun', gender: 'feminine' },
+  { target: 'los huevos', native: 'eggs', category: 'noun', gender: 'masculine' },
+  { target: 'el pan', native: 'bread', category: 'noun', gender: 'masculine' },
+  { target: 'la mantequilla', native: 'butter', category: 'noun', gender: 'feminine' },
+  { target: 'el café', native: 'coffee', category: 'noun', gender: 'masculine' },
+  { target: 'el agua', native: 'water', category: 'noun', gender: 'feminine' }, // feminine despite el
+  { target: 'el jugo', native: 'juice', category: 'noun', gender: 'masculine' },
 
   // Verbs (yo form)
-  { spanish: 'me despierto', english: 'I wake up', category: 'verb' },
-  { spanish: 'me levanto', english: 'I get up', category: 'verb' },
-  { spanish: 'abro', english: 'I open', category: 'verb' },
-  { spanish: 'cierro', english: 'I close', category: 'verb' },
-  { spanish: 'enciendo', english: 'I turn on', category: 'verb' },
-  { spanish: 'apago', english: 'I turn off', category: 'verb' },
-  { spanish: 'tomo', english: 'I take/drink', category: 'verb' },
-  { spanish: 'como', english: 'I eat', category: 'verb' },
-  { spanish: 'cocino', english: 'I cook', category: 'verb' },
-  { spanish: 'me lavo', english: 'I wash myself', category: 'verb' },
-  { spanish: 'me cepillo', english: 'I brush', category: 'verb' },
-  { spanish: 'me ducho', english: 'I shower', category: 'verb' },
-  { spanish: 'pongo', english: 'I put', category: 'verb' },
-  { spanish: 'voy', english: 'I go', category: 'verb' },
-  { spanish: 'uso', english: 'I use', category: 'verb' },
+  { target: 'me despierto', native: 'I wake up', category: 'verb' },
+  { target: 'me levanto', native: 'I get up', category: 'verb' },
+  { target: 'abro', native: 'I open', category: 'verb' },
+  { target: 'cierro', native: 'I close', category: 'verb' },
+  { target: 'enciendo', native: 'I turn on', category: 'verb' },
+  { target: 'apago', native: 'I turn off', category: 'verb' },
+  { target: 'tomo', native: 'I take/drink', category: 'verb' },
+  { target: 'como', native: 'I eat', category: 'verb' },
+  { target: 'cocino', native: 'I cook', category: 'verb' },
+  { target: 'me lavo', native: 'I wash myself', category: 'verb' },
+  { target: 'me cepillo', native: 'I brush', category: 'verb' },
+  { target: 'me ducho', native: 'I shower', category: 'verb' },
+  { target: 'pongo', native: 'I put', category: 'verb' },
+  { target: 'voy', native: 'I go', category: 'verb' },
+  { target: 'uso', native: 'I use', category: 'verb' },
 
   // Living room
-  { spanish: 'la sala', english: 'living room', category: 'noun', gender: 'feminine' },
-  { spanish: 'el sofá', english: 'couch', category: 'noun', gender: 'masculine' },
-  { spanish: 'la televisión', english: 'TV', category: 'noun', gender: 'feminine' },
-  { spanish: 'la mesa de centro', english: 'coffee table', category: 'noun', gender: 'feminine' },
-  { spanish: 'la estantería', english: 'bookshelf', category: 'noun', gender: 'feminine' },
-  { spanish: 'el control remoto', english: 'remote control', category: 'noun', gender: 'masculine' },
+  { target: 'la sala', native: 'living room', category: 'noun', gender: 'feminine' },
+  { target: 'el sofá', native: 'couch', category: 'noun', gender: 'masculine' },
+  { target: 'la televisión', native: 'TV', category: 'noun', gender: 'feminine' },
+  { target: 'la mesa de centro', native: 'coffee table', category: 'noun', gender: 'feminine' },
+  { target: 'la estantería', native: 'bookshelf', category: 'noun', gender: 'feminine' },
+  { target: 'el control remoto', native: 'remote control', category: 'noun', gender: 'masculine' },
 
   // Pets
-  { spanish: 'el gato', english: 'cat', category: 'noun', gender: 'masculine' },
-  { spanish: 'el perro', english: 'dog', category: 'noun', gender: 'masculine' },
-  { spanish: 'la mascota', english: 'pet', category: 'noun', gender: 'feminine' },
-  { spanish: 'la comida para mascotas', english: 'pet food', category: 'noun', gender: 'feminine' },
+  { target: 'el gato', native: 'cat', category: 'noun', gender: 'masculine' },
+  { target: 'el perro', native: 'dog', category: 'noun', gender: 'masculine' },
+  { target: 'la mascota', native: 'pet', category: 'noun', gender: 'feminine' },
+  { target: 'la comida para mascotas', native: 'pet food', category: 'noun', gender: 'feminine' },
 
   // Conversation verbs
-  { spanish: 'hablo con', english: 'I talk to', category: 'verb' },
-  { spanish: 'le pregunto', english: 'I ask him/her', category: 'verb' },
-  { spanish: 'le doy', english: 'I give him/her', category: 'verb' },
-  { spanish: 'acaricio', english: 'I pet/stroke', category: 'verb' },
-  { spanish: 'juego con', english: 'I play with', category: 'verb' },
+  { target: 'hablo con', native: 'I talk to', category: 'verb' },
+  { target: 'le pregunto', native: 'I ask him/her', category: 'verb' },
+  { target: 'le doy', native: 'I give him/her', category: 'verb' },
+  { target: 'acaricio', native: 'I pet/stroke', category: 'verb' },
+  { target: 'juego con', native: 'I play with', category: 'verb' },
 
   // Greetings
-  { spanish: 'hola', english: 'hello', category: 'other' },
-  { spanish: 'buenos días', english: 'good morning', category: 'other' },
-  { spanish: '¿qué quieres?', english: 'what do you want?', category: 'other' },
+  { target: 'hola', native: 'hello', category: 'other' },
+  { target: 'buenos días', native: 'good morning', category: 'other' },
+  { target: '¿qué quieres?', native: 'what do you want?', category: 'other' },
 
   // Other
-  { spanish: 'a', english: 'to', category: 'other' },
-  { spanish: 'de', english: 'of/from', category: 'other' },
-  { spanish: 'el', english: 'the (masc.)', category: 'other' },
-  { spanish: 'la', english: 'the (fem.)', category: 'other' },
-  { spanish: 'y', english: 'and', category: 'other' },
-  { spanish: 'con', english: 'with', category: 'other' },
-  { spanish: 'para', english: 'for', category: 'other' },
+  { target: 'a', native: 'to', category: 'other' },
+  { target: 'de', native: 'of/from', category: 'other' },
+  { target: 'el', native: 'the (masc.)', category: 'other' },
+  { target: 'la', native: 'the (fem.)', category: 'other' },
+  { target: 'y', native: 'and', category: 'other' },
+  { target: 'con', native: 'with', category: 'other' },
+  { target: 'para', native: 'for', category: 'other' },
 ];
 
 export const promptInstructions = `NPC INTERACTIONS:

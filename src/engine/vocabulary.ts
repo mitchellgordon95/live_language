@@ -4,7 +4,7 @@ import type {
   FamiliarityStage,
   GameObject,
 } from './types.js';
-import { vocabulary as vocabData } from '../data/home-basics.js';
+import { vocabulary as vocabData } from '../languages/spanish/modules/home.js';
 
 // Stage transition thresholds
 const THRESHOLDS = {
@@ -24,11 +24,11 @@ export function createInitialVocabulary(): VocabularyProgress {
 
   // Initialize from vocab data
   for (const word of vocabData) {
-    const wordId = word.english.toLowerCase().replace(/[^a-z0-9]/g, '_');
+    const wordId = word.native.toLowerCase().replace(/[^a-z0-9]/g, '_');
     words[wordId] = {
       wordId,
-      spanishForms: [word.spanish, word.spanish.replace(/^(el|la|los|las)\s+/, '')],
-      englishForm: word.english,
+      targetForms: [word.target, word.target.replace(/^(el|la|los|las)\s+/, '')],
+      nativeForm: word.native,
       timesUsedCorrectly: 0,
       timesSeenInContext: 0,
       usesSinceLearning: 0,
@@ -173,17 +173,17 @@ export function recordHintUsed(
 }
 
 export function getWordIdFromObject(obj: GameObject): string {
-  return obj.name.english.toLowerCase().replace(/[^a-z0-9]/g, '_');
+  return obj.name.native.toLowerCase().replace(/[^a-z0-9]/g, '_');
 }
 
-export function getWordIdFromSpanish(
-  spanishText: string,
+export function getWordIdFromTarget(
+  targetText: string,
   vocab: VocabularyProgress
 ): string | null {
-  const normalized = spanishText.toLowerCase().trim();
+  const normalized = targetText.toLowerCase().trim();
 
   for (const [wordId, word] of Object.entries(vocab.words)) {
-    for (const form of word.spanishForms) {
+    for (const form of word.targetForms) {
       if (form.toLowerCase() === normalized || normalized.includes(form.toLowerCase())) {
         return wordId;
       }
@@ -202,13 +202,13 @@ export function getObjectLabel(
 
   if (!word || word.stage === 'new') {
     // Full label: Spanish (English)
-    return `${obj.name.spanish} (${obj.name.english})`;
+    return `${obj.name.target} (${obj.name.native})`;
   } else if (word.stage === 'learning') {
     // Spanish only
-    return obj.name.spanish;
+    return obj.name.target;
   } else {
     // Known - minimal label
-    return obj.name.spanish; // Still show Spanish for now, could be just icon later
+    return obj.name.target; // Still show Spanish for now, could be just icon later
   }
 }
 
@@ -247,7 +247,7 @@ export function extractWordsFromText(
   const normalized = text.toLowerCase();
 
   for (const [wordId, word] of Object.entries(vocab.words)) {
-    for (const form of word.spanishForms) {
+    for (const form of word.targetForms) {
       if (normalized.includes(form.toLowerCase())) {
         if (!foundWords.includes(wordId)) {
           foundWords.push(wordId);

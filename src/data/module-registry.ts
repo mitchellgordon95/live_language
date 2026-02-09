@@ -1,14 +1,14 @@
 import type { Location, Goal, VocabWord, NPC, Pet, ModuleDefinition } from '../engine/types.js';
 
-// Import self-describing module definitions
-import { homeModule } from './home-basics.js';
-import { restaurantModule } from './restaurant-module.js';
-import { clinicModule } from './clinic-module.js';
-import { gymModule } from './gym-module.js';
-import { parkModule } from './park-module.js';
-import { marketModule } from './market-module.js';
-import { bankModule } from './bank-module.js';
-import { street } from './home-basics.js';
+// Import self-describing module definitions from Spanish language
+import { homeModule } from '../languages/spanish/modules/home.js';
+import { restaurantModule } from '../languages/spanish/modules/restaurant.js';
+import { clinicModule } from '../languages/spanish/modules/clinic.js';
+import { gymModule } from '../languages/spanish/modules/gym.js';
+import { parkModule } from '../languages/spanish/modules/park.js';
+import { marketModule } from '../languages/spanish/modules/market.js';
+import { bankModule } from '../languages/spanish/modules/bank.js';
+import { street } from '../languages/spanish/modules/home.js';
 
 export type { ModuleDefinition };
 
