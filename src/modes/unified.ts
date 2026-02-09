@@ -26,53 +26,9 @@ import {
   BUILDING_UNLOCK_LEVELS,
   type BuildingName,
 } from '../engine/game-state.js';
-import { bedroom, getStartGoal, getGoalById, locations as homeLocations, getNPCsInLocation as getHomeNPCsInLocation, getPetsInLocation, npcs, pets } from '../data/home-basics.js';
-import { restaurantLocations, restaurantNPCs, getRestaurantNPCsInLocation, restaurantGoals, getRestaurantGoalById, getRestaurantStartGoal } from '../data/restaurant-module.js';
-import { clinicLocations, clinicNPCs, getClinicNPCsInLocation, clinicGoals, getClinicGoalById, getClinicStartGoal, clinicVocabulary } from '../data/clinic-module.js';
-import { gymLocations, gymNPCs, getGymNPCsInLocation, gymGoals, getGymGoalById, getGymStartGoal, gymVocabulary } from '../data/gym-module.js';
-import { parkLocations, parkNpcs, getParkNPCsInLocation, parkGoals, getParkGoalById, getParkStartGoal, parkVocabulary } from '../data/park-module.js';
-import { marketLocations, marketNPCs, getMarketNPCsInLocation, marketGoals, getMarketGoalById, getMarketStartGoal, marketVocabulary } from '../data/market-module.js';
-import { bankLocations, bankNPCs, getBankNPCsInLocation, bankGoals, getBankGoalById, getBankStartGoal, bankVocabulary } from '../data/bank-module.js';
+import { getPetsInLocation } from '../data/home-basics.js';
+import { allLocations as locations, allNPCs, getNPCsInLocation, getGoalById as getGoalByIdCombined, getStartGoalForBuilding, getModuleByName, getPromptInstructionsForBuilding } from '../data/module-registry.js';
 import { speak } from '../audio/speak.js';
-
-// Merge all locations from home, restaurant, clinic, gym, park, market, and bank modules
-const locations: Record<string, typeof homeLocations[keyof typeof homeLocations]> = {
-  ...homeLocations,
-  ...restaurantLocations,
-  ...clinicLocations,
-  ...gymLocations,
-  ...parkLocations,
-  ...marketLocations,
-  ...bankLocations,
-};
-
-// Merge all NPCs from home, restaurant, clinic, gym, park, market, and bank modules
-const allNPCs = [...npcs, ...restaurantNPCs, ...clinicNPCs, ...gymNPCs, ...parkNpcs, ...marketNPCs, ...bankNPCs];
-
-// Combined NPC lookup
-function getNPCsInLocation(locationId: string) {
-  return allNPCs.filter(npc => npc.location === locationId);
-}
-
-// Combined goal lookup
-function getGoalByIdCombined(id: string) {
-  return getGoalById(id) || getRestaurantGoalById(id) || getClinicGoalById(id) || getGymGoalById(id) || getParkGoalById(id) || getMarketGoalById(id) || getBankGoalById(id);
-}
-
-// Get start goal for a building
-function getStartGoalForBuilding(building: BuildingName): Goal | null {
-  switch (building) {
-    case 'home': return getStartGoal();
-    case 'restaurant': return getRestaurantStartGoal();
-    case 'clinic': return getClinicStartGoal();
-    case 'gym': return getGymStartGoal();
-    case 'park': return getParkStartGoal();
-    case 'market': return getMarketStartGoal();
-    case 'bank': return getBankStartGoal();
-    case 'street': return null; // Street uses mini-goals (TODO: add street goals)
-    default: return null;
-  }
-}
 
 // Handle transitioning to a new building - load goals and update state
 function handleBuildingTransition(state: GameState, newBuilding: BuildingName): GameState {
@@ -306,7 +262,7 @@ ${goalDesc}
 Completed goals: ${completedGoalsDesc}`;
 }
 
-const SYSTEM_PROMPT = `You are the game engine for a Spanish language learning life simulation. The player types commands in Spanish to control their character.
+const CORE_SYSTEM_PROMPT = `You are the game engine for a Spanish language learning life simulation. The player types commands in Spanish to control their character.
 
 Your job:
 1. Understand their Spanish input (be generous - if a native speaker would understand, accept it)
@@ -459,11 +415,6 @@ COMMON ACTIONS:
 - "me ducho" → actions: [{ "type": "use", "objectId": "shower" }], needsChanges: { hygiene: 50 }, goalComplete: ["take_shower"]
 - "me cepillo los dientes" → actions: [{ "type": "use", "objectId": "toothbrush" }], needsChanges: { hygiene: 10 }, goalComplete: ["brush_teeth"]
 
-NPC INTERACTIONS:
-- "hola carlos" → actions: [{ "type": "talk", "npcId": "roommate" }], goalComplete: ["greet_roommate"]
-- "¿qué quieres para desayunar?" → actions: [{ "type": "talk", "npcId": "roommate" }], goalComplete: ["ask_roommate_breakfast"], npcResponse with wantsItem
-- "le doy los huevos a carlos" → actions: [{ "type": "give", "objectId": "eggs", "npcId": "roommate" }]
-
 ADDRESSING NPCs (Spanish patterns to teach):
 Players can address NPCs by name, title, or role. These are natural Spanish patterns:
 - "Carlos, buenos días" (name first, with comma)
@@ -479,142 +430,6 @@ If multiple NPCs are present and the player doesn't specify who they're talking 
 
 The UI shows NPCs with both their role and name - players can use either.
 
-PET INTERACTIONS:
-- "acaricio al gato" → actions: [{ "type": "pet", "petId": "cat" }]
-- "le doy comida al perro" → actions: [{ "type": "feed", "petId": "dog" }], goalComplete: ["feed_pets"]
-
-NPC PERSONALITIES:
-- Carlos (roommate): Sleepy, friendly, casual speech. In the morning, wants coffee or breakfast (eggs, toast).
-- Luna (cat): Independent, aloof. Responds with purring or ignoring.
-- Max (dog): Excited, eager. Responds with tail wagging and barking.
-
-RESTAURANT NPCs:
-- Host (anfitrion): Professional, welcoming. Greets with "Buenas noches" or "Buenas tardes". Asks "Mesa para cuantos?" (Table for how many?). Uses formal "usted".
-- Waiter (mesero, Diego): Friendly, attentive. Takes drink orders first with "Que desea tomar?", then food with "Ya decidio?". Says "Enseguida" (right away) and "Algo mas?" (anything else?).
-- Chef (Rosa): Busy, passionate about food. Occasionally checks on diners. Speaks quickly.
-
-RESTAURANT INTERACTIONS:
-- "buenas noches" or "una mesa para uno, por favor" at entrance → actions: [{ "type": "talk", "npcId": "host" }], goalComplete: ["seated_by_host"], npcResponse from host, npcActions: [{ "npcId": "host", "type": "move_player", "locationId": "restaurant_table" }]
-- "quiero una limonada" → actions: [{ "type": "talk", "npcId": "waiter" }], goalComplete: ["ordered_drink"], npcResponse from waiter, npcActions: [{ "npcId": "waiter", "type": "add_object", "locationId": "restaurant_table", "object": { "id": "my_limonada", "spanishName": "la limonada", "englishName": "lemonade", "actions": ["DRINK"], "consumable": true, "needsEffect": { "hunger": 5 } } }]
-- "quisiera agua" → actions: [{ "type": "talk", "npcId": "waiter" }], goalComplete: ["ordered_drink"], npcResponse from waiter, npcActions: [{ "npcId": "waiter", "type": "add_object", "locationId": "restaurant_table", "object": { "id": "my_agua", "spanishName": "el agua", "englishName": "water", "actions": ["DRINK"], "consumable": true } }]
-- "abro el menu" or "miro el menu" or "leo el menu" → actions: [{ "type": "open", "objectId": "menu" }], goalComplete: ["read_menu"]
-  IMPORTANT: When player opens/reads the menu, your message MUST include the menu contents:
-  "You open the menu and see: BEBIDAS: agua (gratis), refresco ($25), limonada ($30), cerveza ($45), vino ($65), cafe ($35). ENTRADAS: sopa del dia ($55), ensalada ($50), guacamole ($60). PLATOS: pollo asado ($120), carne asada ($150), pescado ($140), tacos ($95), enchiladas ($105), hamburguesa ($100). POSTRES: flan ($50), helado ($45), churros ($40)."
-- "quiero el pollo asado" → actions: [{ "type": "talk", "npcId": "waiter" }], goalComplete: ["ordered_food"], npcResponse from waiter, npcActions: [{ "npcId": "waiter", "type": "add_object", "locationId": "restaurant_table", "object": { "id": "my_pollo", "spanishName": "el pollo asado", "englishName": "grilled chicken", "actions": ["EAT"], "consumable": true, "needsEffect": { "hunger": 40 } } }]
-- "quisiera los tacos" → actions: [{ "type": "talk", "npcId": "waiter" }], goalComplete: ["ordered_food"], npcResponse from waiter, npcActions: [{ "npcId": "waiter", "type": "add_object", "locationId": "restaurant_table", "object": { "id": "my_tacos", "spanishName": "los tacos", "englishName": "tacos", "actions": ["EAT"], "consumable": true, "needsEffect": { "hunger": 35 } } }]
-- "como el pollo" or "como los tacos" → actions: [{ "type": "eat", "objectId": "my_pollo" or "my_tacos" (use the actual delivered food ID) }], goalComplete: ["ate_meal"], needsChanges: { hunger: 40 }
-- "la cuenta, por favor" → actions: [{ "type": "talk", "npcId": "waiter" }], goalComplete: ["asked_for_bill"], npcResponse from waiter, npcActions: [{ "npcId": "waiter", "type": "change_object", "objectId": "bill", "changes": { "delivered": true, "total": 150 } }]
-- "pago la cuenta" → actions: [{ "type": "use", "objectId": "bill" }], goalComplete: ["paid_bill"]
-- "donde esta el bano?" or "voy al bano" → Player can go to restaurant_bathroom
-NOTE: When player orders food/drink, use add_object with an ID like "my_pollo", "my_tacos", "my_limonada", etc. The ID should match what they ordered!
-
-KEY SPANISH FOR ORDERING (teach these patterns):
-- "Quiero..." (I want...) - direct but acceptable
-- "Quisiera..." (I would like...) - more polite
-- "Me trae...?" (Can you bring me...?)
-- "sin" (without) - "sin cebolla" (without onion)
-- "con" (with) - "con arroz" (with rice)
-
-CLINIC NPCs:
-- Receptionist (Maria): Professional and helpful. Uses formal "usted". Asks "Tiene cita?" (Do you have an appointment?), "Cual es su nombre?" (What is your name?), "Por favor, llene este formulario" (Please fill out this form).
-- Doctor (Dr. Garcia): Kind and thorough. Uses formal "usted". Asks "Que le pasa?" and "Donde le duele?". Gives commands: "Abra la boca", "Respire profundo", "Suba la manga". Explains diagnosis and writes prescriptions.
-- Pharmacist (Roberto): Friendly. Explains dosage: "Tome una pastilla cada ocho horas" (Take one pill every eight hours), "Con comida" (With food). Asks "Tiene la receta?" (Do you have the prescription?).
-
-CLINIC INTERACTIONS:
-- "Buenos dias" or "Tengo cita" at reception → actions: [{ "type": "talk", "npcId": "receptionist" }], goalComplete: ["clinic_check_in"], npcResponse from receptionist
-- "Lleno el formulario" → actions: [{ "type": "use", "objectId": "registration_form" }], goalComplete: ["filled_form"]
-- "Me siento" in waiting room → goalComplete: ["waited"]
-- "Me duele la cabeza" or "Tengo fiebre" to doctor → actions: [{ "type": "talk", "npcId": "doctor" }], goalComplete: ["described_symptoms"], npcResponse from doctor
-- "Si, doctor" or "Abro la boca" (following commands) → actions: [{ "type": "talk", "npcId": "doctor" }], goalComplete: ["followed_commands"]
-- "Tomo la receta" → actions: [{ "type": "take", "objectId": "prescription" }], goalComplete: ["got_prescription"]
-- "Aqui esta mi receta" to pharmacist → actions: [{ "type": "talk", "npcId": "pharmacist" }], goalComplete: ["got_medicine"], npcResponse from pharmacist
-
-KEY SPANISH FOR MEDICAL VISITS (teach these patterns):
-- "Me duele..." (My ... hurts) - "Me duele la cabeza" (My head hurts)
-- "Tengo..." (I have...) - "Tengo fiebre" (I have a fever), "Tengo tos" (I have a cough)
-- "No me siento bien" (I don't feel well)
-- Formal commands (usted): "Abra" (Open), "Respire" (Breathe), "Saque" (Stick out)
-
-GYM NPCs:
-- Ana (receptionist_ana): Friendly, energetic receptionist at gym_entrance. Greets with "Bienvenido al gimnasio!" Asks for membership card: "Tu tarjeta, por favor". Uses informal "tu" with regulars.
-- Marco (trainer_marco): Motivational personal trainer on training_floor. Uses imperative commands: "Levanta!" (Lift!), "Respira!" (Breathe!), "Descansa!" (Rest!). Counts reps in Spanish. Enthusiastic about fitness.
-- Sofia (member_sofia): Regular gym member in cardio_zone. Chatty and friendly. Talks about frequency: "Vengo tres veces a la semana" (I come three times a week). Happy to share tips.
-
-GYM INTERACTIONS:
-- "hola" or "aqui esta mi tarjeta" at gym_entrance → actions: [{ "type": "talk", "npcId": "receptionist_ana" }], goalComplete: ["checked_in", "gym_check_in"], npcResponse from Ana
-- "me estiro" or "uso la colchoneta" in stretching_area → actions: [{ "type": "use", "objectId": "yoga_mat" }], goalComplete: ["warmed_up", "stretched", "gym_warm_up"], needsChanges: { energy: -5 }
-- Following trainer commands like "levanto los brazos" → actions: [{ "type": "use", "objectId": "training_bench" }], goalComplete: ["followed_trainer", "gym_follow_trainer"], needsChanges: { energy: -10 }
-- "uso la cinta de correr" or "corro" in cardio_zone → actions: [{ "type": "use", "objectId": "treadmill" }], goalComplete: ["did_cardio", "gym_cardio"], needsChanges: { energy: -15 }
-- "levanto las mancuernas" or "hago repeticiones" in weight_room → actions: [{ "type": "use", "objectId": "dumbbells" }], goalComplete: ["lifted_weights", "gym_weights"], needsChanges: { energy: -10 }
-- "me ducho" in locker_room → actions: [{ "type": "use", "objectId": "gym_shower" }], goalComplete: ["showered", "gym_cool_down"], needsChanges: { hygiene: 30 }
-
-KEY SPANISH FOR GYM (teach these patterns):
-- Imperatives (trainer commands): "Levanta!" (Lift!), "Baja!" (Lower!), "Respira!" (Breathe!)
-- Reflexive verbs: "Me estiro" (I stretch), "Me caliento" (I warm up), "Me ducho" (I shower)
-- Frequency: "tres veces a la semana" (three times a week), "cada dia" (every day)
-- Body parts: "los brazos" (arms), "las piernas" (legs), "el pecho" (chest)
-- Exercise terms: "las repeticiones" (reps), "las series" (sets), "el descanso" (rest)
-
-BANK NPCs:
-- Security Guard (Roberto): Professional security guard. Greets customers formally with "Buenos dias" or "Buenas tardes". Uses "usted" exclusively. Will direct customers inside and explain they need to take a number. Key phrases: "Bienvenido al banco" (Welcome to the bank), "Pase adelante" (Go ahead), "Tome un numero, por favor" (Take a number, please).
-- Bank Teller (Maria Elena): Friendly and efficient bank teller. Always uses formal "usted" and polite conditionals. Patient with customers. Key phrases: "En que le puedo ayudar?" (How may I help you?), "Me permite su identificacion?" (May I see your ID?), "Cuanto desea depositar/retirar?" (How much would you like to deposit/withdraw?), "Algo mas en lo que le pueda servir?" (Anything else I can help you with?).
-- Bank Manager (Senor Mendoza): Distinguished bank manager. Very formal and professional. Uses elaborate courtesy phrases and conditional tense. Handles special accounts, loans, and complaints. Key phrases: "Tome asiento, por favor" (Please have a seat), "En que podria ayudarle hoy?" (How might I help you today?).
-
-BANK INTERACTIONS:
-- "Buenos dias" or "Buenas tardes" at entrance → actions: [{ "type": "talk", "npcId": "bank_guard" }], goalComplete: ["greeted_guard"], npcResponse from bank_guard
-- "Tomo un numero" or "Uso el dispensador" → actions: [{ "type": "use", "objectId": "number_dispenser" }], goalComplete: ["took_number"]
-- Greet teller at window → actions: [{ "type": "talk", "npcId": "bank_teller" }], goalComplete: ["greeted_teller"]
-- "Quisiera consultar mi saldo" → actions: [{ "type": "talk", "npcId": "bank_teller" }], goalComplete: ["checked_balance"], npcResponse from bank_teller
-- "Quisiera depositar quinientos pesos" → actions: [{ "type": "talk", "npcId": "bank_teller" }], goalComplete: ["made_deposit"], npcResponse from bank_teller
-- "Quisiera retirar doscientos pesos" → actions: [{ "type": "talk", "npcId": "bank_teller" }], goalComplete: ["made_withdrawal"], npcResponse from bank_teller
-- "Me puede dar un recibo?" → actions: [{ "type": "talk", "npcId": "bank_teller" }], goalComplete: ["got_receipt"], npcResponse from bank_teller
-- "Muchas gracias" or "Hasta luego" to teller → actions: [{ "type": "talk", "npcId": "bank_teller" }], goalComplete: ["said_goodbye"], npcResponse from bank_teller
-
-KEY SPANISH FOR BANKING (teach these patterns):
-- "Quisiera..." (I would like...) - very polite conditional form
-- "Podria...?" (Could you...?) - polite requests
-- Large numbers: "cien" (100), "doscientos" (200), "quinientos" (500), "mil" (1000)
-- "El saldo" (balance), "El deposito" (deposit), "El retiro" (withdrawal)
-- "El recibo" / "El comprobante" (receipt)
-- Formal "usted" forms: "tiene", "desea", "puede"
-
-PARK NPCs:
-- Senor Gomez (ice_cream_vendor): Friendly elderly ice cream vendor at the kiosk. Talks about weather constantly. Recommends flavors based on temperature. Speaks slowly and clearly.
-- Don Ramon (pigeon_feeder): Quiet elderly man at the fountain who feeds pigeons. Observes nature and uses present progressive to describe ongoing actions. Very patient and kind.
-
-PARK INTERACTIONS (Weather and Present Progressive Focus):
-- "hace buen tiempo" or "hace sol" → goalComplete: ["commented_weather", "check_weather"], present tense weather expressions
-- "estoy caminando por el sendero" → goalComplete: ["walk_the_path"], practice present progressive
-- "la ardilla esta corriendo" or "los pajaros estan volando" → goalComplete: ["observed_animals", "observe_nature"], describe what animals are doing
-- "hola senor, que esta haciendo?" to Don Ramon → actions: [{ "type": "talk", "npcId": "pigeon_feeder" }], goalComplete: ["talked_to_ramon", "talk_to_don_ramon"]
-- "quiero un helado de chocolate" to vendor → actions: [{ "type": "talk", "npcId": "ice_cream_vendor" }], goalComplete: ["got_ice_cream", "buy_ice_cream"]
-- "esta nublado" or "va a llover" → goalComplete: ["weather_reaction", "weather_changes"], react to weather
-
-KEY SPANISH FOR WEATHER (teach these patterns):
-- "Hace + noun" - Hace sol (it's sunny), Hace frio (it's cold), Hace calor (it's hot)
-- "Esta + adjective" - Esta nublado (it's cloudy), Esta lloviendo (it's raining)
-- Present progressive: "estar + gerund" - Estoy caminando (I am walking), Esta comiendo (he/she is eating)
-
-MARKET NPCs:
-- Dona Maria (dona_maria): Elderly fruit vendor at fruit_stand. Friendly, uses diminutives (frutitas, manzanitas). Says "Buenos dias, mi amor! Que busca hoy?" and "Estas naranjas estan muy dulces!"
-- Senor Pedro (senor_pedro): Vegetable vendor at vegetable_stand. Direct but friendly. Uses demonstratives for comparisons: "Esas papas son mas grandes, pero estas son mas frescas."
-- Carlos el Carnicero (carlos_carnicero): Butcher at meat_counter. Uses ticket system. Asks "Que numero tiene?" and "Cuantos gramos quiere?"
-
-MARKET INTERACTIONS:
-- "cuanto cuestan las manzanas?" or asking prices → actions: [{ "type": "talk", "npcId": "dona_maria" }], goalComplete: ["asked_price"], npcResponse with price info
-- "quiero estas naranjas" or using demonstratives → actions: [{ "type": "talk", "npcId": relevant vendor }], goalComplete: ["used_demonstrative"]
-- "cuales son mas frescas?" or comparing items → actions: [{ "type": "talk", "npcId": relevant vendor }], goalComplete: ["compared_items"], npcResponse comparing
-- "quiero un kilo de manzanas" or specifying quantity → actions: [{ "type": "talk", "npcId": relevant vendor }], goalComplete: ["made_purchase"], npcResponse confirming
-- "pago con efectivo" or "pago con tarjeta" at checkout → actions: [{ "type": "use", "objectId": "cash_register" }], goalComplete: ["paid_at_checkout"]
-
-KEY SPANISH FOR MARKET (teach these patterns):
-- "Cuanto cuesta?" / "Cuanto cuestan?" (How much does it/they cost?)
-- "Este/Esta/Estos/Estas" (This/These - near speaker)
-- "Ese/Esa/Esos/Esas" (That/Those - near listener)
-- "Aquel/Aquella" (That over there - far from both)
-- "Un kilo de..." / "Medio kilo de..." (A kilo of... / Half kilo of...)
-- "Mas fresco/grande/barato que..." (Fresher/bigger/cheaper than...)
-
 When generating NPC responses, use simple Spanish appropriate for language learners. Keep responses short (1-2 sentences).
 
 Be encouraging! Focus grammar corrections on one main issue, not every small error.`;
@@ -622,11 +437,18 @@ Be encouraging! Focus grammar corrections on one main issue, not every small err
 async function processInput(input: string, state: GameState): Promise<UnifiedAIResponse> {
   const contextPrompt = buildPrompt(state);
 
+  // Compose system prompt: core rules + current building's module instructions
+  const currentBuilding = getBuildingForLocation(state.location.id);
+  const moduleInstructions = getPromptInstructionsForBuilding(currentBuilding);
+  const systemPrompt = moduleInstructions
+    ? `${CORE_SYSTEM_PROMPT}\n\n${moduleInstructions}`
+    : CORE_SYSTEM_PROMPT;
+
   try {
     const response = await getClient().messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1024,
-      system: SYSTEM_PROMPT,
+      system: systemPrompt,
       messages: [
         {
           role: 'user',
@@ -1180,39 +1002,22 @@ export async function runUnifiedMode(options: GameOptions = {}): Promise<void> {
   let effectiveStartGoal = options.startGoal;
   let forceStanding = options.standing || false;
 
-  if (options.module === 'restaurant') {
-    effectiveStartLocation = 'restaurant_entrance';
-    effectiveStartGoal = 'restaurant_enter';
-    forceStanding = true;  // Start standing when at restaurant
-  } else if (options.module === 'clinic') {
-    effectiveStartLocation = 'clinic_reception';
-    effectiveStartGoal = 'clinic_arrive';
-    forceStanding = true;  // Start standing when at clinic
-  } else if (options.module === 'gym') {
-    effectiveStartLocation = 'gym_entrance';
-    effectiveStartGoal = 'gym_check_in';
-    forceStanding = true;  // Start standing when at gym
-  } else if (options.module === 'park') {
-    effectiveStartLocation = 'park_entrance';
-    effectiveStartGoal = 'arrive_at_park';
-    forceStanding = true;  // Start standing when at park
-  } else if (options.module === 'market') {
-    effectiveStartLocation = 'market_entrance';
-    effectiveStartGoal = 'market_explore';
-    forceStanding = true;  // Start standing when at market
-  } else if (options.module === 'bank') {
-    effectiveStartLocation = 'bank_entrance';
-    effectiveStartGoal = 'bank_enter_greet';
-    forceStanding = true;  // Start standing when at bank
+  if (options.module) {
+    const mod = getModuleByName(options.module);
+    if (mod) {
+      effectiveStartLocation = mod.startLocationId;
+      effectiveStartGoal = mod.startGoalId;
+      forceStanding = mod.name !== 'home';
+    }
   }
 
   // Determine starting location
   const startLocation = effectiveStartLocation && locations[effectiveStartLocation]
     ? locations[effectiveStartLocation]
-    : bedroom;
+    : locations['bedroom'];
 
   // Determine starting goal
-  let startGoal: Goal | null = getStartGoal();
+  let startGoal: Goal | null = getStartGoalForBuilding('home');
   if (options.skipGoals) {
     startGoal = null;
   } else if (effectiveStartGoal) {

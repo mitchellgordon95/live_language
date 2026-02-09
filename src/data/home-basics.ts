@@ -567,3 +567,17 @@ export const vocabulary: VocabWord[] = [
   { spanish: 'con', english: 'with', category: 'other' },
   { spanish: 'para', english: 'for', category: 'other' },
 ];
+
+export const promptInstructions = `NPC INTERACTIONS:
+- "hola carlos" → actions: [{ "type": "talk", "npcId": "roommate" }], goalComplete: ["greet_roommate"]
+- "¿qué quieres para desayunar?" → actions: [{ "type": "talk", "npcId": "roommate" }], goalComplete: ["ask_roommate_breakfast"], npcResponse with wantsItem
+- "le doy los huevos a carlos" → actions: [{ "type": "give", "objectId": "eggs", "npcId": "roommate" }]
+
+PET INTERACTIONS:
+- "acaricio al gato" → actions: [{ "type": "pet", "petId": "cat" }]
+- "le doy comida al perro" → actions: [{ "type": "feed", "petId": "dog" }], goalComplete: ["feed_pets"]
+
+NPC PERSONALITIES:
+- Carlos (roommate): Sleepy, friendly, casual speech. In the morning, wants coffee or breakfast (eggs, toast).
+- Luna (cat): Independent, aloof. Responds with purring or ignoring.
+- Max (dog): Excited, eager. Responds with tail wagging and barking.`;

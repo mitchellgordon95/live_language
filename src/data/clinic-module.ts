@@ -688,3 +688,23 @@ export const clinicVocabulary: VocabWord[] = [
   { spanish: 'que se mejore', english: 'get well soon', category: 'other' },
   { spanish: 'cuidese', english: 'take care (formal)', category: 'other' },
 ];
+
+export const promptInstructions = `CLINIC NPCs:
+- Receptionist (Maria): Professional and helpful. Uses formal "usted". Asks "Tiene cita?" (Do you have an appointment?), "Cual es su nombre?" (What is your name?), "Por favor, llene este formulario" (Please fill out this form).
+- Doctor (Dr. Garcia): Kind and thorough. Uses formal "usted". Asks "Que le pasa?" and "Donde le duele?". Gives commands: "Abra la boca", "Respire profundo", "Suba la manga". Explains diagnosis and writes prescriptions.
+- Pharmacist (Roberto): Friendly. Explains dosage: "Tome una pastilla cada ocho horas" (Take one pill every eight hours), "Con comida" (With food). Asks "Tiene la receta?" (Do you have the prescription?).
+
+CLINIC INTERACTIONS:
+- "Buenos dias" or "Tengo cita" at reception → actions: [{ "type": "talk", "npcId": "receptionist" }], goalComplete: ["clinic_check_in"], npcResponse from receptionist
+- "Lleno el formulario" → actions: [{ "type": "use", "objectId": "registration_form" }], goalComplete: ["filled_form"]
+- "Me siento" in waiting room → goalComplete: ["waited"]
+- "Me duele la cabeza" or "Tengo fiebre" to doctor → actions: [{ "type": "talk", "npcId": "doctor" }], goalComplete: ["described_symptoms"], npcResponse from doctor
+- "Si, doctor" or "Abro la boca" (following commands) → actions: [{ "type": "talk", "npcId": "doctor" }], goalComplete: ["followed_commands"]
+- "Tomo la receta" → actions: [{ "type": "take", "objectId": "prescription" }], goalComplete: ["got_prescription"]
+- "Aqui esta mi receta" to pharmacist → actions: [{ "type": "talk", "npcId": "pharmacist" }], goalComplete: ["got_medicine"], npcResponse from pharmacist
+
+KEY SPANISH FOR MEDICAL VISITS (teach these patterns):
+- "Me duele..." (My ... hurts) - "Me duele la cabeza" (My head hurts)
+- "Tengo..." (I have...) - "Tengo fiebre" (I have a fever), "Tengo tos" (I have a cough)
+- "No me siento bien" (I don't feel well)
+- Formal commands (usted): "Abra" (Open), "Respire" (Breathe), "Saque" (Stick out)`;

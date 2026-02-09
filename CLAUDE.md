@@ -34,6 +34,7 @@ src/
 │   ├── game-state.ts     # State helpers, points/levels, building transitions
 │   └── vocabulary.ts     # Word tracking and familiarity system
 ├── data/
+│   ├── module-registry.ts # Module registry: ModuleDefinition, merged lookups
 │   ├── home-basics.ts    # Home module: bedroom, bathroom, kitchen, NPCs
 │   ├── restaurant-module.ts
 │   ├── market-module.ts
@@ -51,21 +52,14 @@ src/
 - Ordered actions to execute (go, take, open, talk, etc.)
 - Goal completions, NPC responses, needs changes
 
-**Modules**: Each location module exports:
-- `Location` objects with objects, exits
-- `Goal[]` chain with `checkComplete` functions
-- `NPC[]` with personalities for AI to roleplay
-- `VocabWord[]` for the vocabulary system
+**Modules**: Each location module exports locations, NPCs, goals, vocabulary, and `promptInstructions` (AI prompt text for that module's NPC interactions). All modules are registered in `module-registry.ts` which provides merged lookups. The AI system prompt is composed dynamically: core rules + current building's module instructions.
 
 **State**: `GameState` tracks location, inventory, needs, goals, vocabulary progress, points/level, and per-building goal progress (paused when you leave a building).
 
 ## Adding a New Module
 
-1. Create `src/data/{name}-module.ts` with locations, goals, NPCs, vocabulary
-2. Add imports to `unified.ts` (locations, NPCs, goals)
-3. Add to `getBuildingForLocation()` in `game-state.ts`
-4. Add start goal case in `getStartGoalForBuilding()` in `unified.ts`
-5. Add module option in `runUnifiedMode()` in `unified.ts`
+1. Create `src/data/{name}-module.ts` with locations, goals, NPCs, vocabulary, and `promptInstructions`
+2. Add one entry to the `modules` array in `src/data/module-registry.ts`
 
 See `.claude/agents/` for specialized agents: brainstormer, content-writer, implementer, QA, integrator, playtester.
 

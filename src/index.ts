@@ -5,6 +5,7 @@ import * as dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
 import { runUnifiedMode } from './modes/unified.js';
+import { getModuleNames } from './data/module-registry.js';
 
 export interface GameOptions {
   scriptFile?: string;
@@ -57,7 +58,7 @@ Options:
   --start-goal <id>        Start at a specific goal
   --skip-goals             Start with no goals
   --standing               Start standing (not in bed)
-  --module <name>          Start a specific module (e.g., 'restaurant', 'clinic', 'bank', 'park', 'gym', 'market')
+  --module <name>          Start a specific module (${getModuleNames().join(', ')})
   --no-audio               Disable text-to-speech
   --profile <name>         Use a named profile for vocabulary tracking (e.g., 'friend' uses vocabulary-progress-friend.json)
   --help                   Show this help message
@@ -66,12 +67,7 @@ Examples:
   npm start -- --start-location kitchen --standing
   npm start -- --start-goal make_breakfast --standing
   npm start -- --script test.txt
-  npm start -- --module restaurant
-  npm start -- --module clinic
-  npm start -- --module bank
-  npm start -- --module park
-  npm start -- --module gym
-  npm start -- --module market
+${getModuleNames().map(m => `  npm start -- --module ${m}`).join('\n')}
 `);
       process.exit(0);
     }

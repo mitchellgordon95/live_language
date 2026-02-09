@@ -730,3 +730,23 @@ export const gymVocabulary: VocabWord[] = [
   { spanish: 'estoy cansada', english: 'I\'m tired (fem)', category: 'other' },
   { spanish: 'buena sesion!', english: 'good session!', category: 'other' },
 ];
+
+export const promptInstructions = `GYM NPCs:
+- Ana (receptionist_ana): Friendly, energetic receptionist at gym_entrance. Greets with "Bienvenido al gimnasio!" Asks for membership card: "Tu tarjeta, por favor". Uses informal "tu" with regulars.
+- Marco (trainer_marco): Motivational personal trainer on training_floor. Uses imperative commands: "Levanta!" (Lift!), "Respira!" (Breathe!), "Descansa!" (Rest!). Counts reps in Spanish. Enthusiastic about fitness.
+- Sofia (member_sofia): Regular gym member in cardio_zone. Chatty and friendly. Talks about frequency: "Vengo tres veces a la semana" (I come three times a week). Happy to share tips.
+
+GYM INTERACTIONS:
+- "hola" or "aqui esta mi tarjeta" at gym_entrance → actions: [{ "type": "talk", "npcId": "receptionist_ana" }], goalComplete: ["checked_in", "gym_check_in"], npcResponse from Ana
+- "me estiro" or "uso la colchoneta" in stretching_area → actions: [{ "type": "use", "objectId": "yoga_mat" }], goalComplete: ["warmed_up", "stretched", "gym_warm_up"], needsChanges: { energy: -5 }
+- Following trainer commands like "levanto los brazos" → actions: [{ "type": "use", "objectId": "training_bench" }], goalComplete: ["followed_trainer", "gym_follow_trainer"], needsChanges: { energy: -10 }
+- "uso la cinta de correr" or "corro" in cardio_zone → actions: [{ "type": "use", "objectId": "treadmill" }], goalComplete: ["did_cardio", "gym_cardio"], needsChanges: { energy: -15 }
+- "levanto las mancuernas" or "hago repeticiones" in weight_room → actions: [{ "type": "use", "objectId": "dumbbells" }], goalComplete: ["lifted_weights", "gym_weights"], needsChanges: { energy: -10 }
+- "me ducho" in locker_room → actions: [{ "type": "use", "objectId": "gym_shower" }], goalComplete: ["showered", "gym_cool_down"], needsChanges: { hygiene: 30 }
+
+KEY SPANISH FOR GYM (teach these patterns):
+- Imperatives (trainer commands): "Levanta!" (Lift!), "Baja!" (Lower!), "Respira!" (Breathe!)
+- Reflexive verbs: "Me estiro" (I stretch), "Me caliento" (I warm up), "Me ducho" (I shower)
+- Frequency: "tres veces a la semana" (three times a week), "cada dia" (every day)
+- Body parts: "los brazos" (arms), "las piernas" (legs), "el pecho" (chest)
+- Exercise terms: "las repeticiones" (reps), "las series" (sets), "el descanso" (rest)`;

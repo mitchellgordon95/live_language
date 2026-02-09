@@ -10,39 +10,13 @@ import type {
   LocationProgress,
 } from './types.js';
 import { createInitialVocabulary } from './vocabulary.js';
-
-// Building names for location grouping
-export type BuildingName = 'home' | 'street' | 'restaurant' | 'market' | 'gym' | 'park' | 'clinic' | 'bank';
-
-// Map location IDs to their building
-export function getBuildingForLocation(locationId: string): BuildingName {
-  if (['bedroom', 'bathroom', 'kitchen', 'living_room'].includes(locationId)) return 'home';
-  if (locationId === 'street') return 'street';
-  if (locationId.startsWith('restaurant')) return 'restaurant';
-  if (locationId.startsWith('market') || ['fruit_stand', 'vegetable_stand', 'meat_counter'].includes(locationId)) return 'market';
-  if (locationId.startsWith('gym') || ['stretching_area', 'training_floor', 'weight_room', 'cardio_zone', 'locker_room'].includes(locationId)) return 'gym';
-  if (locationId.startsWith('park') || ['main_path', 'fountain_area', 'garden', 'playground', 'kiosk'].includes(locationId)) return 'park';
-  if (locationId.startsWith('clinic') || ['waiting_room', 'exam_room', 'pharmacy'].includes(locationId)) return 'clinic';
-  if (locationId.startsWith('bank')) return 'bank';
-  return 'home'; // Default fallback
-}
+import { type BuildingName, getBuildingForLocation, BUILDING_UNLOCK_LEVELS } from '../data/module-registry.js';
+export { type BuildingName, getBuildingForLocation, BUILDING_UNLOCK_LEVELS };
 
 // Level thresholds
 export function getPointsForLevel(level: number): number {
   return level * 150;  // Level 1 = 150, Level 2 = 300, etc.
 }
-
-// Building unlock levels
-export const BUILDING_UNLOCK_LEVELS: Record<BuildingName, number> = {
-  home: 1,
-  street: 1,
-  restaurant: 2,
-  market: 3,
-  park: 3,
-  gym: 5,
-  clinic: 5,
-  bank: 7,
-};
 
 // Point values for actions
 export const ACTION_POINTS: Record<string, number> = {
