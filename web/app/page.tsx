@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import type { GameView } from '@/lib/types';
 import GamePanel from '@/components/GamePanel';
+import ChatPanel from '@/components/ChatPanel';
+import type { ChatEntry } from '@/components/ChatPanel';
 import ScenePanel from '@/components/ScenePanel';
 import InputBar from '@/components/InputBar';
 
@@ -13,10 +15,15 @@ export default function Home() {
   const [game, setGame] = useState<GameView | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [chatHistory, setChatHistory] = useState<ChatEntry[]>([]);
+  const [hoveredObjId, setHoveredObjId] = useState<string | null>(null);
+  const chatIdRef = useRef(0);
 
   const startGame = useCallback(async (module?: string) => {
     setAppState('loading');
     setError(null);
+    setChatHistory([]);
+    chatIdRef.current = 0;
     try {
       const res = await fetch('/api/game/init', {
         method: 'POST',
@@ -52,6 +59,14 @@ export default function Home() {
       }
       const gameView: GameView = await res.json();
       setGame(gameView);
+      if (gameView.turnResult) {
+        chatIdRef.current += 1;
+        setChatHistory(prev => [...prev, {
+          id: chatIdRef.current,
+          playerInput: input,
+          turnResult: gameView.turnResult!,
+        }]);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error');
     } finally {
@@ -162,16 +177,21 @@ export default function Home() {
         </button>
       </div>
 
-      {/* Main content: scene (left) + game info (right) */}
+      {/* Main content: scene (left) + game info (center) + chat (right) */}
       <div className="flex-1 flex overflow-hidden">
         {/* Scene panel */}
-        <div className="w-1/2 p-3">
-          <ScenePanel game={game} />
+        <div className="w-[40%] p-3">
+          <ScenePanel game={game} hoveredObjId={hoveredObjId} onHoverObj={setHoveredObjId} />
         </div>
 
         {/* Game info panel */}
-        <div className="w-1/2 border-l border-gray-800">
-          <GamePanel game={game} />
+        <div className="w-[30%] border-l border-gray-800">
+          <GamePanel game={game} hoveredObjId={hoveredObjId} onHoverObj={setHoveredObjId} />
+        </div>
+
+        {/* Chat panel */}
+        <div className="w-[30%] border-l border-gray-800">
+          <ChatPanel chatHistory={chatHistory} />
         </div>
       </div>
 

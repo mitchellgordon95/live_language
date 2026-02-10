@@ -6,7 +6,7 @@
 import 'server-only';
 import { join } from 'path';
 import { readFileSync, existsSync } from 'fs';
-import type { GameView, TurnResultView, ObjectCoords, SceneInfo } from './types';
+import type { GameView, TurnResultView, ObjectCoords, SceneInfo, ExitView, NPCView } from './types';
 
 // Path to compiled game engine
 const ENGINE_ROOT = join(process.cwd(), '..', 'dist');
@@ -237,6 +237,22 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
     ? { image: manifest.image, module }
     : null;
 
+  // Exits
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const exits: ExitView[] = (state.location.exits || []).map((exit: any) => ({
+    to: exit.to,
+    name: exit.name,
+  }));
+
+  // NPCs in this location
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const npcsHere = (engine as any).getNPCsInLocation(locationId) as any[];
+  const npcs: NPCView[] = npcsHere.map((npc: { id: string; name: { target: string; native: string } }) => ({
+    id: npc.id,
+    name: npc.name,
+    mood: state.npcState?.[npc.id]?.mood || '',
+  }));
+
   // Points to next level: 150 * level
   const pointsToNextLevel = 150 * state.level;
 
@@ -245,7 +261,8 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
     locationId,
     locationName: state.location.name,
     objects,
-    npcs: [], // TODO: populate from getNPCsInLocation
+    npcs,
+    exits,
     needs: state.needs,
     goal: state.currentGoal ? {
       id: state.currentGoal.id,

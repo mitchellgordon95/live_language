@@ -1,9 +1,11 @@
 'use client';
 
-import type { GameView, TurnResultView } from '@/lib/types';
+import type { GameView } from '@/lib/types';
 
 interface GamePanelProps {
   game: GameView;
+  hoveredObjId: string | null;
+  onHoverObj: (id: string | null) => void;
 }
 
 function NeedsBar({ label, value, icon }: { label: string; value: number; icon: string }) {
@@ -24,62 +26,9 @@ function NeedsBar({ label, value, icon }: { label: string; value: number; icon: 
   );
 }
 
-function TurnFeedback({ result }: { result: TurnResultView }) {
+export default function GamePanel({ game, hoveredObjId, onHoverObj }: GamePanelProps) {
   return (
-    <div className="space-y-2">
-      {/* Action result */}
-      <div className={`text-sm ${result.valid ? 'text-green-400' : 'text-yellow-400'}`}>
-        {result.valid ? '\u2713' : '\u2717'} {result.valid ? result.message : (result.invalidReason || result.message)}
-      </div>
-
-      {/* NPC response */}
-      {result.npcResponse && (
-        <div className="pl-3 border-l-2 border-cyan-600">
-          <div className="text-cyan-400 text-sm">
-            {result.npcResponse.npcName}: &quot;{result.npcResponse.target}&quot;
-          </div>
-          {result.npcResponse.actionText && (
-            <div className="text-gray-500 text-xs italic">*{result.npcResponse.actionText}*</div>
-          )}
-        </div>
-      )}
-
-      {/* Grammar feedback */}
-      {result.grammarScore === 100 && result.valid && (
-        <div className="text-green-400 text-sm">
-          Perfect! <span className="text-gray-400">&quot;{result.targetModel}&quot;</span>
-        </div>
-      )}
-      {result.grammarIssues.length > 0 && result.grammarIssues[0].original.toLowerCase() !== result.grammarIssues[0].corrected.toLowerCase() && (
-        <div className="text-sm">
-          <span className="text-yellow-400">Tip:</span>{' '}
-          <span className="text-gray-300">&quot;{result.grammarIssues[0].corrected}&quot; is more natural</span>
-          <div className="text-gray-500 text-xs mt-0.5">{result.grammarIssues[0].explanation}</div>
-        </div>
-      )}
-
-      {/* Points */}
-      {result.pointsAwarded > 0 && (
-        <div className="text-yellow-400 text-xs">
-          +{result.pointsAwarded} pts{result.leveledUp ? ' - LEVEL UP!' : ''}
-        </div>
-      )}
-
-      {/* Goals completed */}
-      {result.goalsCompleted.length > 0 && (
-        <div className="text-green-400 text-sm">
-          {result.goalsCompleted.map((g, i) => (
-            <div key={i}>Goal complete: {g}</div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
-
-export default function GamePanel({ game }: GamePanelProps) {
-  return (
-    <div className="flex flex-col gap-4 h-full overflow-y-auto p-4">
+    <div className="flex flex-col gap-3 h-full overflow-y-auto p-4">
       {/* Location header */}
       <div>
         <h2 className="text-lg font-bold text-blue-400">
@@ -97,10 +46,41 @@ export default function GamePanel({ game }: GamePanelProps) {
         </div>
       )}
 
-      {/* Turn result */}
-      {game.turnResult && (
-        <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700">
-          <TurnFeedback result={game.turnResult} />
+      {/* Exits */}
+      {game.exits.length > 0 && (
+        <div>
+          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Exits</div>
+          <div className="flex flex-wrap gap-1.5">
+            {game.exits.map((exit) => (
+              <span
+                key={exit.to}
+                className="text-xs px-2 py-1 rounded bg-gray-700/30 text-gray-300 border border-gray-600/30 cursor-default"
+              >
+                {exit.name.target} <span className="text-gray-500">({exit.name.native})</span>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* NPCs here */}
+      {game.npcs.length > 0 && (
+        <div>
+          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Who&apos;s here</div>
+          <div className="space-y-1">
+            {game.npcs.map((npc) => (
+              <div key={npc.id} className="flex items-center gap-2 text-sm">
+                <div className="w-6 h-6 rounded-full bg-cyan-900/50 border border-cyan-700/50 flex items-center justify-center text-xs text-cyan-400">
+                  {npc.name.native.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <span className="text-cyan-400">{npc.name.target}</span>
+                  <span className="text-gray-500 ml-1">({npc.name.native})</span>
+                  {npc.mood && <span className="text-gray-600 text-xs ml-1">- {npc.mood}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -111,13 +91,17 @@ export default function GamePanel({ game }: GamePanelProps) {
           {game.objects.map((obj) => (
             <span
               key={obj.id}
-              className={`text-xs px-2 py-1 rounded ${
-                obj.vocabStage === 'known'
+              className={`text-xs px-2 py-1 rounded cursor-default transition-all ${
+                hoveredObjId === obj.id
+                  ? 'bg-white/20 text-white border border-white/40 ring-1 ring-white/20'
+                  : obj.vocabStage === 'known'
                   ? 'bg-green-900/30 text-green-400 border border-green-800/50'
                   : obj.vocabStage === 'learning'
                   ? 'bg-yellow-900/30 text-yellow-400 border border-yellow-800/50'
                   : 'bg-gray-700/50 text-gray-300 border border-gray-600/50'
               }`}
+              onMouseEnter={() => onHoverObj(obj.id)}
+              onMouseLeave={() => onHoverObj(null)}
             >
               {obj.vocabStage === 'known' ? obj.name.target : `${obj.name.target} (${obj.name.native})`}
             </span>

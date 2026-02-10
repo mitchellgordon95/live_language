@@ -23,6 +23,12 @@ export interface GameObjectView {
 export interface NPCView {
   id: string;
   name: BilingualText;
+  mood: string;
+}
+
+export interface ExitView {
+  to: string;
+  name: BilingualText;
 }
 
 export interface NeedsView {
@@ -68,6 +74,7 @@ export interface GameView {
   locationName: BilingualText;
   objects: GameObjectView[];
   npcs: NPCView[];
+  exits: ExitView[];
   needs: NeedsView;
   goal: GoalView | null;
   inventory: ItemView[];
