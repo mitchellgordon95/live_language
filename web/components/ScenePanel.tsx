@@ -86,7 +86,7 @@ export default function ScenePanel({ game, hoveredObjId, onHoverObj }: ScenePane
 
         {/* Portrait tray — overlaps bottom edge of scene */}
         {hasPortraits && (
-          <div className="absolute -bottom-5 left-0 right-0 flex justify-center items-end gap-3 z-10 pointer-events-none">
+          <div className="absolute -bottom-8 left-0 right-0 flex justify-center items-end gap-3 z-10 pointer-events-none">
             {/* Player portrait */}
             {game.portraitHint?.player && (
               <PortraitAvatar
@@ -179,8 +179,8 @@ interface PortraitAvatarProps {
 
 function PortraitAvatar({ src, alt, label, fallbackLetter, size }: PortraitAvatarProps) {
   const sizeClasses = size === 'lg'
-    ? 'w-14 h-14 border-2 border-gray-600'
-    : 'w-11 h-11 border-2 border-cyan-500/60';
+    ? 'w-20 h-20 border-2 border-gray-600'
+    : 'w-16 h-16 border-2 border-cyan-500/60';
 
   return (
     <div className="flex flex-col items-center gap-0.5">
@@ -189,10 +189,10 @@ function PortraitAvatar({ src, alt, label, fallbackLetter, size }: PortraitAvata
         <img
           src={src}
           alt={alt}
-          className={`${sizeClasses} rounded-full object-cover shadow-lg`}
+          className={`${sizeClasses} rounded-lg object-cover shadow-lg`}
         />
       ) : (
-        <div className={`${sizeClasses} rounded-full bg-cyan-900/70 backdrop-blur-sm flex items-center justify-center text-sm text-cyan-300 font-medium shadow-lg`}>
+        <div className={`${sizeClasses} rounded-lg bg-cyan-900/70 backdrop-blur-sm flex items-center justify-center text-lg text-cyan-300 font-medium shadow-lg`}>
           {fallbackLetter || alt.charAt(0).toUpperCase()}
         </div>
       )}
