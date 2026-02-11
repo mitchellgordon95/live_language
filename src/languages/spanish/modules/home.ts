@@ -319,6 +319,7 @@ export const npcs: NPC[] = [
     name: { target: 'Carlos', native: 'Carlos' },
     location: 'living_room',
     personality: 'Sleepy but friendly roommate. Just woke up, sitting on the couch. Wants coffee or breakfast. Speaks casually.',
+    gender: 'male',
   },
 ];
 

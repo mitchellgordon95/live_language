@@ -306,18 +306,21 @@ export const restaurantNPCs: NPC[] = [
     name: { target: 'el anfitrion', native: 'host' },
     location: 'restaurant_entrance',
     personality: 'Professional and welcoming. Greets customers and seats them. Speaks formally with "usted". Will ask "Mesa para cuantos?" (Table for how many?) and guide player to their table.',
+    gender: 'male',
   },
   {
     id: 'waiter',
     name: { target: 'el mesero', native: 'waiter' },
     location: 'restaurant_table',
     personality: 'Friendly and attentive waiter named Diego. Takes orders politely. Uses both formal "usted" and friendly tone. Will suggest specials, ask about drinks first, then food. Key phrases: "Que desea tomar?" (What would you like to drink?), "Ya decidio?" (Have you decided?), "Algo mas?" (Anything else?), "Enseguida" (Right away).',
+    gender: 'male',
   },
   {
     id: 'chef',
     name: { target: 'el chef', native: 'chef' },
     location: 'restaurant_kitchen',
     personality: 'Busy and passionate chef named Rosa. Speaks quickly and uses cooking terms. Can be seen through kitchen window. Occasionally comes out to check on diners. Proud of the food.',
+    gender: 'female',
   },
 ];
 

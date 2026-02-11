@@ -56,6 +56,7 @@ export interface NPC {
   name: BilingualText;
   location: string;
   personality: string;
+  gender?: 'male' | 'female';
 }
 
 export interface Pet {

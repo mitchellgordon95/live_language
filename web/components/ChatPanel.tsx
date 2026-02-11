@@ -14,10 +14,12 @@ export interface ChatEntry {
   playerInput: string;
   turnResult?: TurnResultView;
   learnResult?: LearnResult;
+  sayResult?: string;
 }
 
 interface ChatPanelProps {
   chatHistory: ChatEntry[];
+  onSpeak?: (text: string, voice?: string) => void;
 }
 
 function LearnFeedback({ result }: { result: LearnResult }) {
@@ -55,7 +57,24 @@ function simpleMarkdown(text: string): string {
     .replace(/\n/g, '<br/>');
 }
 
-function TurnFeedback({ result }: { result: TurnResultView }) {
+function SayFeedback({ text }: { text: string }) {
+  return (
+    <div className="text-sm text-gray-300">
+      <span className="text-gray-500">Speaking:</span> &quot;{text}&quot;
+    </div>
+  );
+}
+
+function SpeakerIcon() {
+  return (
+    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+      <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+    </svg>
+  );
+}
+
+function TurnFeedback({ result, onSpeak }: { result: TurnResultView; onSpeak?: (text: string, voice?: string) => void }) {
   return (
     <div className="space-y-1.5">
       {/* Action result */}
@@ -79,8 +98,17 @@ function TurnFeedback({ result }: { result: TurnResultView }) {
             </div>
           )}
           <div className="pl-2 border-l-2 border-cyan-600 flex-1">
-            <div className="text-cyan-400 text-sm">
-              {result.npcResponse.npcName}: &quot;{result.npcResponse.target}&quot;
+            <div className="text-cyan-400 text-sm flex items-center gap-1">
+              <span>{result.npcResponse.npcName}: &quot;{result.npcResponse.target}&quot;</span>
+              {onSpeak && (
+                <button
+                  onClick={() => onSpeak(result.npcResponse!.target, result.npcResponse!.voice)}
+                  className="text-gray-500 hover:text-cyan-400 transition-colors ml-1 pointer-events-auto"
+                  title="Replay speech"
+                >
+                  <SpeakerIcon />
+                </button>
+              )}
             </div>
             {result.npcResponse.actionText && (
               <div className="text-gray-500 text-xs italic">*{result.npcResponse.actionText}*</div>
@@ -122,7 +150,7 @@ function TurnFeedback({ result }: { result: TurnResultView }) {
   );
 }
 
-export default function ChatPanel({ chatHistory }: ChatPanelProps) {
+export default function ChatPanel({ chatHistory, onSpeak }: ChatPanelProps) {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -147,8 +175,9 @@ export default function ChatPanel({ chatHistory }: ChatPanelProps) {
             </div>
             {/* Game response or learn lesson */}
             <div className="bg-gray-800/40 rounded-lg p-2.5 border border-gray-700/50">
-              {entry.turnResult && <TurnFeedback result={entry.turnResult} />}
+              {entry.turnResult && <TurnFeedback result={entry.turnResult} onSpeak={onSpeak} />}
               {entry.learnResult && <LearnFeedback result={entry.learnResult} />}
+              {entry.sayResult && <SayFeedback text={entry.sayResult} />}
             </div>
           </div>
         ))}

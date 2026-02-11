@@ -344,12 +344,14 @@ export const parkNpcs: NPC[] = [
     name: { target: 'Senor Gomez', native: 'Mr. Gomez' },
     location: 'kiosk',
     personality: 'Friendly elderly ice cream vendor. Talks about the weather constantly. Recommends flavors based on the temperature. Speaks slowly and clearly for learners.',
+    gender: 'male',
   },
   {
     id: 'pigeon_feeder',
     name: { target: 'Don Ramon', native: 'Don Ramon' },
     location: 'fountain_area',
     personality: 'Quiet elderly man who feeds pigeons every day. Enjoys observing nature and commenting on what he sees. Uses present progressive to describe ongoing actions. Very patient and kind.',
+    gender: 'male',
   },
 ];
 

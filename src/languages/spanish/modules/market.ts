@@ -353,6 +353,7 @@ export const marketNPCs: NPC[] = [
     - "Le doy un poquito de descuento"
     Uses demonstratives frequently: "Estas manzanas son las mejores" (these apples are the best).
     When asked prices, says things like "Las fresas cuestan cuarenta y cinco pesos el kilo."`,
+    gender: 'female',
   },
   {
     id: 'senor_pedro',
@@ -367,6 +368,7 @@ export const marketNPCs: NPC[] = [
     - "Aquellas zanahorias son de ayer, pero estas llegaron hoy"
     Uses demonstratives for near/far: este/ese/aquel and esto/eso/aquello.
     Patient when explaining weights and quantities.`,
+    gender: 'male',
   },
   {
     id: 'carlos_carnicero',
@@ -381,6 +383,7 @@ export const marketNPCs: NPC[] = [
     - "Este chorizo es casero" (This chorizo is homemade)
     - "La carne de res cuesta ciento veinte el kilo"
     Likes to compare: "Este pollo es mas fresco que ese."`,
+    gender: 'male',
   },
 ];
 

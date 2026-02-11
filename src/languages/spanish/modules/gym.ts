@@ -322,18 +322,21 @@ export const gymNPCs: NPC[] = [
     name: { target: 'Ana', native: 'Ana' },
     location: 'gym_entrance',
     personality: 'Friendly and energetic receptionist. Greets members with enthusiasm. Checks membership cards and answers questions about classes and schedules. Uses informal "tu" with regulars. Key phrases: "Bienvenido al gimnasio!" (Welcome to the gym!), "Tu tarjeta, por favor" (Your card, please), "Hay una clase de yoga a las diez" (There is a yoga class at ten).',
+    gender: 'female',
   },
   {
     id: 'trainer_marco',
     name: { target: 'Marco', native: 'Marco' },
     location: 'training_floor',
     personality: 'Motivational and knowledgeable personal trainer. Uses imperative commands during training: "Levanta!" (Lift!), "Respira!" (Breathe!), "Descansa!" (Rest!). Counts reps in Spanish. Encourages proper form. Mix of formal and informal depending on context. Will demonstrate exercises and give tips. Enthusiastic about fitness.',
+    gender: 'male',
   },
   {
     id: 'member_sofia',
     name: { target: 'Sofia', native: 'Sofia' },
     location: 'cardio_zone',
     personality: 'Regular gym member, friendly and chatty. On the elliptical when you arrive. Happy to share gym tips and talk about her workout routine. Uses casual speech. Talks about frequency: "Vengo tres veces a la semana" (I come three times a week). Will ask about your fitness goals.',
+    gender: 'female',
   },
 ];
 

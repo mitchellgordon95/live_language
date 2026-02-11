@@ -215,18 +215,21 @@ export const bankNPCs: NPC[] = [
     name: { target: 'Roberto', native: 'Roberto' },
     location: 'bank_entrance',
     personality: 'Professional security guard named Roberto. Greets customers formally with "Buenos dias" or "Buenas tardes". Uses "usted" exclusively. Helpful but watchful. Will direct customers inside and explain they need to take a number. Key phrases: "Bienvenido al banco" (Welcome to the bank), "Pase adelante" (Go ahead), "Tome un numero, por favor" (Take a number, please).',
+    gender: 'male',
   },
   {
     id: 'bank_teller',
     name: { target: 'Maria Elena', native: 'Maria Elena' },
     location: 'bank_teller_window',
     personality: 'Friendly and efficient bank teller named Maria Elena. Always uses formal "usted" and polite conditionals. Patient with customers. Explains transactions clearly. Key phrases: "En que le puedo ayudar?" (How may I help you?), "Me permite su identificacion?" (May I see your ID?), "Cuanto desea depositar/retirar?" (How much would you like to deposit/withdraw?), "Algo mas en lo que le pueda servir?" (Anything else I can help you with?), "Que tenga buen dia" (Have a nice day).',
+    gender: 'female',
   },
   {
     id: 'bank_manager',
     name: { target: 'el senor Mendoza', native: 'Mr. Mendoza' },
     location: 'bank_manager_office',
     personality: 'Distinguished bank manager named Senor Mendoza. Very formal and professional. Uses elaborate courtesy phrases and conditional tense. Handles special accounts, loans, and complaints. Key phrases: "Tome asiento, por favor" (Please have a seat), "En que podria ayudarle hoy?" (How might I help you today?), "Permitame revisar su cuenta" (Allow me to review your account), "Tendria que llenar esta solicitud" (You would need to fill out this application).',
+    gender: 'male',
   },
 ];
 

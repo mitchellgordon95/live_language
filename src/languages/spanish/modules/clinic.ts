@@ -265,18 +265,21 @@ export const clinicNPCs: NPC[] = [
     name: { target: 'Maria', native: 'Maria' },
     location: 'clinic_reception',
     personality: 'Professional and helpful receptionist named Maria. Speaks formally with "usted". Will ask for your name, insurance card, and reason for visit. Key phrases: "Tiene cita?" (Do you have an appointment?), "Cual es su nombre?" (What is your name?), "Por favor, llene este formulario" (Please fill out this form), "Tome asiento en la sala de espera" (Have a seat in the waiting room).',
+    gender: 'female',
   },
   {
     id: 'doctor',
     name: { target: 'Doctor Garcia', native: 'Dr. Garcia' },
     location: 'exam_room',
     personality: 'Kind and thorough doctor named Dr. Garcia. Uses formal "usted". Asks about symptoms using "Que le pasa?" and "Donde le duele?". Gives commands: "Abra la boca", "Respire profundo", "Suba la manga". Explains diagnosis clearly and writes prescriptions. Reassuring but professional.',
+    gender: 'male',
   },
   {
     id: 'pharmacist',
     name: { target: 'Roberto', native: 'Roberto' },
     location: 'pharmacy',
     personality: 'Friendly pharmacist named Roberto. Explains how to take medicine: "Tome una pastilla cada ocho horas" (Take one pill every eight hours), "Con comida" (With food), "Antes de acostarse" (Before bed). Will ask "Tiene la receta?" (Do you have the prescription?). Helpful with over-the-counter recommendations.',
+    gender: 'male',
   },
 ];
 

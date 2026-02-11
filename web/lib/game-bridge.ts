@@ -154,7 +154,7 @@ export async function playTurn(sessionId: string, input: string): Promise<GameVi
   // Save vocabulary periodically
   eng.saveVocabulary(session.state.vocabulary, session.state.profile);
 
-  const turnResult = buildTurnResultView(result);
+  const turnResult = buildTurnResultView(result, session.state);
   return buildGameView(sessionId, session.state, turnResult, result.response);
 }
 
@@ -447,8 +447,18 @@ function getVocabStageForObject(vocabulary: { words: Record<string, { stage: str
   return word.stage as 'new' | 'learning' | 'known';
 }
 
+// Map NPC gender to Gemini TTS voice
+function npcVoice(npcId: string, locationId: string): string {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const npcsHere = (engine as any).getNPCsInLocation(locationId) as any[];
+  const npc = npcsHere.find((n: { id: string }) => n.id === npcId);
+  if (npc?.gender === 'female') return 'Leda';
+  if (npc?.gender === 'male') return 'Charon';
+  return 'Puck'; // default for pets, unknown
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function buildTurnResultView(result: any): TurnResultView {
+function buildTurnResultView(result: any, state: any): TurnResultView {
   const response = result.response;
   return {
     valid: response.valid,
@@ -467,6 +477,7 @@ function buildTurnResultView(result: any): TurnResultView {
       target: response.npcResponse.spanish || '',
       native: response.npcResponse.english || '',
       actionText: response.npcResponse.actionText,
+      voice: npcVoice(response.npcResponse.npcId, state.location.id),
     } : null,
     pointsAwarded: result.effectsResult?.pointsAwarded || 0,
     leveledUp: result.effectsResult?.leveledUp || false,

@@ -7,6 +7,7 @@ import ChatPanel from '@/components/ChatPanel';
 import type { ChatEntry } from '@/components/ChatPanel';
 import ScenePanel from '@/components/ScenePanel';
 import InputBar from '@/components/InputBar';
+import { useTTS } from '@/hooks/useTTS';
 
 type AppState = 'menu' | 'loading' | 'playing' | 'error';
 
@@ -18,6 +19,7 @@ export default function Home() {
   const [chatHistory, setChatHistory] = useState<ChatEntry[]>([]);
   const [hoveredObjId, setHoveredObjId] = useState<string | null>(null);
   const chatIdRef = useRef(0);
+  const { speak, isMuted, toggleMute } = useTTS();
 
   const startGame = useCallback(async (module?: string) => {
     setAppState('loading');
@@ -44,6 +46,21 @@ export default function Home() {
   }, []);
 
   const handleInput = useCallback(async (input: string) => {
+    // /say command: entirely client-side TTS
+    if (input.trim().toLowerCase().startsWith('/say ')) {
+      const textToSpeak = input.trim().slice(5).trim();
+      if (textToSpeak) {
+        speak(textToSpeak);
+        chatIdRef.current += 1;
+        setChatHistory(prev => [...prev, {
+          id: chatIdRef.current,
+          playerInput: input,
+          sayResult: textToSpeak,
+        }]);
+      }
+      return;
+    }
+
     if (!game || isProcessing) return;
     setIsProcessing(true);
     setError(null);
@@ -82,13 +99,17 @@ export default function Home() {
           playerInput: input,
           turnResult: gameView.turnResult!,
         }]);
+        // Auto-speak NPC dialog with gendered voice
+        if (gameView.turnResult.npcResponse?.target) {
+          speak(gameView.turnResult.npcResponse.target, gameView.turnResult.npcResponse.voice);
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error');
     } finally {
       setIsProcessing(false);
     }
-  }, [game, isProcessing]);
+  }, [game, isProcessing, speak]);
 
   // --- Menu Screen ---
   if (appState === 'menu') {
@@ -185,12 +206,21 @@ export default function Home() {
       {/* Top bar */}
       <div className="flex items-center justify-between px-4 py-2 bg-gray-900 border-b border-gray-800">
         <h1 className="text-sm font-medium text-gray-400">Language Life Sim</h1>
-        <button
-          onClick={() => { setAppState('menu'); setGame(null); }}
-          className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
-        >
-          Back to Menu
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={toggleMute}
+            className="text-gray-500 hover:text-gray-300 transition-colors"
+            title={isMuted ? 'Unmute TTS' : 'Mute TTS'}
+          >
+            {isMuted ? <SpeakerOffIcon /> : <SpeakerOnIcon />}
+          </button>
+          <button
+            onClick={() => { setAppState('menu'); setGame(null); }}
+            className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+          >
+            Back to Menu
+          </button>
+        </div>
       </div>
 
       {/* Main content: scene (left) + game info (center) + chat (right) */}
@@ -207,7 +237,7 @@ export default function Home() {
 
         {/* Chat panel */}
         <div className="w-[30%] pt-3 border-l border-gray-800">
-          <ChatPanel chatHistory={chatHistory} />
+          <ChatPanel chatHistory={chatHistory} onSpeak={speak} />
         </div>
       </div>
 
@@ -226,5 +256,25 @@ export default function Home() {
         )}
       </div>
     </div>
+  );
+}
+
+function SpeakerOnIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+      <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+      <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+    </svg>
+  );
+}
+
+function SpeakerOffIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+      <line x1="23" y1="9" x2="17" y2="15" />
+      <line x1="17" y1="9" x2="23" y2="15" />
+    </svg>
   );
 }
