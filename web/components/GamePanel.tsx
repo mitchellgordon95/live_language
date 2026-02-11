@@ -37,18 +37,6 @@ export default function GamePanel({ game, hoveredObjId, onHoverObj }: GamePanelP
         <p className="text-sm text-gray-400">{game.locationName.target}</p>
       </div>
 
-      {/* Player portrait */}
-      {game.portraitHint?.player && game.scene && (
-        <div className="flex justify-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={`/scenes/${game.scene.module}/portraits/${game.portraitHint.player}`}
-            alt="You"
-            className="w-24 h-24 rounded-lg object-cover border-2 border-gray-700 transition-all duration-300"
-          />
-        </div>
-      )}
-
       {/* Current goal */}
       {game.goal && (
         <div className="bg-gray-800/50 rounded-lg p-3 border border-purple-900/50">

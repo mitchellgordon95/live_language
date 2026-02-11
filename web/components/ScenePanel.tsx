@@ -1,6 +1,6 @@
 'use client';
 
-import type { GameView, GameObjectView, ExitView, NPCView } from '@/lib/types';
+import type { GameView, GameObjectView } from '@/lib/types';
 
 interface ScenePanelProps {
   game: GameView;
@@ -12,8 +12,8 @@ export default function ScenePanel({ game, hoveredObjId, onHoverObj }: ScenePane
   // No scene image available — show placeholder
   if (!game.scene) {
     return (
-      <div className="relative w-full h-full bg-gray-900 rounded-lg overflow-hidden flex items-center justify-center">
-        <div className="absolute inset-0 opacity-20" style={{
+      <div className="relative w-full h-full bg-gray-900 rounded-lg flex items-center justify-center">
+        <div className="absolute inset-0 opacity-20 rounded-lg" style={{
           background: 'linear-gradient(135deg, #6366f1 0%, #4f46e5 50%, #4338ca 100%)',
         }} />
         <div className="relative text-center">
@@ -31,8 +31,10 @@ export default function ScenePanel({ game, hoveredObjId, onHoverObj }: ScenePane
     (obj) => obj.coords && (obj.coords.w > 0 || obj.coords.h > 0)
   );
 
+  const hasPortraits = game.portraitHint?.player || game.npcs.length > 0;
+
   return (
-    <div className="relative w-full h-full bg-gray-900 rounded-lg overflow-hidden flex items-center justify-center">
+    <div className="relative w-full h-full bg-gray-900 rounded-lg flex flex-col items-center justify-center">
       {/* Square container — matches 1024x1024 scene images */}
       <div className="relative aspect-square max-w-full max-h-full">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -43,7 +45,7 @@ export default function ScenePanel({ game, hoveredObjId, onHoverObj }: ScenePane
           draggable={false}
         />
 
-        {/* Overlay layer */}
+        {/* Overlay layer — object labels and vignettes only */}
         <div className="absolute inset-0 pointer-events-none">
           {/* Object labels (dots) */}
           {labeledObjects.map((obj) => (
@@ -80,26 +82,32 @@ export default function ScenePanel({ game, hoveredObjId, onHoverObj }: ScenePane
               </div>
             );
           })}
-
-          {/* NPC badges */}
-          {game.npcs.map((npc, i) => (
-            <NPCBadge
-              key={npc.id}
-              npc={npc}
-              position={getNPCPosition(i, game.npcs.length)}
-              module={game.scene?.module}
-            />
-          ))}
-
-          {/* Exit indicators */}
-          {game.exits.map((exit, i) => (
-            <ExitIndicator
-              key={exit.to}
-              exit={exit}
-              position={getExitPosition(i, game.exits.length)}
-            />
-          ))}
         </div>
+
+        {/* Portrait tray — overlaps bottom edge of scene */}
+        {hasPortraits && (
+          <div className="absolute -bottom-5 left-0 right-0 flex justify-center items-end gap-3 z-10 pointer-events-none">
+            {/* Player portrait */}
+            {game.portraitHint?.player && (
+              <PortraitAvatar
+                src={`/scenes/${game.scene.module}/portraits/${game.portraitHint.player}`}
+                alt="You"
+                size="lg"
+              />
+            )}
+            {/* NPC portraits */}
+            {game.npcs.map((npc) => (
+              <PortraitAvatar
+                key={npc.id}
+                src={npc.portrait ? `/scenes/${game.scene!.module}/portraits/${npc.portrait}` : undefined}
+                alt={npc.name.native}
+                label={npc.name.target}
+                fallbackLetter={npc.name.native.charAt(0).toUpperCase()}
+                size="md"
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
@@ -159,70 +167,40 @@ function ObjectLabel({ obj, isHighlighted, onMouseEnter, onMouseLeave }: ObjectL
   );
 }
 
-// --- NPC Badges ---
+// --- Portrait Avatar (used in tray below scene) ---
 
-function getNPCPosition(index: number, total: number): { x: number; y: number } {
-  // Place NPCs in the lower-middle area, spread horizontally
-  const spread = Math.min(40, total * 20);
-  const startX = 50 - spread / 2;
-  const x = total === 1 ? 50 : startX + (spread * index) / (total - 1);
-  return { x, y: 78 };
+interface PortraitAvatarProps {
+  src?: string;
+  alt: string;
+  label?: string;
+  fallbackLetter?: string;
+  size: 'lg' | 'md';
 }
 
-function NPCBadge({ npc, position, module }: { npc: NPCView; position: { x: number; y: number }; module?: string }) {
+function PortraitAvatar({ src, alt, label, fallbackLetter, size }: PortraitAvatarProps) {
+  const sizeClasses = size === 'lg'
+    ? 'w-14 h-14 border-2 border-gray-600'
+    : 'w-11 h-11 border-2 border-cyan-500/60';
+
   return (
-    <div
-      className="absolute pointer-events-auto"
-      style={{
-        left: `${position.x}%`,
-        top: `${position.y}%`,
-        transform: 'translate(-50%, -50%)',
-      }}
-    >
-      <div className="flex flex-col items-center gap-0.5">
-        {npc.portrait && module ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={`/scenes/${module}/portraits/${npc.portrait}`}
-            alt={npc.name.native}
-            className="w-10 h-10 rounded-full object-cover border-2 border-cyan-500/60 shadow-lg"
-          />
-        ) : (
-          <div className="w-8 h-8 rounded-full bg-cyan-900/70 border-2 border-cyan-500/60 backdrop-blur-sm flex items-center justify-center text-sm text-cyan-300 font-medium shadow-lg">
-            {npc.name.native.charAt(0).toUpperCase()}
-          </div>
-        )}
-        <div className="px-1.5 py-0.5 rounded text-[10px] bg-gray-900/70 text-cyan-300 border border-cyan-700/30 backdrop-blur-sm whitespace-nowrap">
-          {npc.name.target}
+    <div className="flex flex-col items-center gap-0.5">
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={src}
+          alt={alt}
+          className={`${sizeClasses} rounded-full object-cover shadow-lg`}
+        />
+      ) : (
+        <div className={`${sizeClasses} rounded-full bg-cyan-900/70 backdrop-blur-sm flex items-center justify-center text-sm text-cyan-300 font-medium shadow-lg`}>
+          {fallbackLetter || alt.charAt(0).toUpperCase()}
         </div>
-      </div>
-    </div>
-  );
-}
-
-// --- Exit Indicators ---
-
-function getExitPosition(index: number, total: number): { x: number; y: number } {
-  // Spread exits along the bottom edge
-  const spread = Math.min(70, total * 25);
-  const startX = 50 - spread / 2;
-  const x = total === 1 ? 50 : startX + (spread * index) / (total - 1);
-  return { x, y: 95 };
-}
-
-function ExitIndicator({ exit, position }: { exit: ExitView; position: { x: number; y: number } }) {
-  return (
-    <div
-      className="absolute pointer-events-auto"
-      style={{
-        left: `${position.x}%`,
-        top: `${position.y}%`,
-        transform: 'translate(-50%, -50%)',
-      }}
-    >
-      <div className="px-2 py-1 rounded bg-gray-900/70 text-white/80 text-xs border border-gray-500/40 backdrop-blur-sm hover:bg-gray-700/90 hover:text-white transition-all cursor-default whitespace-nowrap">
-        {exit.name.target} &rarr;
-      </div>
+      )}
+      {label && (
+        <div className="px-1.5 py-0.5 rounded text-[10px] bg-gray-900/80 text-gray-300 backdrop-blur-sm whitespace-nowrap">
+          {label}
+        </div>
+      )}
     </div>
   );
 }
