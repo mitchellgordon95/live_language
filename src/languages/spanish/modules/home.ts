@@ -414,8 +414,7 @@ export const goals: Goal[] = [
     description: 'Prepare something to eat. Maybe some eggs?',
     hint: 'Try "Abro la nevera" to open the fridge, then "Cocino los huevos"',
     checkComplete: (state: GameState) =>
-      state.completedGoals.includes('make_breakfast') ||
-      state.completedGoals.includes('ate_food'),
+      state.completedGoals.includes('make_breakfast'),
     nextGoalId: 'go_to_living_room',
   },
   {

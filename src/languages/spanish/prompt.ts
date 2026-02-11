@@ -100,6 +100,7 @@ IMPORTANT RULES:
 - locationId must be a valid exit from current location
 - Can only interact with objects/NPCs/pets in current location (or destination after a "go" action)
 - Player must be standing to leave bedroom
+- When entering bedroom, player stays standing. Only set position to "in_bed" if player explicitly says they lie down or go to bed.
 - Can't take items from closed fridge
 - needsChanges: Use small increments (-20 to +20). Positive = better.
 - goalComplete: Array of goal IDs this action completes:
@@ -152,7 +153,7 @@ COMMON ACTIONS:
 - "abro la nevera" → actions: [{ "type": "open", "objectId": "refrigerator" }]
 - "apago el despertador" → actions: [{ "type": "turn_off", "objectId": "alarm_clock" }]
 - "tomo la leche" → actions: [{ "type": "take", "objectId": "milk" }]
-- "como los huevos" → actions: [{ "type": "eat", "objectId": "eggs" }], needsChanges: { hunger: 25 }
+- "como los huevos" → actions: [{ "type": "eat", "objectId": "eggs" }], needsChanges: { hunger: 25 }, goalComplete: ["make_breakfast"]
 - "me ducho" → actions: [{ "type": "use", "objectId": "shower" }], needsChanges: { hygiene: 50 }, goalComplete: ["take_shower"]
 - "me cepillo los dientes" → actions: [{ "type": "use", "objectId": "toothbrush" }], needsChanges: { hygiene: 10 }, goalComplete: ["brush_teeth"]
 
