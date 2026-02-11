@@ -86,7 +86,7 @@ export default function ScenePanel({ game, hoveredObjId, onHoverObj }: ScenePane
 
         {/* Portrait tray — overlaps bottom edge of scene */}
         {hasPortraits && (
-          <div className="absolute -bottom-8 left-0 right-0 flex justify-center items-end gap-3 z-10 pointer-events-none">
+          <div className="absolute -bottom-16 left-0 right-0 flex justify-center items-end gap-4 z-10 pointer-events-none">
             {/* Player portrait */}
             {game.portraitHint?.player && (
               <PortraitAvatar
@@ -179,8 +179,8 @@ interface PortraitAvatarProps {
 
 function PortraitAvatar({ src, alt, label, fallbackLetter, size }: PortraitAvatarProps) {
   const sizeClasses = size === 'lg'
-    ? 'w-20 h-20 border-2 border-gray-600'
-    : 'w-16 h-16 border-2 border-cyan-500/60';
+    ? 'w-40 h-40 border-2 border-gray-600'
+    : 'w-32 h-32 border-2 border-cyan-500/60';
 
   return (
     <div className="flex flex-col items-center gap-0.5">
@@ -192,12 +192,12 @@ function PortraitAvatar({ src, alt, label, fallbackLetter, size }: PortraitAvata
           className={`${sizeClasses} rounded-lg object-cover shadow-lg`}
         />
       ) : (
-        <div className={`${sizeClasses} rounded-lg bg-cyan-900/70 backdrop-blur-sm flex items-center justify-center text-lg text-cyan-300 font-medium shadow-lg`}>
+        <div className={`${sizeClasses} rounded-lg bg-cyan-900/70 backdrop-blur-sm flex items-center justify-center text-3xl text-cyan-300 font-medium shadow-lg`}>
           {fallbackLetter || alt.charAt(0).toUpperCase()}
         </div>
       )}
       {label && (
-        <div className="px-1.5 py-0.5 rounded text-[10px] bg-gray-900/80 text-gray-300 backdrop-blur-sm whitespace-nowrap">
+        <div className="px-2 py-1 rounded text-xs bg-gray-900/80 text-gray-300 backdrop-blur-sm whitespace-nowrap">
           {label}
         </div>
       )}
