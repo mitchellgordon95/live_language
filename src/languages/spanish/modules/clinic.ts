@@ -425,7 +425,7 @@ export const clinicGoals: Goal[] = [
     id: 'clinic_complete',
     title: 'Clinic visit complete!',
     description: 'Felicidades! You successfully visited the doctor and got your medicine. You learned how to describe symptoms with "me duele" and "tengo", and how to follow medical commands.',
-    checkComplete: () => false, // Final goal
+    checkComplete: (state: GameState) => state.completedGoals.includes('clinic_get_medicine'),
   },
 ];
 

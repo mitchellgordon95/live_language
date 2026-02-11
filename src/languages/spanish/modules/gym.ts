@@ -440,7 +440,7 @@ export const gymGoals: Goal[] = [
     id: 'gym_complete',
     title: 'Workout complete!',
     description: 'Felicidades! You completed a full workout in Spanish. You learned body parts, exercise verbs, imperatives, and how to talk about frequency.',
-    checkComplete: () => false, // Final goal
+    checkComplete: (state: GameState) => state.completedGoals.includes('gym_cool_down'),
   },
 ];
 

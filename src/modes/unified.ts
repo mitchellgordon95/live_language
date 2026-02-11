@@ -27,7 +27,7 @@ import {
   type BuildingName,
 } from '../engine/game-state.js';
 import { getPetsInLocation } from '../languages/spanish/modules/home.js';
-import { allLocations as locations, allNPCs, getNPCsInLocation, getGoalById as getGoalByIdCombined, getStartGoalForBuilding, getModuleByName, getPromptInstructionsForBuilding } from '../data/module-registry.js';
+import { allLocations as locations, allNPCs, getNPCsInLocation, getGoalById as getGoalByIdCombined, getStartGoalForBuilding, getAllGoalsForBuilding, getModuleByName, getPromptInstructionsForBuilding } from '../data/module-registry.js';
 import { speak } from '../audio/speak.js';
 import type { LanguageConfig } from '../languages/types.js';
 
@@ -711,27 +711,34 @@ export async function processTurn(
     }
   }
 
-  // Advance through satisfied goals
-  while (newState.currentGoal && newState.currentGoal.checkComplete(newState)) {
-    const completedGoal = newState.currentGoal;
-    const wasAlreadyComplete = newState.completedGoals.includes(completedGoal.id);
-    if (!goalsCompleted.some(g => g.id === completedGoal.id) && !wasAlreadyComplete) {
-      goalsCompleted.push(completedGoal);
-    }
-    if (completedGoal.nextGoalId) {
-      const nextGoal = getGoalByIdCombined(completedGoal.nextGoalId);
+  // Check ALL goals in current building for completion (not just the chain)
+  const currentBuilding = getBuildingForLocation(newState.location.id);
+  const allBuildingGoals = getAllGoalsForBuilding(currentBuilding);
+
+  for (const goal of allBuildingGoals) {
+    if (!newState.completedGoals.includes(goal.id) && goal.checkComplete(newState)) {
+      if (!goalsCompleted.some(g => g.id === goal.id)) {
+        goalsCompleted.push(goal);
+      }
       newState = {
         ...newState,
-        completedGoals: wasAlreadyComplete
-          ? newState.completedGoals
-          : [...newState.completedGoals, completedGoal.id],
-        currentGoal: nextGoal || null,
-        failedCurrentGoal: false,
+        completedGoals: [...newState.completedGoals, goal.id],
       };
-    } else {
-      break;
     }
   }
+
+  // Update suggested goal: first uncompleted goal in chain order
+  let suggestedGoal = getStartGoalForBuilding(currentBuilding);
+  while (suggestedGoal && newState.completedGoals.includes(suggestedGoal.id)) {
+    suggestedGoal = suggestedGoal.nextGoalId
+      ? getGoalByIdCombined(suggestedGoal.nextGoalId) || null
+      : null;
+  }
+  newState = {
+    ...newState,
+    currentGoal: suggestedGoal,
+    failedCurrentGoal: false,
+  };
 
   return { newState, response, effectsResult, goalsCompleted };
 }

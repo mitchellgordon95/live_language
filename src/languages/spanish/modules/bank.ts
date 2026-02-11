@@ -361,7 +361,7 @@ export const bankGoals: Goal[] = [
     id: 'bank_complete',
     title: 'Bank visit complete!',
     description: 'Felicidades! You successfully completed banking transactions in Spanish. You learned formal "usted" forms, polite conditionals like "quisiera" and "podria", and large numbers.',
-    checkComplete: () => false, // Final goal
+    checkComplete: (state: GameState) => state.completedGoals.includes('bank_polite_farewell'),
   },
 ];
 

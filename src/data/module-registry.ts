@@ -80,6 +80,10 @@ export function getModuleByName(name: string): ModuleDefinition | undefined {
   return modulesByName[name];
 }
 
+export function getAllGoalsForBuilding(building: string): Goal[] {
+  return modulesByName[building]?.goals || [];
+}
+
 export function getModuleForLocation(locationId: string): ModuleDefinition | undefined {
   const building = getBuildingForLocation(locationId);
   return modulesByName[building];

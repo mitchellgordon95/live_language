@@ -454,7 +454,7 @@ export const parkGoals: Goal[] = [
     id: 'park_complete',
     title: 'Park visit complete!',
     description: 'Congratulations! You practiced weather expressions and the present progressive tense.',
-    checkComplete: () => false, // Final goal, always shown
+    checkComplete: (state: GameState) => state.completedGoals.includes('weather_changes'),
   },
 ];
 

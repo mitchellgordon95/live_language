@@ -6,7 +6,7 @@
 import 'server-only';
 import { join } from 'path';
 import { readFileSync, existsSync } from 'fs';
-import type { GameView, TurnResultView, ObjectCoords, SceneInfo, ExitView, NPCView, PortraitHint } from './types';
+import type { GameView, TurnResultView, ObjectCoords, SceneInfo, ExitView, NPCView, GoalView, PortraitHint } from './types';
 
 // Path to compiled game engine
 const ENGINE_ROOT = join(process.cwd(), '..', 'dist');
@@ -26,6 +26,8 @@ let engine: {
   getAvailableLanguages: () => string[];
   getNPCsInLocation: (locationId: string) => unknown[];
   getVocabStage: (vocab: unknown, objectId: string) => string;
+  getAllGoalsForBuilding: (building: string) => unknown[];
+  getBuildingForLocation: (locationId: string) => string;
 } | null = null;
 
 async function getEngine() {
@@ -61,6 +63,8 @@ async function getEngine() {
       const v = vocab as { words: Record<string, { stage: string }> };
       return v.words[objectId]?.stage || 'new';
     },
+    getAllGoalsForBuilding: registryMod.getAllGoalsForBuilding,
+    getBuildingForLocation: registryMod.getBuildingForLocation,
   };
 
   return engine;
@@ -425,11 +429,7 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
     npcs,
     exits,
     needs: state.needs,
-    goal: state.currentGoal ? {
-      id: state.currentGoal.id,
-      title: state.currentGoal.title,
-      hint: state.currentGoal.hint || '',
-    } : null,
+    goals: buildGoalChecklist(state, module),
     inventory: state.inventory,
     level: state.level,
     points: state.points,
@@ -439,6 +439,22 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
     portraitHint,
     turnResult,
   };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function buildGoalChecklist(state: any, module: string): GoalView[] {
+  const building = (engine as any).getBuildingForLocation(state.location.id) as string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const allGoals = (engine as any).getAllGoalsForBuilding(building) as any[];
+  const suggestedId = state.currentGoal?.id || null;
+
+  return allGoals.map((g: { id: string; title: string; hint?: string; nextGoalId?: string }) => ({
+    id: g.id,
+    title: g.title,
+    hint: g.hint || '',
+    completed: state.completedGoals.includes(g.id),
+    suggested: g.id === suggestedId,
+  }));
 }
 
 function getVocabStageForObject(vocabulary: { words: Record<string, { stage: string }> }, objectId: string): 'new' | 'learning' | 'known' {

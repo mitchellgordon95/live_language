@@ -533,7 +533,7 @@ export const marketGoals: Goal[] = [
     id: 'market_complete',
     title: 'Market visit complete!',
     description: 'Felicidades! You successfully shopped at the market in Spanish. You learned demonstratives, numbers, prices, and how to compare items.',
-    checkComplete: () => false, // Final goal
+    checkComplete: (state: GameState) => state.completedGoals.includes('market_checkout_pay'),
   },
 ];
 

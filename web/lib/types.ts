@@ -43,6 +43,8 @@ export interface GoalView {
   id: string;
   title: string;
   hint: string;
+  completed: boolean;
+  suggested: boolean;
 }
 
 export interface GrammarIssueView {
@@ -85,7 +87,7 @@ export interface GameView {
   npcs: NPCView[];
   exits: ExitView[];
   needs: NeedsView;
-  goal: GoalView | null;
+  goals: GoalView[];
   inventory: ItemView[];
   level: number;
   points: number;

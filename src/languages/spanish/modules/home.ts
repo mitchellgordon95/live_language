@@ -461,7 +461,7 @@ export const goals: Goal[] = [
     id: 'morning_complete',
     title: 'Morning routine complete!',
     description: 'Congratulations! You completed your morning routine with your roommate and pets.',
-    checkComplete: () => false, // Final goal, always shown
+    checkComplete: (state: GameState) => state.completedGoals.includes('feed_pets'),
   },
 ];
 

@@ -37,12 +37,34 @@ export default function GamePanel({ game, hoveredObjId, onHoverObj }: GamePanelP
         <p className="text-sm text-gray-400">{game.locationName.target}</p>
       </div>
 
-      {/* Current goal */}
-      {game.goal && (
+      {/* Goal checklist */}
+      {game.goals.length > 0 && (
         <div className="bg-gray-800/50 rounded-lg p-3 border border-purple-900/50">
-          <div className="text-purple-400 text-xs font-medium uppercase tracking-wide mb-1">Goal</div>
-          <div className="text-sm text-gray-200">{game.goal.title}</div>
-          <div className="text-xs text-gray-500 mt-1">Hint: {game.goal.hint}</div>
+          <div className="text-purple-400 text-xs font-medium uppercase tracking-wide mb-2">Goals</div>
+          <div className="space-y-1">
+            {game.goals.filter(g => !g.id.endsWith('_complete')).map((goal) => (
+              <div key={goal.id} className={`flex items-start gap-2 text-sm ${
+                goal.completed ? 'text-gray-600' : goal.suggested ? 'text-gray-200' : 'text-gray-500'
+              }`}>
+                <span className="mt-0.5 flex-shrink-0 text-xs w-3">
+                  {goal.completed ? '✓' : goal.suggested ? '▸' : '○'}
+                </span>
+                <div className="min-w-0">
+                  <div className={goal.completed ? 'line-through' : ''}>
+                    {goal.title}
+                  </div>
+                  {goal.suggested && goal.hint && (
+                    <div className="text-xs text-gray-500 mt-0.5">{goal.hint}</div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+          {game.goals.find(g => g.id.endsWith('_complete') && g.completed) && (
+            <div className="mt-2 pt-2 border-t border-purple-900/30 text-green-400 text-sm font-medium">
+              All goals complete!
+            </div>
+          )}
         </div>
       )}
 

@@ -453,7 +453,7 @@ export const restaurantGoals: Goal[] = [
     id: 'restaurant_complete',
     title: 'Restaurant visit complete!',
     description: 'Felicidades! You successfully ordered and paid for a meal in Spanish. You learned how to use "quiero" and "quisiera" for polite requests.',
-    checkComplete: () => false, // Final goal
+    checkComplete: (state: GameState) => state.completedGoals.includes('restaurant_pay'),
   },
 ];
 
