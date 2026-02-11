@@ -116,11 +116,8 @@ As you play, note anywhere the experience is confusing:
 - Does the player have to do tedious repetitive actions?
 
 ### 4. Run Tests
-```bash
-DEBUG_UNIFIED=1 npm start -- --module {module} --script test-{module}.txt --no-audio
-```
 
-**Always use `--no-audio`** to disable text-to-speech during automated testing.
+Test modules via the web UI at `http://localhost:3000` (start with `cd web && npm run dev`).
 
 Watch for:
 - "valid": false when it should be true

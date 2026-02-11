@@ -2,12 +2,9 @@
   "name": "language-life-sim",
   "version": "0.1.0",
   "description": "Language learning game where you control a sim by speaking the target language",
-  "main": "dist/index.js",
   "type": "module",
   "scripts": {
-    "build": "tsc",
-    "start": "node dist/index.js",
-    "dev": "tsx src/index.ts"
+    "build": "tsc"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
