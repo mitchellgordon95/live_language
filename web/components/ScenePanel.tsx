@@ -56,12 +56,38 @@ export default function ScenePanel({ game, hoveredObjId, onHoverObj }: ScenePane
             />
           ))}
 
+          {/* Object state vignettes */}
+          {game.portraitHint?.objectChanges?.map((change) => {
+            const obj = game.objects.find(o => o.id === change.objectId);
+            if (!obj?.coords) return null;
+            return (
+              <div
+                key={`vignette-${change.objectId}`}
+                className="absolute pointer-events-none"
+                style={{
+                  left: `${obj.coords.x}%`,
+                  top: `${obj.coords.y}%`,
+                  transform: 'translate(-50%, -50%)',
+                  animation: 'portrait-fade-in 0.4s ease-out',
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={`/scenes/${game.scene!.module}/portraits/${change.image}`}
+                  alt={obj.name.native}
+                  className="w-24 h-24 rounded-lg border-2 border-white/30 shadow-lg"
+                />
+              </div>
+            );
+          })}
+
           {/* NPC badges */}
           {game.npcs.map((npc, i) => (
             <NPCBadge
               key={npc.id}
               npc={npc}
               position={getNPCPosition(i, game.npcs.length)}
+              module={game.scene?.module}
             />
           ))}
 
@@ -143,7 +169,7 @@ function getNPCPosition(index: number, total: number): { x: number; y: number } 
   return { x, y: 78 };
 }
 
-function NPCBadge({ npc, position }: { npc: NPCView; position: { x: number; y: number } }) {
+function NPCBadge({ npc, position, module }: { npc: NPCView; position: { x: number; y: number }; module?: string }) {
   return (
     <div
       className="absolute pointer-events-auto"
@@ -154,9 +180,18 @@ function NPCBadge({ npc, position }: { npc: NPCView; position: { x: number; y: n
       }}
     >
       <div className="flex flex-col items-center gap-0.5">
-        <div className="w-8 h-8 rounded-full bg-cyan-900/70 border-2 border-cyan-500/60 backdrop-blur-sm flex items-center justify-center text-sm text-cyan-300 font-medium shadow-lg">
-          {npc.name.native.charAt(0).toUpperCase()}
-        </div>
+        {npc.portrait && module ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={`/scenes/${module}/portraits/${npc.portrait}`}
+            alt={npc.name.native}
+            className="w-10 h-10 rounded-full object-cover border-2 border-cyan-500/60 shadow-lg"
+          />
+        ) : (
+          <div className="w-8 h-8 rounded-full bg-cyan-900/70 border-2 border-cyan-500/60 backdrop-blur-sm flex items-center justify-center text-sm text-cyan-300 font-medium shadow-lg">
+            {npc.name.native.charAt(0).toUpperCase()}
+          </div>
+        )}
         <div className="px-1.5 py-0.5 rounded text-[10px] bg-gray-900/70 text-cyan-300 border border-cyan-700/30 backdrop-blur-sm whitespace-nowrap">
           {npc.name.target}
         </div>

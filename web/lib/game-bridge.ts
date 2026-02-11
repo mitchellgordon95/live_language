@@ -6,7 +6,7 @@
 import 'server-only';
 import { join } from 'path';
 import { readFileSync, existsSync } from 'fs';
-import type { GameView, TurnResultView, ObjectCoords, SceneInfo, ExitView, NPCView } from './types';
+import type { GameView, TurnResultView, ObjectCoords, SceneInfo, ExitView, NPCView, PortraitHint } from './types';
 
 // Path to compiled game engine
 const ENGINE_ROOT = join(process.cwd(), '..', 'dist');
@@ -120,7 +120,7 @@ export async function initGame(options: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let state = eng.createInitialState(startLocation, startGoal, vocab) as any;
 
-  if (forceStanding || options.module) {
+  if (forceStanding) {
     state = { ...state, playerPosition: 'standing' };
   }
 
@@ -155,7 +155,7 @@ export async function playTurn(sessionId: string, input: string): Promise<GameVi
   eng.saveVocabulary(session.state.vocabulary, session.state.profile);
 
   const turnResult = buildTurnResultView(result);
-  return buildGameView(sessionId, session.state, turnResult);
+  return buildGameView(sessionId, session.state, turnResult, result.response);
 }
 
 // --- Scene Manifest Loading ---
@@ -189,6 +189,143 @@ function loadManifest(module: string, locationId: string): SceneManifest | null 
   }
 }
 
+// --- Portrait Manifest Loading ---
+
+interface PortraitManifest {
+  player: {
+    default: string;
+    variants: Array<{ image: string; match: Record<string, unknown> }>;
+  };
+  npcs: Record<string, { default: string }>;
+  pets: Record<string, { default: string }>;
+  objects: Record<string, Array<{ image: string; match: Record<string, unknown> }>>;
+}
+
+const portraitManifestCache = new Map<string, PortraitManifest | null>();
+
+function loadPortraitManifest(module: string): PortraitManifest | null {
+  if (portraitManifestCache.has(module)) return portraitManifestCache.get(module)!;
+
+  const manifestPath = join(process.cwd(), 'public', 'scenes', module, 'portraits', 'manifest.json');
+
+  if (!existsSync(manifestPath)) {
+    portraitManifestCache.set(module, null);
+    return null;
+  }
+
+  try {
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8')) as PortraitManifest;
+    portraitManifestCache.set(module, manifest);
+    return manifest;
+  } catch {
+    portraitManifestCache.set(module, null);
+    return null;
+  }
+}
+
+// Action types that map to transient player portrait variants
+const ACTION_TO_PORTRAIT: Record<string, string> = {
+  eat: 'eat',
+  drink: 'eat',       // eating portrait covers drinking too
+  cook: 'cook',
+  use: 'use',          // resolved further by goal context
+};
+
+// Goal IDs that map to specific player portrait actions
+const GOAL_TO_PORTRAIT_ACTION: Record<string, string> = {
+  brush_teeth: 'brush_teeth',
+  take_shower: 'shower',
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function resolvePortraits(state: any, response: any | null, module: string): PortraitHint | null {
+  const manifest = loadPortraitManifest(module);
+  if (!manifest) return null;
+
+  const hint: PortraitHint = {};
+
+  // 1. Player portrait — check transient actions first, fall back to persistent state
+  if (response?.actions?.length) {
+    // Check if a goal was just completed that maps to a portrait
+    const completedGoals: string[] = response.goalComplete
+      ? (Array.isArray(response.goalComplete) ? response.goalComplete : [response.goalComplete])
+      : [];
+
+    let lastAction: string | null = null;
+
+    // Check goal-based portrait first (more specific)
+    for (const goalId of completedGoals) {
+      if (GOAL_TO_PORTRAIT_ACTION[goalId]) {
+        lastAction = GOAL_TO_PORTRAIT_ACTION[goalId];
+        break;
+      }
+    }
+
+    // Fall back to action-type-based portrait
+    if (!lastAction) {
+      for (const action of response.actions) {
+        const mapped = ACTION_TO_PORTRAIT[action.type];
+        if (mapped) {
+          lastAction = mapped;
+        }
+      }
+    }
+
+    if (lastAction) {
+      const transientMatch = manifest.player.variants.find(
+        v => v.match.lastAction === lastAction
+      );
+      if (transientMatch) {
+        hint.player = transientMatch.image;
+      }
+    }
+  }
+
+  // Fall back to persistent state (playerPosition)
+  if (!hint.player) {
+    const persistentMatch = manifest.player.variants.find(
+      v => v.match.playerPosition === state.playerPosition
+    );
+    hint.player = persistentMatch?.image || manifest.player.default;
+  }
+
+  // 2. Active NPC portrait (when NPC speaks this turn)
+  if (response?.npcResponse?.npcId) {
+    const npcId = response.npcResponse.npcId;
+    const npcPortrait = manifest.npcs[npcId]?.default || manifest.pets[npcId]?.default;
+    if (npcPortrait) {
+      hint.activeNpc = npcPortrait;
+    }
+  }
+
+  // 3. Object state change portraits
+  if (response?.actions?.length) {
+    const objectChanges: Array<{ objectId: string; image: string }> = [];
+
+    for (const action of response.actions) {
+      const objectId = action.objectId;
+      if (!objectId || !manifest.objects[objectId]) continue;
+
+      const objState = state.objectStates?.[objectId] || {};
+      for (const variant of manifest.objects[objectId]) {
+        const matches = Object.entries(variant.match).every(
+          ([key, val]) => objState[key] === val
+        );
+        if (matches) {
+          objectChanges.push({ objectId, image: variant.image });
+          break;
+        }
+      }
+    }
+
+    if (objectChanges.length > 0) {
+      hint.objectChanges = objectChanges;
+    }
+  }
+
+  return hint;
+}
+
 // Map location IDs to their module name for scene lookup
 const LOCATION_TO_MODULE: Record<string, string> = {
   bedroom: 'home', bathroom: 'home', kitchen: 'home', living_room: 'home', street: 'home',
@@ -207,7 +344,7 @@ const LOCATION_TO_MODULE: Record<string, string> = {
 // --- View Model Builders ---
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function buildGameView(sessionId: string, state: any, turnResult: TurnResultView | null): GameView {
+function buildGameView(sessionId: string, state: any, turnResult: TurnResultView | null, response?: any): GameView {
   const locationId = state.location.id;
   const module = LOCATION_TO_MODULE[locationId] || 'home';
   const manifest = loadManifest(module, locationId);
@@ -247,14 +384,24 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
   // NPCs in this location
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const npcsHere = (engine as any).getNPCsInLocation(locationId) as any[];
+  const portraitManifest = loadPortraitManifest(module);
   const npcs: NPCView[] = npcsHere.map((npc: { id: string; name: { target: string; native: string } }) => ({
     id: npc.id,
     name: npc.name,
     mood: state.npcState?.[npc.id]?.mood || '',
+    portrait: portraitManifest?.npcs[npc.id]?.default || portraitManifest?.pets?.[npc.id]?.default || undefined,
   }));
 
   // Points to next level: 150 * level
   const pointsToNextLevel = 150 * state.level;
+
+  // Resolve portraits for this turn
+  const portraitHint = resolvePortraits(state, response || null, module);
+
+  // Attach NPC portrait to turn result if applicable
+  if (turnResult?.npcResponse && portraitHint?.activeNpc) {
+    turnResult.npcResponse.portrait = `/scenes/${module}/portraits/${portraitHint.activeNpc}`;
+  }
 
   return {
     sessionId,
@@ -275,6 +422,7 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
     pointsToNextLevel,
     completedGoals: state.completedGoals,
     scene,
+    portraitHint,
     turnResult,
   };
 }

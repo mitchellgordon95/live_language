@@ -24,6 +24,7 @@ export interface NPCView {
   id: string;
   name: BilingualText;
   mood: string;
+  portrait?: string;  // relative path, e.g. "portraits/npc-roommate-default.png"
 }
 
 export interface ExitView {
@@ -56,6 +57,7 @@ export interface NPCResponseView {
   target: string;
   native: string;
   actionText?: string;
+  portrait?: string;  // full src path, e.g. "/scenes/home/portraits/npc-roommate-default.png"
 }
 
 export interface ItemView {
@@ -66,6 +68,12 @@ export interface ItemView {
 export interface SceneInfo {
   image: string;       // filename, e.g. "kitchen.png"
   module: string;      // e.g. "home"
+}
+
+export interface PortraitHint {
+  player?: string;         // portrait filename, e.g. "player-player-cooking.png"
+  activeNpc?: string;      // NPC portrait filename when NPC speaks this turn
+  objectChanges?: Array<{ objectId: string; image: string }>;
 }
 
 export interface GameView {
@@ -83,6 +91,7 @@ export interface GameView {
   pointsToNextLevel: number;
   completedGoals: string[];
   scene: SceneInfo | null;
+  portraitHint: PortraitHint | null;
 
   // Last turn results (null on init)
   turnResult: TurnResultView | null;

@@ -23,13 +23,27 @@ function TurnFeedback({ result }: { result: TurnResultView }) {
 
       {/* NPC response */}
       {result.npcResponse && (
-        <div className="pl-3 border-l-2 border-cyan-600">
-          <div className="text-cyan-400 text-sm">
-            {result.npcResponse.npcName}: &quot;{result.npcResponse.target}&quot;
-          </div>
-          {result.npcResponse.actionText && (
-            <div className="text-gray-500 text-xs italic">*{result.npcResponse.actionText}*</div>
+        <div className="flex gap-2 items-start">
+          {result.npcResponse.portrait ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={result.npcResponse.portrait}
+              alt={result.npcResponse.npcName}
+              className="w-10 h-10 rounded-full object-cover border border-cyan-700/50 flex-shrink-0 mt-0.5"
+            />
+          ) : (
+            <div className="w-10 h-10 rounded-full bg-cyan-900/50 border border-cyan-700/50 flex items-center justify-center text-sm text-cyan-400 flex-shrink-0 mt-0.5">
+              {result.npcResponse.npcName.charAt(0).toUpperCase()}
+            </div>
           )}
+          <div className="pl-2 border-l-2 border-cyan-600 flex-1">
+            <div className="text-cyan-400 text-sm">
+              {result.npcResponse.npcName}: &quot;{result.npcResponse.target}&quot;
+            </div>
+            {result.npcResponse.actionText && (
+              <div className="text-gray-500 text-xs italic">*{result.npcResponse.actionText}*</div>
+            )}
+          </div>
         </div>
       )}
 
