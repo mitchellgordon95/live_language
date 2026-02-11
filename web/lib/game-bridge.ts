@@ -298,29 +298,30 @@ function resolvePortraits(state: any, response: any | null, module: string): Por
     }
   }
 
-  // 3. Object state change portraits
-  if (response?.actions?.length) {
-    const objectChanges: Array<{ objectId: string; image: string }> = [];
+  // 3. Object state portraits — show current state for all objects with portrait definitions
+  const locationObjects = state.location?.objects || [];
+  const objectChanges: Array<{ objectId: string; image: string }> = [];
 
-    for (const action of response.actions) {
-      const objectId = action.objectId;
-      if (!objectId || !manifest.objects[objectId]) continue;
+  for (const obj of locationObjects) {
+    const objectId = obj.id;
+    if (!manifest.objects[objectId]) continue;
 
-      const objState = state.objectStates?.[objectId] || {};
-      for (const variant of manifest.objects[objectId]) {
-        const matches = Object.entries(variant.match).every(
-          ([key, val]) => objState[key] === val
-        );
-        if (matches) {
-          objectChanges.push({ objectId, image: variant.image });
-          break;
-        }
+    // Merge base object state with any runtime overrides (same as engine's getObjectState)
+    const effectiveState = { ...(obj.state || {}), ...(state.objectStates?.[objectId] || {}) };
+
+    for (const variant of manifest.objects[objectId]) {
+      const matches = Object.entries(variant.match).every(
+        ([key, val]) => effectiveState[key] === val
+      );
+      if (matches) {
+        objectChanges.push({ objectId, image: variant.image });
+        break;
       }
     }
+  }
 
-    if (objectChanges.length > 0) {
-      hint.objectChanges = objectChanges;
-    }
+  if (objectChanges.length > 0) {
+    hint.objectChanges = objectChanges;
   }
 
   return hint;

@@ -31,7 +31,8 @@ export default function ScenePanel({ game, hoveredObjId, onHoverObj }: ScenePane
     (obj) => obj.coords && (obj.coords.w > 0 || obj.coords.h > 0)
   );
 
-  const hasPortraits = game.portraitHint?.player || game.npcs.length > 0;
+  const objectPortraits = game.portraitHint?.objectChanges || [];
+  const hasPortraits = game.portraitHint?.player || game.npcs.length > 0 || objectPortraits.length > 0;
 
   return (
     <div className="relative w-full h-full bg-gray-900 rounded-lg flex flex-col items-center">
@@ -45,9 +46,8 @@ export default function ScenePanel({ game, hoveredObjId, onHoverObj }: ScenePane
           draggable={false}
         />
 
-        {/* Overlay layer — object labels and vignettes only */}
+        {/* Overlay layer — object labels only */}
         <div className="absolute inset-0 pointer-events-none">
-          {/* Object labels (dots) */}
           {labeledObjects.map((obj) => (
             <ObjectLabel
               key={obj.id}
@@ -57,31 +57,6 @@ export default function ScenePanel({ game, hoveredObjId, onHoverObj }: ScenePane
               onMouseLeave={() => onHoverObj(null)}
             />
           ))}
-
-          {/* Object state vignettes */}
-          {game.portraitHint?.objectChanges?.map((change) => {
-            const obj = game.objects.find(o => o.id === change.objectId);
-            if (!obj?.coords) return null;
-            return (
-              <div
-                key={`vignette-${change.objectId}`}
-                className="absolute pointer-events-none"
-                style={{
-                  left: `${obj.coords.x}%`,
-                  top: `${obj.coords.y}%`,
-                  transform: 'translate(-50%, -50%)',
-                  animation: 'portrait-fade-in 0.4s ease-out',
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={`/scenes/${game.scene!.module}/portraits/${change.image}`}
-                  alt={obj.name.native}
-                  className="w-24 h-24 rounded-lg border-2 border-white/30 shadow-lg"
-                />
-              </div>
-            );
-          })}
         </div>
 
         {/* Portrait tray — overlaps bottom edge of scene */}
@@ -106,6 +81,19 @@ export default function ScenePanel({ game, hoveredObjId, onHoverObj }: ScenePane
                 size="md"
               />
             ))}
+            {/* Object state portraits */}
+            {objectPortraits.map((change) => {
+              const obj = game.objects.find(o => o.id === change.objectId);
+              return (
+                <PortraitAvatar
+                  key={`obj-${change.objectId}`}
+                  src={`/scenes/${game.scene!.module}/portraits/${change.image}`}
+                  alt={obj?.name.native || change.objectId}
+                  label={obj?.name.target}
+                  size="md"
+                />
+              );
+            })}
           </div>
         )}
       </div>
