@@ -425,6 +425,7 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
     sessionId,
     locationId,
     locationName: state.location.name,
+    module,
     objects,
     npcs,
     exits,
@@ -476,7 +477,7 @@ function npcVoice(npcId: string, locationId: string): string {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildTurnResultView(result: any, state: any): TurnResultView {
   const response = result.response;
-  return {
+  const view: TurnResultView = {
     valid: response.valid,
     message: response.message || '',
     invalidReason: response.invalidReason,
@@ -500,6 +501,13 @@ function buildTurnResultView(result: any, state: any): TurnResultView {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     goalsCompleted: (result.goalsCompleted || []).map((g: any) => g.title || g.id),
   };
+
+  // Include hint when action failed and there's a current goal with a hint
+  if (!response.valid && state.currentGoal?.hint) {
+    view.hint = state.currentGoal.hint;
+  }
+
+  return view;
 }
 
 export function getAvailableModules(): string[] {

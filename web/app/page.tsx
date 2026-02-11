@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useRef } from 'react';
 import type { GameView } from '@/lib/types';
-import GamePanel from '@/components/GamePanel';
 import ChatPanel from '@/components/ChatPanel';
 import type { ChatEntry } from '@/components/ChatPanel';
 import ScenePanel from '@/components/ScenePanel';
@@ -17,7 +16,6 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatEntry[]>([]);
-  const [hoveredObjId, setHoveredObjId] = useState<string | null>(null);
   const chatIdRef = useRef(0);
   const { speak, isMuted, toggleMute } = useTTS();
 
@@ -38,6 +36,16 @@ export default function Home() {
       }
       const gameView: GameView = await res.json();
       setGame(gameView);
+
+      // Tutorial hints for home module
+      if (gameView.module === 'home') {
+        chatIdRef.current += 1;
+        const hint1: ChatEntry = { id: chatIdRef.current, playerInput: '', systemHint: 'Try typing "Me levanto" to get out of bed' };
+        chatIdRef.current += 1;
+        const hint2: ChatEntry = { id: chatIdRef.current, playerInput: '', systemHint: 'You can type /learn [topic] to get a quick Spanish lesson on any topic' };
+        setChatHistory([hint1, hint2]);
+      }
+
       setAppState('playing');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to start game');
@@ -207,6 +215,9 @@ export default function Home() {
       <div className="flex items-center justify-between px-4 py-2 bg-gray-900 border-b border-gray-800">
         <h1 className="text-sm font-medium text-gray-400">Language Life Sim</h1>
         <div className="flex items-center gap-3">
+          <span className="text-xs text-gray-500">
+            Lvl {game.level} &middot; {game.points}/{game.pointsToNextLevel} pts
+          </span>
           <button
             onClick={toggleMute}
             className="text-gray-500 hover:text-gray-300 transition-colors"
@@ -223,37 +234,30 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Main content: scene (left) + game info (center) + chat (right) */}
+      {/* Main content: world (left) + chat+input (right) */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Scene panel */}
-        <div className="w-[40%] p-3">
-          <ScenePanel game={game} hoveredObjId={hoveredObjId} onHoverObj={setHoveredObjId} />
+        {/* World panel */}
+        <div className="w-[55%] border-r border-gray-800">
+          <ScenePanel game={game} />
         </div>
 
-        {/* Game info panel */}
-        <div className="w-[30%] pt-3 border-l border-gray-800">
-          <GamePanel game={game} hoveredObjId={hoveredObjId} onHoverObj={setHoveredObjId} />
-        </div>
-
-        {/* Chat panel */}
-        <div className="w-[30%] pt-3 border-l border-gray-800">
+        {/* Chat + Input column */}
+        <div className="w-[45%] flex flex-col">
           <ChatPanel chatHistory={chatHistory} onSpeak={speak} />
+          <div className="p-3 border-t border-gray-800">
+            {error && (
+              <div className="text-red-400 text-xs mb-2">{error}</div>
+            )}
+            <InputBar
+              onSubmit={handleInput}
+              disabled={isProcessing}
+              placeholder="Type in Spanish... (e.g., 'abro la nevera')"
+            />
+            {isProcessing && (
+              <div className="text-gray-500 text-xs mt-1 animate-pulse">Thinking...</div>
+            )}
+          </div>
         </div>
-      </div>
-
-      {/* Input bar */}
-      <div className="p-3 bg-gray-900 border-t border-gray-800">
-        {error && (
-          <div className="text-red-400 text-xs mb-2">{error}</div>
-        )}
-        <InputBar
-          onSubmit={handleInput}
-          disabled={isProcessing}
-          placeholder="Type in Spanish... (e.g., 'abro la nevera')"
-        />
-        {isProcessing && (
-          <div className="text-gray-500 text-xs mt-1 animate-pulse">Thinking...</div>
-        )}
       </div>
     </div>
   );

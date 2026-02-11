@@ -15,6 +15,7 @@ export interface ChatEntry {
   turnResult?: TurnResultView;
   learnResult?: LearnResult;
   sayResult?: string;
+  systemHint?: string;
 }
 
 interface ChatPanelProps {
@@ -81,6 +82,13 @@ function TurnFeedback({ result, onSpeak }: { result: TurnResultView; onSpeak?: (
       <div className={`text-sm ${result.valid ? 'text-green-400' : 'text-yellow-400'}`}>
         {result.valid ? '\u2713' : '\u2717'} {result.valid ? result.message : (result.invalidReason || result.message)}
       </div>
+
+      {/* Hint after failed action */}
+      {!result.valid && result.hint && (
+        <div className="text-xs text-blue-300/80 bg-blue-900/20 border border-blue-800/30 rounded px-2 py-1">
+          Hint: {result.hint}
+        </div>
+      )}
 
       {/* NPC response */}
       {result.npcResponse && (
@@ -167,18 +175,28 @@ export default function ChatPanel({ chatHistory, onSpeak }: ChatPanelProps) {
         )}
         {chatHistory.map((entry) => (
           <div key={entry.id} className="space-y-1.5">
+            {/* System hint (no player input) */}
+            {entry.systemHint && (
+              <div className="text-xs text-blue-300/80 bg-blue-900/20 border border-blue-800/30 rounded px-3 py-2">
+                {entry.systemHint}
+              </div>
+            )}
             {/* Player input */}
-            <div className="flex justify-end">
-              <span className="inline-block px-3 py-1.5 rounded-lg bg-blue-600/30 text-blue-200 text-sm border border-blue-700/30 max-w-[90%]">
-                {entry.playerInput}
-              </span>
-            </div>
+            {entry.playerInput && (
+              <div className="flex justify-end">
+                <span className="inline-block px-3 py-1.5 rounded-lg bg-blue-600/30 text-blue-200 text-sm border border-blue-700/30 max-w-[90%]">
+                  {entry.playerInput}
+                </span>
+              </div>
+            )}
             {/* Game response or learn lesson */}
-            <div className="bg-gray-800/40 rounded-lg p-2.5 border border-gray-700/50">
-              {entry.turnResult && <TurnFeedback result={entry.turnResult} onSpeak={onSpeak} />}
-              {entry.learnResult && <LearnFeedback result={entry.learnResult} />}
-              {entry.sayResult && <SayFeedback text={entry.sayResult} />}
-            </div>
+            {(entry.turnResult || entry.learnResult || entry.sayResult) && (
+              <div className="bg-gray-800/40 rounded-lg p-2.5 border border-gray-700/50">
+                {entry.turnResult && <TurnFeedback result={entry.turnResult} onSpeak={onSpeak} />}
+                {entry.learnResult && <LearnFeedback result={entry.learnResult} />}
+                {entry.sayResult && <SayFeedback text={entry.sayResult} />}
+              </div>
+            )}
           </div>
         ))}
         <div ref={chatEndRef} />

@@ -83,6 +83,7 @@ export interface GameView {
   sessionId: string;
   locationId: string;
   locationName: BilingualText;
+  module: string;
   objects: GameObjectView[];
   npcs: NPCView[];
   exits: ExitView[];
@@ -111,4 +112,5 @@ export interface TurnResultView {
   pointsAwarded: number;
   leveledUp: boolean;
   goalsCompleted: string[];
+  hint?: string;
 }
