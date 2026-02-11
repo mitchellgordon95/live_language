@@ -34,9 +34,9 @@ export default function ScenePanel({ game, hoveredObjId, onHoverObj }: ScenePane
   const hasPortraits = game.portraitHint?.player || game.npcs.length > 0;
 
   return (
-    <div className="relative w-full h-full bg-gray-900 rounded-lg flex flex-col items-center justify-center">
+    <div className="relative w-full h-full bg-gray-900 rounded-lg flex flex-col items-center">
       {/* Square container — matches 1024x1024 scene images */}
-      <div className="relative aspect-square max-w-full max-h-full">
+      <div className="relative aspect-square max-w-full max-h-[calc(100%-2rem)]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={imageSrc}
