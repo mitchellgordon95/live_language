@@ -351,8 +351,21 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
   const manifest = loadManifest(module, locationId);
 
   // Build objects list with vocab stages and coordinates
+  // Filter out fridge items unless the fridge is open (same logic as CLI buildPrompt)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const objects = (state.location.objects || []).map((obj: any) => ({
+  const visibleObjects = (state.location.objects || []).filter((obj: any) => {
+    const effectiveState = { ...(obj.state || {}), ...(state.objectStates?.[obj.id] || {}) };
+    if (effectiveState.inFridge) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const fridge = (state.location.objects || []).find((o: any) => o.id === 'refrigerator');
+      if (!fridge) return false;
+      const fridgeState = { ...(fridge.state || {}), ...(state.objectStates?.['refrigerator'] || {}) };
+      return fridgeState.open;
+    }
+    return true;
+  });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const objects = visibleObjects.map((obj: any) => ({
     id: obj.id,
     name: obj.name,
     vocabStage: getVocabStageForObject(state.vocabulary, obj.id),
@@ -465,4 +478,67 @@ function buildTurnResultView(result: any): TurnResultView {
 export function getAvailableModules(): string[] {
   // Hard-coded for now; could load from engine
   return ['home', 'restaurant', 'market', 'gym', 'park', 'clinic', 'bank'];
+}
+
+// --- /learn Command ---
+
+const MAX_LEARN_PER_DAY = 5;
+
+export async function handleLearnCommand(sessionId: string, topic: string): Promise<{ lesson: string; remaining: number } | { error: string }> {
+  const session = sessions.get(sessionId);
+  if (!session) {
+    return { error: 'Session not found. Start a new game.' };
+  }
+
+  const state = session.state;
+
+  // Calculate current in-game day
+  const currentDay = Math.floor((state.time.hour + state.time.minute / 60) / 24) + 1;
+
+  // Reset counter if it's a new day
+  if (state.lastLearnCommandDay !== currentDay) {
+    state.learnCommandsUsedToday = 0;
+    state.lastLearnCommandDay = currentDay;
+  }
+
+  // Check if limit reached
+  if (state.learnCommandsUsedToday >= MAX_LEARN_PER_DAY) {
+    return { error: `You've used all ${MAX_LEARN_PER_DAY} /learn commands for today. Keep playing to advance the day!` };
+  }
+
+  const remaining = MAX_LEARN_PER_DAY - state.learnCommandsUsedToday - 1;
+
+  try {
+    // Dynamic import of Anthropic client (already loaded by engine via dotenv)
+    const Anthropic = (await import(/* webpackIgnore: true */ '@anthropic-ai/sdk')).default;
+    const client = new Anthropic();
+
+    const response = await client.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1024,
+      system: `You are a friendly Spanish language tutor. Give a brief, helpful lesson on the requested topic.
+
+Guidelines:
+- Keep it concise (under 300 words)
+- Use simple explanations with clear examples
+- Include 3-5 example sentences in Spanish with English translations
+- Focus on practical usage, not linguistic theory
+- If the topic is vague, pick a common interpretation
+- Use markdown formatting for clarity`,
+      messages: [
+        { role: 'user', content: `Teach me about: ${topic}` },
+      ],
+    });
+
+    const content = response.content[0];
+    const lesson = content.type === 'text' ? content.text : 'Could not generate lesson.';
+
+    // Increment usage counter
+    state.learnCommandsUsedToday += 1;
+    sessions.set(sessionId, session);
+
+    return { lesson, remaining };
+  } catch {
+    return { error: 'Could not generate lesson. Try again.' };
+  }
 }

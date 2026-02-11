@@ -3,14 +3,56 @@
 import { useEffect, useRef } from 'react';
 import type { TurnResultView } from '@/lib/types';
 
+export interface LearnResult {
+  lesson?: string;
+  remaining?: number;
+  error?: string;
+}
+
 export interface ChatEntry {
   id: number;
   playerInput: string;
-  turnResult: TurnResultView;
+  turnResult?: TurnResultView;
+  learnResult?: LearnResult;
 }
 
 interface ChatPanelProps {
   chatHistory: ChatEntry[];
+}
+
+function LearnFeedback({ result }: { result: LearnResult }) {
+  if (result.error) {
+    return <div className="text-yellow-400 text-sm">{result.error}</div>;
+  }
+  return (
+    <div className="space-y-2">
+      <div className="text-sm text-gray-200 whitespace-pre-wrap leading-relaxed prose prose-invert prose-sm max-w-none
+        [&_strong]:text-blue-300 [&_em]:text-gray-400
+        [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:list-decimal [&_ol]:pl-4
+        [&_li]:text-gray-300 [&_code]:text-cyan-300 [&_code]:bg-gray-800 [&_code]:px-1 [&_code]:rounded"
+        dangerouslySetInnerHTML={{ __html: simpleMarkdown(result.lesson || '') }}
+      />
+      {result.remaining !== undefined && (
+        <div className="text-gray-500 text-xs">{result.remaining} /learn uses remaining today</div>
+      )}
+    </div>
+  );
+}
+
+// Minimal markdown → HTML for lesson text
+function simpleMarkdown(text: string): string {
+  return text
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`(.+?)`/g, '<code>$1</code>')
+    .replace(/^### (.+)$/gm, '<div class="text-blue-400 font-medium mt-2">$1</div>')
+    .replace(/^## (.+)$/gm, '<div class="text-blue-400 font-medium text-base mt-2">$1</div>')
+    .replace(/^# (.+)$/gm, '<div class="text-blue-400 font-bold text-base mt-2">$1</div>')
+    .replace(/^- (.+)$/gm, '<div class="pl-3">• $1</div>')
+    .replace(/^\d+\. (.+)$/gm, '<div class="pl-3">$&</div>')
+    .replace(/\n\n/g, '<br/><br/>')
+    .replace(/\n/g, '<br/>');
 }
 
 function TurnFeedback({ result }: { result: TurnResultView }) {
@@ -103,9 +145,10 @@ export default function ChatPanel({ chatHistory }: ChatPanelProps) {
                 {entry.playerInput}
               </span>
             </div>
-            {/* Game response */}
+            {/* Game response or learn lesson */}
             <div className="bg-gray-800/40 rounded-lg p-2.5 border border-gray-700/50">
-              <TurnFeedback result={entry.turnResult} />
+              {entry.turnResult && <TurnFeedback result={entry.turnResult} />}
+              {entry.learnResult && <LearnFeedback result={entry.learnResult} />}
             </div>
           </div>
         ))}

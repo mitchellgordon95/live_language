@@ -57,7 +57,23 @@ export default function Home() {
         const data = await res.json();
         throw new Error(data.error || 'Failed to process turn');
       }
-      const gameView: GameView = await res.json();
+      const data = await res.json();
+
+      // Handle /learn response
+      if (data.learn) {
+        chatIdRef.current += 1;
+        setChatHistory(prev => [...prev, {
+          id: chatIdRef.current,
+          playerInput: input,
+          learnResult: data.learn.error
+            ? { error: data.learn.error }
+            : { lesson: data.learn.lesson, remaining: data.learn.remaining },
+        }]);
+        return;
+      }
+
+      // Normal game turn
+      const gameView = data as GameView;
       setGame(gameView);
       if (gameView.turnResult) {
         chatIdRef.current += 1;
