@@ -24,11 +24,13 @@ export default function ScenePanel({ game }: ScenePanelProps) {
   const labeledObjects = game.objects.filter(
     (obj) => obj.coords && (obj.coords.w > 0 || obj.coords.h > 0)
   );
-  const unlabeledObjects = game.objects.filter(
-    (obj) => !obj.coords || (obj.coords.w === 0 && obj.coords.h === 0)
-  );
-
   const objectPortraits = game.portraitHint?.objectChanges || [];
+  const activePortraitIds = new Set(objectPortraits.map(p => p.objectId));
+
+  const unlabeledObjects = game.objects.filter(
+    (obj) => (!obj.coords || (obj.coords.w === 0 && obj.coords.h === 0))
+      && !obj.containerId  // exclude container items (shown on portrait instead)
+  );
   const hasPortraits = game.portraitHint?.player || game.npcs.length > 0 || objectPortraits.length > 0;
 
   const { west: westExits, east: eastExits, north: northExits } = distributeExits(game.exits);
@@ -160,13 +162,14 @@ export default function ScenePanel({ game }: ScenePanelProps) {
           ))}
           {objectPortraits.map((change) => {
             const obj = game.objects.find(o => o.id === change.objectId);
+            const containedItems = game.objects.filter(o => o.containerId === change.objectId);
             return (
-              <PortraitAvatar
+              <PortraitWithItems
                 key={`obj-${change.objectId}`}
                 src={`/scenes/${game.scene!.module}/portraits/${change.image}`}
                 alt={obj?.name.native || change.objectId}
                 label={obj?.name.target}
-                size="md"
+                items={containedItems}
               />
             );
           })}
@@ -424,6 +427,67 @@ function PortraitAvatar({ src, alt, label, mood, fallbackLetter, size }: Portrai
         <div className="px-2 py-1 rounded text-xs bg-gray-900/80 backdrop-blur-sm whitespace-nowrap text-center">
           {label && <span className="text-gray-300">{label}</span>}
           {mood && <span className="text-gray-500 ml-1">- {mood}</span>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// --- Portrait with contained item dots (e.g. open fridge with food items) ---
+
+function PortraitWithItems({ src, alt, label, items }: {
+  src: string;
+  alt: string;
+  label?: string;
+  items: GameObjectView[];
+}) {
+  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+
+  return (
+    <div className="flex flex-col items-center gap-0.5">
+      <div className="relative w-32 h-32">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={src}
+          alt={alt}
+          className="w-32 h-32 border-2 border-cyan-500/60 rounded-lg object-cover shadow-lg"
+        />
+        {/* Item dots overlaid on portrait */}
+        {items.length > 0 && (
+          <div className="absolute bottom-1 left-1 right-1 flex justify-center gap-1.5 pointer-events-auto">
+            {items.map((item) => {
+              const isKnown = item.vocabStage === 'known';
+              const vocabColor = isKnown ? 'bg-green-400' : item.vocabStage === 'learning' ? 'bg-yellow-400' : 'bg-blue-400';
+              const isHovered = hoveredItem === item.id;
+              return (
+                <div
+                  key={item.id}
+                  className="relative"
+                  onMouseEnter={() => setHoveredItem(item.id)}
+                  onMouseLeave={() => setHoveredItem(null)}
+                >
+                  <div
+                    className={`w-3 h-3 rounded-full ${vocabColor} border border-white/30 cursor-default ${
+                      item.vocabStage === 'new' ? 'shadow-sm' : ''
+                    }`}
+                    style={item.vocabStage === 'new' ? { animation: 'gentle-pulse 2s ease-in-out infinite' } : undefined}
+                  />
+                  {isHovered && (
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-0.5 rounded text-xs whitespace-nowrap shadow-lg backdrop-blur-sm bg-gray-900/90 text-white border border-gray-500/50 flex items-center gap-1.5 z-20">
+                      <span className={`w-1.5 h-1.5 rounded-full ${vocabColor} flex-shrink-0`} />
+                      <span className="font-medium">{item.name.target}</span>
+                      {!isKnown && <span className="text-blue-200">({item.name.native})</span>}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      {label && (
+        <div className="px-2 py-1 rounded text-xs bg-gray-900/80 backdrop-blur-sm whitespace-nowrap text-center">
+          <span className="text-gray-300">{label}</span>
         </div>
       )}
     </div>

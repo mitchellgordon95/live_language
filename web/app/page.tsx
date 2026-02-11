@@ -72,6 +72,16 @@ export default function Home() {
     if (!game || isProcessing) return;
     setIsProcessing(true);
     setError(null);
+
+    // Show player input immediately with pending state
+    chatIdRef.current += 1;
+    const entryId = chatIdRef.current;
+    setChatHistory(prev => [...prev, {
+      id: entryId,
+      playerInput: input,
+      pending: true,
+    }]);
+
     try {
       const res = await fetch('/api/game', {
         method: 'POST',
@@ -86,14 +96,13 @@ export default function Home() {
 
       // Handle /learn response
       if (data.learn) {
-        chatIdRef.current += 1;
-        setChatHistory(prev => [...prev, {
-          id: chatIdRef.current,
-          playerInput: input,
+        setChatHistory(prev => prev.map(e => e.id === entryId ? {
+          ...e,
+          pending: false,
           learnResult: data.learn.error
             ? { error: data.learn.error }
             : { lesson: data.learn.lesson, remaining: data.learn.remaining },
-        }]);
+        } : e));
         return;
       }
 
@@ -101,19 +110,23 @@ export default function Home() {
       const gameView = data as GameView;
       setGame(gameView);
       if (gameView.turnResult) {
-        chatIdRef.current += 1;
-        setChatHistory(prev => [...prev, {
-          id: chatIdRef.current,
-          playerInput: input,
+        setChatHistory(prev => prev.map(e => e.id === entryId ? {
+          ...e,
+          pending: false,
           turnResult: gameView.turnResult!,
-        }]);
+        } : e));
         // Auto-speak NPC dialog with gendered voice
         if (gameView.turnResult.npcResponse?.target) {
           speak(gameView.turnResult.npcResponse.target, gameView.turnResult.npcResponse.voice);
         }
+      } else {
+        // No turn result — just remove pending
+        setChatHistory(prev => prev.map(e => e.id === entryId ? { ...e, pending: false } : e));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error');
+      // Remove pending on error
+      setChatHistory(prev => prev.map(e => e.id === entryId ? { ...e, pending: false } : e));
     } finally {
       setIsProcessing(false);
     }
@@ -253,9 +266,6 @@ export default function Home() {
               disabled={isProcessing}
               placeholder="Type in Spanish... (e.g., 'abro la nevera')"
             />
-            {isProcessing && (
-              <div className="text-gray-500 text-xs mt-1 animate-pulse">Thinking...</div>
-            )}
           </div>
         </div>
       </div>

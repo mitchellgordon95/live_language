@@ -369,12 +369,16 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
     return true;
   });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const objects = visibleObjects.map((obj: any) => ({
-    id: obj.id,
-    name: obj.name,
-    vocabStage: getVocabStageForObject(state.vocabulary, obj.id),
-    coords: manifest?.objects?.[obj.id] || undefined,
-  }));
+  const objects = visibleObjects.map((obj: any) => {
+    const effectiveState = { ...(obj.state || {}), ...(state.objectStates?.[obj.id] || {}) };
+    return {
+      id: obj.id,
+      name: obj.name,
+      vocabStage: getVocabStageForObject(state.vocabulary, obj.id),
+      coords: manifest?.objects?.[obj.id] || undefined,
+      containerId: effectiveState.inFridge ? 'refrigerator' : undefined,
+    };
+  });
 
   // Add dynamic objects (no coordinates — they weren't in the generated image)
   const dynamicObjs = state.dynamicObjects?.[locationId] || [];

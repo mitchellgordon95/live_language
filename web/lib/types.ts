@@ -18,6 +18,7 @@ export interface GameObjectView {
   name: BilingualText;
   vocabStage: 'new' | 'learning' | 'known';
   coords?: ObjectCoords;
+  containerId?: string;
 }
 
 export interface NPCView {

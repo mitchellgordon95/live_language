@@ -16,6 +16,7 @@ export interface ChatEntry {
   learnResult?: LearnResult;
   sayResult?: string;
   systemHint?: string;
+  pending?: boolean;
 }
 
 interface ChatPanelProps {
@@ -161,9 +162,11 @@ function TurnFeedback({ result, onSpeak }: { result: TurnResultView; onSpeak?: (
 export default function ChatPanel({ chatHistory, onSpeak }: ChatPanelProps) {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
+  // Scroll when new entries are added or when pending entries resolve
+  const lastEntry = chatHistory[chatHistory.length - 1];
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatHistory.length]);
+  }, [chatHistory.length, lastEntry?.pending]);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -196,6 +199,10 @@ export default function ChatPanel({ chatHistory, onSpeak }: ChatPanelProps) {
                 {entry.learnResult && <LearnFeedback result={entry.learnResult} />}
                 {entry.sayResult && <SayFeedback text={entry.sayResult} />}
               </div>
+            )}
+            {/* Pending response */}
+            {entry.pending && (
+              <div className="text-gray-500 text-xs animate-pulse pl-1">Thinking...</div>
             )}
           </div>
         ))}
