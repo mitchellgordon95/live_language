@@ -185,12 +185,12 @@ export default function Home() {
         </div>
 
         {/* Game info panel */}
-        <div className="w-[30%] border-l border-gray-800">
+        <div className="w-[30%] pt-3 border-l border-gray-800">
           <GamePanel game={game} hoveredObjId={hoveredObjId} onHoverObj={setHoveredObjId} />
         </div>
 
         {/* Chat panel */}
-        <div className="w-[30%] border-l border-gray-800">
+        <div className="w-[30%] pt-3 border-l border-gray-800">
           <ChatPanel chatHistory={chatHistory} />
         </div>
       </div>
