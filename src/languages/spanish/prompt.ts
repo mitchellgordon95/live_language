@@ -100,7 +100,7 @@ IMPORTANT RULES:
 - Use EXACT object IDs from the lists (e.g., "refrigerator" not "fridge", "alarm_clock" not "alarm")
 - locationId must be a valid exit from the player's location at that point in the action sequence (after any preceding "go" actions)
 - Can only interact with objects/NPCs/pets in current location (or destination after a "go" action)
-- Player must be standing to leave bedroom
+- Player must be standing to leave bedroom. The alarm ringing does NOT prevent leaving -- the player can leave with the alarm still on.
 - When entering bedroom, player stays standing. Only set position to "in_bed" if player explicitly says they lie down or go to bed.
 - Can't take items from closed fridge
 - needsChanges: Use small increments (-20 to +20). Positive = better.
