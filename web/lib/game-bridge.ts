@@ -493,7 +493,7 @@ function buildTurnResultView(result: any, state: any): TurnResultView {
       explanation: issue.explanation,
     })),
     targetModel: response.spanishModel || '',
-    npcResponse: response.npcResponse ? {
+    npcResponse: response.npcResponse?.npcId ? {
       npcName: response.npcResponse.npcId,
       target: response.npcResponse.spanish || '',
       native: response.npcResponse.english || '',
