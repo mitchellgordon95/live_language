@@ -692,8 +692,11 @@ export async function processTurn(
   }
 
   // Check ALL goals in current building for completion (not just the chain)
+  // Skip goal checking if the AI response was an error (understood: false, valid: false)
   const currentBuilding = getBuildingForLocation(newState.location.id);
-  const allBuildingGoals = getAllGoalsForBuilding(currentBuilding);
+  const allBuildingGoals = (response.understood === false && response.valid === false)
+    ? []
+    : getAllGoalsForBuilding(currentBuilding);
 
   for (const goal of allBuildingGoals) {
     if (!newState.completedGoals.includes(goal.id) && goal.checkComplete(newState)) {
