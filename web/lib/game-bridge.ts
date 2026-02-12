@@ -89,6 +89,7 @@ function generateSessionId(): string {
 export async function initGame(options: {
   module?: string;
   language?: string;
+  profile?: string;
 }): Promise<GameView> {
   const eng = await getEngine();
 
@@ -98,7 +99,7 @@ export async function initGame(options: {
     throw new Error(`Unknown language: ${languageId}. Available: ${eng.getAvailableLanguages().join(', ')}`);
   }
 
-  const vocab = eng.loadVocabulary();
+  const vocab = eng.loadVocabulary(options.profile || undefined);
 
   // Determine start location and goal from module
   let startLocationId = 'bedroom';
@@ -128,8 +129,8 @@ export async function initGame(options: {
     state = { ...state, playerPosition: 'standing' };
   }
 
-  // Disable audio in web mode
-  state = { ...state, audioEnabled: false };
+  // Disable audio in web mode, set vocab profile
+  state = { ...state, audioEnabled: false, profile: options.profile || undefined };
 
   const sessionId = generateSessionId();
   sessions.set(sessionId, { state, languageId });
@@ -522,31 +523,11 @@ export function getAvailableModules(): string[] {
 
 // --- /learn Command ---
 
-const MAX_LEARN_PER_DAY = 5;
-
-export async function handleLearnCommand(sessionId: string, topic: string): Promise<{ lesson: string; remaining: number } | { error: string }> {
+export async function handleLearnCommand(sessionId: string, topic: string): Promise<{ lesson: string } | { error: string }> {
   const session = sessions.get(sessionId);
   if (!session) {
     return { error: 'Session not found. Start a new game.' };
   }
-
-  const state = session.state;
-
-  // Calculate current in-game day
-  const currentDay = Math.floor((state.time.hour + state.time.minute / 60) / 24) + 1;
-
-  // Reset counter if it's a new day
-  if (state.lastLearnCommandDay !== currentDay) {
-    state.learnCommandsUsedToday = 0;
-    state.lastLearnCommandDay = currentDay;
-  }
-
-  // Check if limit reached
-  if (state.learnCommandsUsedToday >= MAX_LEARN_PER_DAY) {
-    return { error: `You've used all ${MAX_LEARN_PER_DAY} /learn commands for today. Keep playing to advance the day!` };
-  }
-
-  const remaining = MAX_LEARN_PER_DAY - state.learnCommandsUsedToday - 1;
 
   try {
     // Dynamic import of Anthropic client (already loaded by engine via dotenv)
@@ -573,11 +554,7 @@ Guidelines:
     const content = response.content[0];
     const lesson = content.type === 'text' ? content.text : 'Could not generate lesson.';
 
-    // Increment usage counter
-    state.learnCommandsUsedToday += 1;
-    sessions.set(sessionId, session);
-
-    return { lesson, remaining };
+    return { lesson };
   } catch {
     return { error: 'Could not generate lesson. Try again.' };
   }

@@ -5,7 +5,6 @@ import type { TurnResultView } from '@/lib/types';
 
 export interface LearnResult {
   lesson?: string;
-  remaining?: number;
   error?: string;
 }
 
@@ -36,9 +35,6 @@ function LearnFeedback({ result }: { result: LearnResult }) {
         [&_li]:text-gray-300 [&_code]:text-cyan-300 [&_code]:bg-gray-800 [&_code]:px-1 [&_code]:rounded"
         dangerouslySetInnerHTML={{ __html: simpleMarkdown(result.lesson || '') }}
       />
-      {result.remaining !== undefined && (
-        <div className="text-gray-500 text-xs">{result.remaining} /learn uses remaining today</div>
-      )}
     </div>
   );
 }

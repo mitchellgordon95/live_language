@@ -16,6 +16,7 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatEntry[]>([]);
+  const [profile, setProfile] = useState('');
   const chatIdRef = useRef(0);
   const { speak, isMuted, toggleMute } = useTTS();
 
@@ -28,7 +29,7 @@ export default function Home() {
       const res = await fetch('/api/game/init', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ module, language: 'spanish' }),
+        body: JSON.stringify({ module, language: 'spanish', profile: profile || undefined }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -163,7 +164,18 @@ export default function Home() {
       <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
         <div className="max-w-md w-full p-8">
           <h1 className="text-3xl font-bold mb-2 text-center">Language Life Sim</h1>
-          <p className="text-gray-400 text-center mb-8">Learn Spanish through an interactive life simulation</p>
+          <p className="text-gray-400 text-center mb-6">Learn Spanish through an interactive life simulation</p>
+
+          <div className="mb-6">
+            <label className="text-gray-500 text-xs block mb-1">Vocab Profile</label>
+            <input
+              type="text"
+              value={profile}
+              onChange={(e) => setProfile(e.target.value.replace(/[^a-zA-Z0-9_-]/g, ''))}
+              placeholder="default"
+              className="w-full px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-blue-500"
+            />
+          </div>
 
           <div className="space-y-3">
             <button

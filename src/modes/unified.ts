@@ -15,7 +15,6 @@ import {
   getObjectState,
   getBuildingForLocation,
   awardPoints,
-  isBuildingUnlocked,
   saveLocationProgress,
   loadLocationProgress,
   ACTION_POINTS,
@@ -611,7 +610,6 @@ export interface ApplyEffectsResult {
   leveledUp: boolean;
   buildingChanged: boolean;
   newBuilding?: BuildingName;
-  buildingBlocked?: BuildingName;  // If tried to enter locked building
 }
 
 /**
@@ -623,7 +621,6 @@ function applyMechanicalEffects(state: GameState, parseResult: ParseResult): App
   let totalActionPoints = 0;
   let buildingChanged = false;
   let newBuilding: BuildingName | undefined;
-  let buildingBlocked: BuildingName | undefined;
 
   const grammarScore = parseResult.grammar?.score ?? 100;
   const oldBuilding = getBuildingForLocation(state.location.id);
@@ -638,13 +635,6 @@ function applyMechanicalEffects(state: GameState, parseResult: ParseResult): App
       case 'go':
         if (action.locationId && locations[action.locationId]) {
           const targetBuilding = getBuildingForLocation(action.locationId);
-
-          // Check if building is unlocked - only when ENTERING a new building from outside
-          if (targetBuilding !== oldBuilding && !isBuildingUnlocked(newState, targetBuilding)) {
-            buildingBlocked = targetBuilding;
-            totalActionPoints -= actionPoints;
-            break;
-          }
 
           // Handle building transition
           if (targetBuilding !== oldBuilding) {
@@ -773,7 +763,6 @@ function applyMechanicalEffects(state: GameState, parseResult: ParseResult): App
     leveledUp,
     buildingChanged,
     newBuilding,
-    buildingBlocked,
   };
 }
 

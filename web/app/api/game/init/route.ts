@@ -7,6 +7,7 @@ export async function POST(request: Request) {
     const gameView = await initGame({
       module: body.module,
       language: body.language,
+      profile: body.profile,
     });
     return NextResponse.json(gameView);
   } catch (error) {
