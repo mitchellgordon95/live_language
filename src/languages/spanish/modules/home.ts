@@ -569,7 +569,7 @@ export const vocabulary: VocabWord[] = [
 ];
 
 export const promptInstructions = `NPC INTERACTIONS:
-- "hola carlos" → actions: [{ "type": "talk", "npcId": "roommate" }], goalComplete: ["greet_roommate"]
+- "hola carlos" / "buenos días carlos" / "hola carlos, ¿qué haces?" → actions: [{ "type": "talk", "npcId": "roommate" }], goalComplete: ["greet_roommate"]. ANY greeting to Carlos completes this goal, even if the player says more after the greeting.
 - "¿qué quieres para desayunar?" → actions: [{ "type": "talk", "npcId": "roommate" }], goalComplete: ["ask_roommate_breakfast"], npcResponse with wantsItem
 - "le doy los huevos a carlos" → actions: [{ "type": "give", "objectId": "eggs", "npcId": "roommate" }]
 
