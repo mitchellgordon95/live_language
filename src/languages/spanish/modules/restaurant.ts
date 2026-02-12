@@ -597,6 +597,15 @@ export const restaurantVocabulary: VocabWord[] = [
   { target: 'cincuenta', native: 'fifty', category: 'other' },
   { target: 'veinticinco', native: 'twenty-five', category: 'other' },
 
+  // Objects missing vocab entries
+  { target: 'la cesta de pan', native: 'bread basket', category: 'noun', gender: 'feminine' },
+  { target: 'el perchero', native: 'coat rack', category: 'noun', gender: 'masculine' },
+  { target: 'el banco de espera', native: 'waiting bench', category: 'noun', gender: 'masculine' },
+  { target: 'el dispensador de jabon', native: 'soap dispenser', category: 'noun', gender: 'masculine' },
+  { target: 'el lector de tarjetas', native: 'card reader', category: 'noun', gender: 'masculine' },
+  { target: 'la caja registradora', native: 'cash register', category: 'noun', gender: 'feminine' },
+  { target: 'el frasco de propinas', native: 'tip jar', category: 'noun', gender: 'masculine' },
+
   // Adjectives
   { target: 'delicioso', native: 'delicious', category: 'adjective' },
   { target: 'rico', native: 'tasty/rich', category: 'adjective' },
