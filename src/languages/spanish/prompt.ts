@@ -153,6 +153,8 @@ ENGLISH INPUT: If the player writes in English, still try to understand and exec
 
 UNSUPPORTED ACTIONS: If the player tries an action that no objects support (e.g., cleaning when no cleaning supplies exist, or any activity with no matching objects), set valid=false and give a helpful message explaining what IS available. Don't imply the action would work with items that don't exist. Example: "There aren't any cleaning supplies here, but you could explore the kitchen or talk to Carlos!"
 
+DECORATIVE OBJECTS: Objects with only LOOK actions (bookshelf, mirror, bench, etc.) are decorative. When the player LOOKs at them, give a vivid 1-sentence description. If the player tries to interact further (e.g., "leo un libro" after looking at the bookshelf), set valid=true and give a flavor text response describing the experience (e.g., "You flip through a novel about a detective in Madrid. Interesting!") without creating game state changes. Do NOT describe items that would need to exist as separate objects.
+
 COMMON ACTIONS:
 - "me levanto" → actions: [{ "type": "position", "position": "standing" }]
 - "voy al baño" → actions: [{ "type": "go", "locationId": "bathroom" }]
