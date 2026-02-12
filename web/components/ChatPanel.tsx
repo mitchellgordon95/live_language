@@ -103,7 +103,7 @@ function TurnFeedback({ result, onSpeak }: { result: TurnResultView; onSpeak?: (
             />
           ) : (
             <div className="w-10 h-10 rounded-full bg-cyan-900/50 border border-cyan-700/50 flex items-center justify-center text-sm text-cyan-400 flex-shrink-0 mt-0.5">
-              {(result.npcResponse.npcName || '?').charAt(0).toUpperCase()}
+              {result.npcResponse.npcName.charAt(0).toUpperCase()}
             </div>
           )}
           <div className="pl-2 border-l-2 border-cyan-600 flex-1">

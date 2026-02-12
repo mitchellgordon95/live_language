@@ -39,12 +39,6 @@ export const bedroom: Location = {
       state: { open: false },
       actions: ['OPEN', 'CLOSE'],
     },
-    {
-      id: 'clothes',
-      name: { target: 'la ropa', native: 'clothes' },
-      state: { inCloset: true },
-      actions: ['DRESS'],
-    },
   ],
   exits: [
     { to: 'bathroom', name: { target: 'el baño', native: 'bathroom' } },
@@ -162,12 +156,6 @@ export const kitchen: Location = {
       state: {},
       actions: ['TAKE', 'USE'],
       takeable: true,
-    },
-    {
-      id: 'kitchen_sink',
-      name: { target: 'el fregadero', native: 'kitchen sink' },
-      state: {},
-      actions: ['USE'],
     },
     // Food items (inside fridge, shown when fridge is open)
     {
@@ -517,7 +505,6 @@ export const vocabulary: VocabWord[] = [
   { target: 'la taza', native: 'cup', category: 'noun', gender: 'feminine' },
   { target: 'el plato', native: 'plate', category: 'noun', gender: 'masculine' },
   { target: 'la sartén', native: 'pan', category: 'noun', gender: 'feminine' },
-  { target: 'el fregadero', native: 'kitchen sink', category: 'noun', gender: 'masculine' },
 
   // Food
   { target: 'la leche', native: 'milk', category: 'noun', gender: 'feminine' },
@@ -582,7 +569,7 @@ export const vocabulary: VocabWord[] = [
 ];
 
 export const promptInstructions = `NPC INTERACTIONS:
-- Any greeting to Carlos (e.g., "hola carlos", "buenos dias carlos", "hola carlos, que tal?", "hola carlos que estas haciendo") → actions: [{ "type": "talk", "npcId": "roommate" }], goalComplete: ["greet_roommate"]. The greeting can be part of a longer sentence — if the player says hello in any form, the greet_roommate goal is complete.
+- "hola carlos" → actions: [{ "type": "talk", "npcId": "roommate" }], goalComplete: ["greet_roommate"]
 - "¿qué quieres para desayunar?" → actions: [{ "type": "talk", "npcId": "roommate" }], goalComplete: ["ask_roommate_breakfast"], npcResponse with wantsItem
 - "le doy los huevos a carlos" → actions: [{ "type": "give", "objectId": "eggs", "npcId": "roommate" }]
 

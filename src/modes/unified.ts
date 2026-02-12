@@ -67,7 +67,7 @@ function getSaveFile(profile?: string): string {
 
 // Ordered action for compound commands
 interface Action {
-  type: 'open' | 'close' | 'turn_on' | 'turn_off' | 'take' | 'put' | 'go' | 'position' | 'eat' | 'drink' | 'use' | 'cook' | 'pet' | 'feed' | 'talk' | 'give' | 'dress';
+  type: 'open' | 'close' | 'turn_on' | 'turn_off' | 'take' | 'put' | 'go' | 'position' | 'eat' | 'drink' | 'use' | 'cook' | 'pet' | 'feed' | 'talk' | 'give';
   objectId?: string;
   locationId?: string;
   position?: 'standing' | 'in_bed';
@@ -142,11 +142,6 @@ function buildPrompt(state: GameState): string {
       const fridgeState = fridge ? getObjectState(state, fridge) : {};
       return fridgeState.open;
     }
-    if (objState.inCloset) {
-      const closet = state.location.objects.find(o => o.id === 'closet');
-      const closetState = closet ? getObjectState(state, closet) : {};
-      return closetState.open;
-    }
     return true;
   });
   const dynamicObjects = state.dynamicObjects?.[state.location.id] || [];
@@ -213,21 +208,6 @@ function buildPrompt(state: GameState): string {
     .filter(Boolean)
     .join('\n');
 
-  // NPCs and pets in adjacent rooms (for compound move+interact commands)
-  const adjacentNPCsDesc = state.location.exits
-    .map(exit => {
-      const npcsInRoom = getNPCsInLocation(exit.to);
-      const petsInRoom = getPetsInLocation(exit.to, state.petLocations);
-      const entities = [
-        ...npcsInRoom.map(n => n.id),
-        ...petsInRoom.map(p => p.id),
-      ];
-      if (entities.length === 0) return null;
-      return `- ${exit.to}: ${entities.join(', ')}`;
-    })
-    .filter(Boolean)
-    .join('\n');
-
   return `CURRENT GAME STATE:
 
 Location: ${state.location.id} (${state.location.name.native})
@@ -247,9 +227,6 @@ ${exitsDesc}
 
 Objects in adjacent rooms (use these IDs for compound commands):
 ${adjacentRoomsDesc}
-
-NPCs/pets in adjacent rooms (for compound move+interact commands):
-${adjacentNPCsDesc}
 
 Player inventory:
 ${inventoryDesc}
@@ -564,7 +541,6 @@ function applyEffects(state: GameState, response: UnifiedAIResponse): ApplyEffec
       case 'feed':
       case 'talk':
       case 'give':
-      case 'dress':
         // These actions don't have direct state changes beyond needs/goals
         // which are handled below
         if (action.type === 'give' && action.objectId) {
@@ -680,17 +656,6 @@ export async function processTurn(
   let newState = state;
   let effectsResult: ApplyEffectsResult | null = null;
   const goalsCompleted: Goal[] = [];
-
-  // Validate npcResponse — strip if NPC/pet is not actually in the final location
-  if (response.npcResponse?.npcId) {
-    const finalLocationId = response.actions?.find(a => a.type === 'go')?.locationId || state.location.id;
-    const npcsInFinalLocation = getNPCsInLocation(finalLocationId);
-    const petsInFinalLocation = getPetsInLocation(finalLocationId, state.petLocations);
-    const npcId = response.npcResponse.npcId;
-    if (!npcsInFinalLocation.some(n => n.id === npcId) && !petsInFinalLocation.some(p => p.id === npcId)) {
-      response.npcResponse = undefined;
-    }
-  }
 
   if (response.valid) {
     effectsResult = applyEffects(newState, response);

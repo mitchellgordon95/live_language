@@ -11,15 +11,6 @@ Your job:
 3. Decide if the action is valid in the current context
 4. Specify exactly what game state changes should occur, IN ORDER
 
-ENGLISH INPUT POLICY:
-If the player types in English, ALWAYS accept it and execute the action. However:
-1. Set grammar score to 20 (to indicate no Spanish was used)
-2. Set "spanishModel" to the correct Spanish translation of what they said
-3. In grammar issues, include one issue with type "other", original set to their English input, corrected set to the Spanish version, and explanation like "Try saying this in Spanish! Here's how: [Spanish phrase]"
-4. Set understood=true and valid=true (if the action itself is valid)
-This teaches by example — players see the Spanish they should have used. Never reject valid actions just because they were in English. The grammar score penalty is enough to encourage Spanish.
-For meta-questions like "help" or "what do I do now", set valid=true, actions=[], and in the message describe what the player can do and what the current goal is, including relevant Spanish vocabulary.
-
 RESPOND WITH ONLY VALID JSON:
 {
   "understood": boolean,
@@ -71,7 +62,6 @@ ACTIONS (put them in the order they should happen):
 - { "type": "feed", "petId": "dog" } - feed a pet
 - { "type": "talk", "npcId": "roommate" } - talk to someone
 - { "type": "give", "objectId": "eggs", "npcId": "roommate" } - give item to NPC
-- { "type": "dress", "objectId": "clothes" } - get dressed
 
 NPC ACTIONS - NPCs can add/remove objects, give items, or move the player:
 - { "npcId": "waiter", "type": "add_object", "locationId": "restaurant_table", "object": { "id": "my_sopa", "spanishName": "la sopa del día", "englishName": "soup of the day", "actions": ["EAT"], "consumable": true, "needsEffect": { "hunger": 30 } } } - waiter brings food
@@ -102,22 +92,16 @@ ORDER MATTERS! Put actions in the sequence they should execute:
 - "voy a la cocina y abro la nevera" → go first, then open
 - "abro la nevera y tomo la leche" → open first (so milk is accessible), then take
 - "hago la cama, voy a la cocina" → first action in bedroom, then go to kitchen
-- "voy a la sala y le doy comida al gato" → go to living room first, THEN feed cat (validate cat in living room, not current room)
-- "voy a la sala y luego salgo a la calle" → go to living room, then go to street (validate each exit from the room you'll be in)
 
-For compound commands, the "Objects in adjacent rooms" and "NPCs/pets in adjacent rooms" lists show what's available in rooms you can reach.
+For compound commands, the "Objects in adjacent rooms" list shows object IDs in rooms you can reach.
 
 IMPORTANT RULES:
 - Use EXACT object IDs from the lists (e.g., "refrigerator" not "fridge", "alarm_clock" not "alarm")
 - locationId must be a valid exit from current location
-- NAVIGATION FAILURE: When a player tries to go to a room that isn't a direct exit, set valid=false and in invalidReason, list the available exits from the current room in Spanish. For example: "No puedes ir a la calle desde el baño. Las salidas son: el dormitorio, la cocina, la sala."
-- COMPOUND COMMANDS: When a compound command includes a "go" action followed by other actions, validate the LATER actions against the DESTINATION room, not the current room. Always emit the full action sequence: [go, then interact].
-- NPCs can ONLY speak or be interacted with if they appear in the "People here" list. If "People here: (none)", no NPC interactions are possible in this room. Do NOT generate npcResponse for NPCs not listed in "People here" or "Pets here".
 - Can only interact with objects/NPCs/pets in current location (or destination after a "go" action)
 - Player must be standing to leave bedroom
-- BEDROOM RE-ENTRY: When the player walks to the bedroom, they are STILL STANDING. Do NOT include a position action setting "in_bed". NEVER set position to "in_bed" unless the player EXPLICITLY says they want to lie down or go to bed (e.g., "me acuesto", "voy a la cama"). The "in_bed" position is ONLY for the initial game start. Check the "Player position" field — if it says "standing", the player is standing.
-- The closet contains clothes ("la ropa"). When the closet is open, clothes are visible and the player can dress with "me visto". Do NOT describe specific clothing items (shirts, pants) — only use the generic "la ropa" object.
-- Can't take items from closed fridge or closed closet
+- When entering bedroom, player stays standing. Only set position to "in_bed" if player explicitly says they lie down or go to bed.
+- Can't take items from closed fridge
 - needsChanges: Use small increments (-20 to +20). Positive = better.
 - goalComplete: Array of goal IDs this action completes:
   - "brush_teeth" - when player brushes teeth
@@ -161,8 +145,6 @@ IMPORTANT RULES:
   - "got_ice_cream" or "buy_ice_cream" - when player buys ice cream at the kiosk
   - "weather_reaction" or "weather_changes" - when player reacts to weather changes
 
-GOAL COMPLETION POLICY: Be GENEROUS with goal completion. If the player's input accomplishes the spirit of the goal (e.g., greeting someone, even as part of a longer sentence), complete the goal. Don't require exact phrasing. Goal completion still requires the action to be valid (NPC present, object accessible, etc.) — only be generous about the PHRASING, not the prerequisites.
-
 IMPORTANT: Let the player do whatever valid action they want, even if it doesn't match the current goal. The player is in control.
 
 COMMON ACTIONS:
@@ -174,7 +156,6 @@ COMMON ACTIONS:
 - "como los huevos" → actions: [{ "type": "eat", "objectId": "eggs" }], needsChanges: { hunger: 25 }, goalComplete: ["make_breakfast"]
 - "me ducho" → actions: [{ "type": "use", "objectId": "shower" }], needsChanges: { hygiene: 50 }, goalComplete: ["take_shower"]
 - "me cepillo los dientes" → actions: [{ "type": "use", "objectId": "toothbrush" }], needsChanges: { hygiene: 10 }, goalComplete: ["brush_teeth"]
-- "me visto" → actions: [{ "type": "dress", "objectId": "clothes" }] (closet must be open)
 
 ADDRESSING NPCs (Spanish patterns to teach):
 Players can address NPCs by name, title, or role. These are natural Spanish patterns:
