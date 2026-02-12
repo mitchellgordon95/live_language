@@ -98,6 +98,8 @@ If multiple NPCs are present and the player doesn't specify who they're talking 
 1. Use context (ordering food → waiter, not chef)
 2. Have the closest/most relevant NPC respond
 
+LANGUAGE: All grammar explanations and invalidReason messages MUST be in English. Only the "corrected" and "spanishModel" fields should be in Spanish.
+
 Be encouraging! Focus grammar corrections on one main issue, not every small error.`;
 
 // Pass 2: Narrate the turn given validated actions
@@ -138,6 +140,7 @@ NPC ACTION TEXT examples:
 - Vendor hands over items → actionText: "Doña María te da las manzanas"
 
 NARRATION STYLE:
+- ALL narration, descriptions, and pet reactions MUST be in English. Only NPC "spanish" and "actionText" fields should be in Spanish.
 - Messages should be vivid and encouraging
 - NEVER mention goals, objectives, or progress in the message. Just describe what happened. The UI shows goals separately.
 - COOKING narration: Describe the transformation (e.g., "You toast the bread and eat it. Delicious!") even though the actions reference the raw ingredient
