@@ -87,7 +87,7 @@ export default function ScenePanel({ game }: ScenePanelProps) {
                   <div className="flex items-center gap-1.5 text-xs text-gray-300">
                     <span className="text-gray-400">{goalsExpanded ? '\u25bc' : '\u25b6'}</span>
                     {allComplete ? (
-                      <span className="text-green-400 font-medium">{'\u2713'} All goals complete!</span>
+                      <span className="text-green-400 font-medium">{'\u2713'} All goals complete!<span className="block text-gray-400 font-normal mt-0.5">Head outside to explore!</span></span>
                     ) : (
                       <span>Goals {completedCount}/{visibleGoals.length}</span>
                     )}
@@ -221,7 +221,7 @@ export default function ScenePanel({ game }: ScenePanelProps) {
                 >
                   <span>{goalsExpanded ? '\u25bc' : '\u25b6'}</span>
                   {allComplete ? (
-                    <span className="text-green-400">All goals complete!</span>
+                    <span className="text-green-400">All goals complete!<span className="block text-gray-400 text-xs font-normal mt-0.5">Head outside to explore!</span></span>
                   ) : (
                     <span>Goals {completedCount}/{visibleGoals.length}</span>
                   )}
