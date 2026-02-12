@@ -180,7 +180,7 @@ export default function ChatPanel({ chatHistory, onSpeak }: ChatPanelProps) {
           <div key={entry.id} className="space-y-1.5">
             {/* System hint (no player input) */}
             {entry.systemHint && (
-              <div className="text-xs text-blue-300/80 bg-blue-900/20 border border-blue-800/30 rounded px-3 py-2">
+              <div className="text-xs text-blue-300/80 bg-blue-900/20 border border-blue-800/30 rounded px-3 py-2 whitespace-pre-wrap">
                 {entry.systemHint}
               </div>
             )}
