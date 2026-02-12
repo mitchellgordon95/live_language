@@ -103,6 +103,7 @@ IMPORTANT RULES:
 - When entering bedroom, player stays standing. Only set position to "in_bed" if player explicitly says they lie down or go to bed.
 - Can't take items from closed fridge
 - needsChanges: Use small increments (-20 to +20). Positive = better.
+- COOKING: When the player cooks food, use "cook" then "eat" actions on the ORIGINAL ingredient's objectId (e.g., "cook" bread then "eat" bread). Do NOT narrate creating new food items that don't exist as game objects. The message can describe the transformation (e.g., "You toast the bread and eat it") but actions must reference existing object IDs. Only npcActions can create new objects.
 - goalComplete: Array of goal IDs this action completes:
   - "brush_teeth" - when player brushes teeth
   - "take_shower" - when player showers
@@ -154,6 +155,7 @@ COMMON ACTIONS:
 - "apago el despertador" → actions: [{ "type": "turn_off", "objectId": "alarm_clock" }]
 - "tomo la leche" → actions: [{ "type": "take", "objectId": "milk" }]
 - "como los huevos" → actions: [{ "type": "eat", "objectId": "eggs" }], needsChanges: { hunger: 25 }, goalComplete: ["make_breakfast"]
+- "preparo tostadas" / "hago tostadas" → actions: [{ "type": "cook", "objectId": "bread" }, { "type": "eat", "objectId": "bread" }], needsChanges: { hunger: 20 }, goalComplete: ["make_breakfast"], message: "You toast the bread and eat it. Delicious!"
 - "me ducho" → actions: [{ "type": "use", "objectId": "shower" }], needsChanges: { hygiene: 50 }, goalComplete: ["take_shower"]
 - "me cepillo los dientes" → actions: [{ "type": "use", "objectId": "toothbrush" }], needsChanges: { hygiene: 10 }, goalComplete: ["brush_teeth"]
 
