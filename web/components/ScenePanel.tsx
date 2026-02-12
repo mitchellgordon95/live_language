@@ -334,8 +334,13 @@ function CompactNeed({ icon, value, label }: { icon: string; value: number; labe
   return (
     <div className="flex items-center gap-1 flex-1" title={`${label}: ${value}%`}>
       <span className="text-sm">{icon}</span>
-      <div className="flex-1 h-1.5 bg-gray-700 rounded-full overflow-hidden">
-        <div className={`h-full ${color} rounded-full transition-all duration-500`} style={{ width: `${value}%` }} />
+      <div className="flex-1">
+        <div className="flex justify-between text-[10px] text-gray-500 leading-none mb-0.5">
+          <span>{label}</span>
+        </div>
+        <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
+          <div className={`h-full ${color} rounded-full transition-all duration-500`} style={{ width: `${value}%` }} />
+        </div>
       </div>
     </div>
   );
