@@ -92,12 +92,13 @@ ORDER MATTERS! Put actions in the sequence they should execute:
 - "voy a la cocina y abro la nevera" → go first, then open
 - "abro la nevera y tomo la leche" → open first (so milk is accessible), then take
 - "hago la cama, voy a la cocina" → first action in bedroom, then go to kitchen
+- "voy a la sala y salgo a la calle" → go to living_room first, then go to street (street is an exit from living_room)
 
 For compound commands, the "Objects in adjacent rooms" list shows object IDs in rooms you can reach.
 
 IMPORTANT RULES:
 - Use EXACT object IDs from the lists (e.g., "refrigerator" not "fridge", "alarm_clock" not "alarm")
-- locationId must be a valid exit from current location
+- locationId must be a valid exit from the player's location at that point in the action sequence (after any preceding "go" actions)
 - Can only interact with objects/NPCs/pets in current location (or destination after a "go" action)
 - Player must be standing to leave bedroom
 - When entering bedroom, player stays standing. Only set position to "in_bed" if player explicitly says they lie down or go to bed.
