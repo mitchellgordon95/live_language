@@ -366,6 +366,13 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
       const fridgeState = { ...(fridge.state || {}), ...(state.objectStates?.['refrigerator'] || {}) };
       return fridgeState.open;
     }
+    if (effectiveState.inCloset) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const closet = (state.location.objects || []).find((o: any) => o.id === 'closet');
+      if (!closet) return false;
+      const closetState = { ...(closet.state || {}), ...(state.objectStates?.['closet'] || {}) };
+      return closetState.open;
+    }
     return true;
   });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -376,7 +383,7 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
       name: obj.name,
       vocabStage: getVocabStageForObject(state.vocabulary, obj.id),
       coords: manifest?.objects?.[obj.id] || undefined,
-      containerId: effectiveState.inFridge ? 'refrigerator' : undefined,
+      containerId: effectiveState.inFridge ? 'refrigerator' : effectiveState.inCloset ? 'closet' : undefined,
     };
   });
 
@@ -493,7 +500,7 @@ function buildTurnResultView(result: any, state: any): TurnResultView {
       explanation: issue.explanation,
     })),
     targetModel: response.spanishModel || '',
-    npcResponse: response.npcResponse ? {
+    npcResponse: (response.npcResponse && response.npcResponse.npcId) ? {
       npcName: response.npcResponse.npcId,
       target: response.npcResponse.spanish || '',
       native: response.npcResponse.english || '',
