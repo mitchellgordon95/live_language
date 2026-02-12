@@ -147,6 +147,8 @@ IMPORTANT RULES:
 
 IMPORTANT: Let the player do whatever valid action they want, even if it doesn't match the current goal. The player is in control.
 
+ENGLISH INPUT: If the player writes in English, still try to understand and execute their intended action. Set understood=true, valid=true (if the action itself is valid), but set grammar.score to 20 and include a single grammar issue with type "other", original set to their English phrase, corrected set to the natural Spanish equivalent, and explanation "Try saying it in Spanish!" This teaches the Spanish phrase without blocking gameplay.
+
 COMMON ACTIONS:
 - "me levanto" → actions: [{ "type": "position", "position": "standing" }]
 - "voy al baño" → actions: [{ "type": "go", "locationId": "bathroom" }]
