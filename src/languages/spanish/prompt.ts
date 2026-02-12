@@ -87,19 +87,6 @@ UNSUPPORTED ACTIONS: If the player tries an action that no objects support (e.g.
 
 DECORATIVE OBJECTS: Objects with only LOOK actions (bookshelf, mirror, bench, etc.) are decorative. The player can look at or briefly interact with them. Set valid=true with an empty actions array for flavor interactions (e.g., "leo un libro"). The narration pass will handle the description.
 
-COMMON ACTIONS:
-- "me levanto" → actions: [{ "type": "position", "position": "standing" }]
-- "voy al baño" → actions: [{ "type": "go", "locationId": "bathroom" }]
-- "abro la nevera" → actions: [{ "type": "open", "objectId": "refrigerator" }]
-- "apago el despertador" → actions: [{ "type": "turn_off", "objectId": "alarm_clock" }]
-- "tomo la leche" → actions: [{ "type": "take", "objectId": "milk" }]
-- "como los huevos" → actions: [{ "type": "eat", "objectId": "eggs" }], needsChanges: { hunger: 25 }
-- "preparo tostadas" / "hago tostadas" → actions: [{ "type": "cook", "objectId": "bread" }, { "type": "eat", "objectId": "bread" }], needsChanges: { hunger: 20 }
-- "me ducho" → actions: [{ "type": "use", "objectId": "shower" }], needsChanges: { hygiene: 50 }
-- "me cepillo los dientes" → actions: [{ "type": "use", "objectId": "toothbrush" }], needsChanges: { hygiene: 10 }
-- "me acuesto en el sofá" / "duermo en el sofá" → actions: [{ "type": "use", "objectId": "couch" }], needsChanges: { energy: 10 }
-- "me visto" / "me pongo ropa" / "me cambio" → actions: [{ "type": "use", "objectId": "closet" }]
-
 ADDRESSING NPCs (Spanish patterns):
 Players can address NPCs by name, title, or role:
 - "Carlos, buenos días" (name first, with comma)

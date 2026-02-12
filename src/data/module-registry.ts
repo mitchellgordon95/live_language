@@ -26,7 +26,8 @@ const modules: ModuleDefinition[] = [
     startGoalId: '',
     locationIds: ['street'],
     unlockLevel: 1,
-    promptInstructions: '',
+    parseGuidance: '',
+    narrateGuidance: '',
   },
   restaurantModule,
   marketModule,
@@ -115,63 +116,14 @@ export function getDisplayName(building: string): string {
   return modulesByName[building]?.displayName || building;
 }
 
-// Generate prompt text from structured module data
-export function generatePromptInstructions(mod: ModuleDefinition): string {
-  if (!mod.npcDescriptions && !mod.interactions) {
-    return mod.promptInstructions;
-  }
-
-  const parts: string[] = [];
-
-  if (mod.npcDescriptions?.length) {
-    parts.push(`${mod.displayName.toUpperCase()} NPCs:`);
-    for (const npc of mod.npcDescriptions) {
-      const phrases = npc.keyPhrases?.length
-        ? ` Key phrases: ${npc.keyPhrases.map(p => `"${p}"`).join(', ')}.`
-        : '';
-      parts.push(`- ${npc.id}: ${npc.personality}${phrases}`);
-    }
-  }
-
-  if (mod.interactions?.length) {
-    parts.push('');
-    parts.push(`${mod.displayName.toUpperCase()} INTERACTIONS:`);
-    for (const inter of mod.interactions) {
-      const triggers = inter.triggers.map(t => `"${t}"`).join(' or ');
-      const loc = inter.location ? ` at ${inter.location}` : '';
-      const lineParts: string[] = [];
-      if (inter.actions?.length) lineParts.push(`actions: ${JSON.stringify(inter.actions)}`);
-      if (inter.goalComplete) lineParts.push(`goalComplete: ${JSON.stringify(inter.goalComplete)}`);
-      if (inter.needsChanges) lineParts.push(`needsChanges: ${JSON.stringify(inter.needsChanges)}`);
-      if (inter.npcActions) lineParts.push(`npcActions: ${JSON.stringify(inter.npcActions)}`);
-      const details = lineParts.length ? ` ${lineParts.join(', ')}` : '';
-      parts.push(`- ${triggers}${loc} →${details}`);
-      if (inter.note) parts.push(`  ${inter.note}`);
-    }
-  }
-
-  // Append any extra notes from promptInstructions
-  if (mod.promptInstructions) {
-    parts.push('');
-    parts.push(mod.promptInstructions);
-  }
-
-  if (mod.teachingNotes) {
-    parts.push('');
-    parts.push(`${mod.teachingNotes.title}:`);
-    for (const pattern of mod.teachingNotes.patterns) {
-      parts.push(`- ${pattern}`);
-    }
-  }
-
-  return parts.join('\n');
+// Parse guidance for current building (Pass 1)
+export function getParseGuidanceForBuilding(building: string): string {
+  return modulesByName[building]?.parseGuidance || '';
 }
 
-// Prompt instructions for current building
-export function getPromptInstructionsForBuilding(building: string): string {
-  const mod = modulesByName[building];
-  if (!mod) return '';
-  return generatePromptInstructions(mod);
+// Narrate guidance for current building (Pass 2)
+export function getNarrateGuidanceForBuilding(building: string): string {
+  return modulesByName[building]?.narrateGuidance || '';
 }
 
 // All registered module names (for help text, etc.)
@@ -196,40 +148,3 @@ export function getAllKnownGoalIds(): Set<string> {
   return _allGoalIds;
 }
 
-// Validate structured interaction data against module definitions
-// Note: goalComplete IDs are NOT validated here — they include informal completion
-// markers (like "seated_by_host") that goal.checkComplete() checks via
-// state.completedGoals.includes(). Runtime validation in unified.ts handles AI output.
-function validateModuleInteractions(mod: ModuleDefinition): string[] {
-  const errors: string[] = [];
-  if (!mod.interactions) return errors;
-
-  const objectIds = new Set(
-    Object.values(mod.locations).flatMap(loc => loc.objects.map(o => o.id))
-  );
-  const npcIds = new Set(mod.npcs.map(n => n.id));
-  const petIds = new Set((mod.pets || []).map(p => p.id));
-  const locationIds = new Set(mod.locationIds);
-
-  for (const inter of mod.interactions) {
-    for (const action of inter.actions || []) {
-      if (action.objectId && !objectIds.has(action.objectId))
-        errors.push(`${mod.name}: unknown objectId "${action.objectId}"`);
-      if (action.npcId && !npcIds.has(action.npcId))
-        errors.push(`${mod.name}: unknown npcId "${action.npcId}"`);
-      if (action.petId && !petIds.has(action.petId))
-        errors.push(`${mod.name}: unknown petId "${action.petId}"`);
-      if (action.locationId && !locationIds.has(action.locationId))
-        errors.push(`${mod.name}: unknown locationId "${action.locationId}"`);
-    }
-  }
-  return errors;
-}
-
-// Run validation on all modules at load time
-for (const mod of modules) {
-  const errors = validateModuleInteractions(mod);
-  for (const err of errors) {
-    console.warn(`[module-validation] ${err}`);
-  }
-}

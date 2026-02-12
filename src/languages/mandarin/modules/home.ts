@@ -254,15 +254,12 @@ export const homeModule: ModuleDefinition = {
   startGoalId: 'wake_up',
   locationIds: ['bedroom', 'bathroom', 'kitchen'],
   unlockLevel: 1,
-  promptInstructions: `MANDARIN HOME MODULE:
-NPCs: 室友小明 (Xiao Ming, the roommate) is in the kitchen. He's friendly and speaks simple Mandarin.
-
-GOAL COMPLETION:
-- "wake_up" - when player gets out of bed (起床 qichuang)
-- "brush_teeth" - when player brushes teeth (刷牙 shuaya)
-- "take_shower" - when player showers (洗澡 xizao)
-- "make_breakfast" - when player eats food (吃早饭 chi zaofan)
-- "greet_roommate" - when player greets Xiao Ming (你好/早上好)
+  parseGuidance: `ACTION RULES:
+- 起床 (qichuang) → position standing
+- 去浴室/去厨房 (qu yushi/qu chufang) → go to bathroom/kitchen
+- 打开冰箱 (dakai bingxiang) → open refrigerator
+- 刷牙 (shuaya) → use toothbrush
+- 洗澡 (xizao) → use shower
 
 GRAMMAR TO TEACH:
 - Basic SVO word order: 我打开冰箱 (wo dakai bingxiang)
@@ -270,4 +267,14 @@ GRAMMAR TO TEACH:
 - 了 particle for completed actions: 我吃了早饭 (wo chi le zaofan)
 - Location with 在: 我在厨房 (wo zai chufang)
 - Going with 去: 我去浴室 (wo qu yushi)`,
+
+  narrateGuidance: `NPC PERSONALITIES:
+- 小明 (Xiao Ming, roommate): Friendly, speaks simple Mandarin. In the kitchen in the morning.
+
+GOAL COMPLETION:
+- Player gets out of bed → wake_up
+- Player brushes teeth → brush_teeth
+- Player showers → take_shower
+- Player eats food → make_breakfast
+- Player greets Xiao Ming (你好/早上好) → greet_roommate`,
 };

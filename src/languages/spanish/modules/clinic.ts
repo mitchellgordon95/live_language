@@ -692,34 +692,6 @@ export const clinicVocabulary: VocabWord[] = [
   { target: 'cuidese', native: 'take care (formal)', category: 'other' },
 ];
 
-import type { NPCDescription, ModuleInteraction, TeachingNotes } from '../../../engine/types.js';
-
-const npcDescriptions: NPCDescription[] = [
-  { id: 'receptionist', personality: 'Maria. Professional and helpful. Uses formal "usted".', keyPhrases: ['Tiene cita?', 'Cual es su nombre?', 'Por favor, llene este formulario'] },
-  { id: 'doctor', personality: 'Dr. Garcia. Kind and thorough. Uses formal "usted". Explains diagnosis and writes prescriptions.', keyPhrases: ['Que le pasa?', 'Donde le duele?', 'Abra la boca', 'Respire profundo', 'Suba la manga'] },
-  { id: 'pharmacist', personality: 'Roberto. Friendly. Explains dosage.', keyPhrases: ['Tome una pastilla cada ocho horas', 'Con comida', 'Tiene la receta?'] },
-];
-
-const interactions: ModuleInteraction[] = [
-  { triggers: ['Buenos dias', 'Tengo cita'], location: 'clinic_reception', actions: [{ type: 'talk', npcId: 'receptionist' }], goalComplete: ['clinic_check_in'] },
-  { triggers: ['Lleno el formulario'], actions: [{ type: 'use', objectId: 'registration_form' }], goalComplete: ['filled_form'] },
-  { triggers: ['Me siento'], location: 'clinic_waiting', goalComplete: ['waited'] },
-  { triggers: ['Me duele la cabeza', 'Tengo fiebre'], actions: [{ type: 'talk', npcId: 'doctor' }], goalComplete: ['described_symptoms'] },
-  { triggers: ['Si, doctor', 'Abro la boca'], actions: [{ type: 'talk', npcId: 'doctor' }], goalComplete: ['followed_commands'], note: 'following doctor commands' },
-  { triggers: ['Tomo la receta'], actions: [{ type: 'take', objectId: 'prescription' }], goalComplete: ['got_prescription'] },
-  { triggers: ['Aqui esta mi receta'], actions: [{ type: 'talk', npcId: 'pharmacist' }], goalComplete: ['got_medicine'] },
-];
-
-const teachingNotes: TeachingNotes = {
-  title: 'KEY SPANISH FOR MEDICAL VISITS (teach these patterns)',
-  patterns: [
-    '"Me duele..." (My ... hurts) - "Me duele la cabeza" (My head hurts)',
-    '"Tengo..." (I have...) - "Tengo fiebre" (I have a fever), "Tengo tos" (I have a cough)',
-    '"No me siento bien" (I don\'t feel well)',
-    'Formal commands (usted): "Abra" (Open), "Respire" (Breathe), "Saque" (Stick out)',
-  ],
-};
-
 export const clinicModule: ModuleDefinition = {
   name: 'clinic',
   displayName: 'Clinic',
@@ -731,8 +703,33 @@ export const clinicModule: ModuleDefinition = {
   startGoalId: 'clinic_arrive',
   locationIds: Object.keys(clinicLocations),
   unlockLevel: 5,
-  promptInstructions: '',
-  npcDescriptions,
-  interactions,
-  teachingNotes,
+
+  parseGuidance: `ACTION RULES:
+- Greeting or checking in at reception → talk to receptionist
+- Filling out the registration form → use registration_form
+- Sitting in waiting room → valid with empty actions (flavor interaction)
+- Describing symptoms to the doctor → talk to doctor
+- Following doctor commands (open mouth, breathe, etc.) → talk to doctor
+- Taking the prescription → take prescription
+- Showing prescription to pharmacist → talk to pharmacist
+
+TEACHING FOCUS:
+- "Me duele..." (My ... hurts) — "Me duele la cabeza" (My head hurts)
+- "Tengo..." (I have...) — "Tengo fiebre" (fever), "Tengo tos" (cough)
+- "No me siento bien" (I don't feel well)
+- Formal commands (usted): "Abra" (Open), "Respire" (Breathe), "Saque" (Stick out)`,
+
+  narrateGuidance: `NPC PERSONALITIES:
+- Maria (receptionist): Professional and helpful. Uses formal "usted". Says "Tiene cita?", "Cual es su nombre?", "Por favor, llene este formulario".
+- Dr. Garcia (doctor): Kind and thorough. Uses formal "usted". Explains diagnosis and writes prescriptions. Says "Que le pasa?", "Donde le duele?", "Abra la boca", "Respire profundo".
+- Roberto (pharmacist): Friendly. Explains dosage. Says "Tome una pastilla cada ocho horas", "Con comida", "Tiene la receta?".
+
+GOAL COMPLETION:
+- Check in at reception → clinic_check_in
+- Fill out form → filled_form
+- Wait in waiting room → waited
+- Describe symptoms to doctor → described_symptoms
+- Follow doctor's examination commands → followed_commands
+- Take prescription → got_prescription
+- Give prescription to pharmacist → got_medicine`,
 };

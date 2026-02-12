@@ -546,37 +546,6 @@ export const bankVocabulary: VocabWord[] = [
   { target: 'anual', native: 'annual', category: 'adjective' },
 ];
 
-import type { NPCDescription, ModuleInteraction, TeachingNotes } from '../../../engine/types.js';
-
-const npcDescriptions: NPCDescription[] = [
-  { id: 'bank_guard', personality: 'Roberto. Professional security guard. Uses "usted" exclusively. Will direct customers inside and explain they need to take a number.', keyPhrases: ['Bienvenido al banco', 'Pase adelante', 'Tome un numero, por favor'] },
-  { id: 'bank_teller', personality: 'Maria Elena. Friendly and efficient bank teller. Always uses formal "usted" and polite conditionals. Patient with customers.', keyPhrases: ['En que le puedo ayudar?', 'Me permite su identificacion?', 'Cuanto desea depositar/retirar?', 'Algo mas en lo que le pueda servir?'] },
-  { id: 'bank_manager', personality: 'Senor Mendoza. Distinguished bank manager. Very formal and professional. Uses elaborate courtesy phrases and conditional tense. Handles special accounts, loans, and complaints.', keyPhrases: ['Tome asiento, por favor', 'En que podria ayudarle hoy?'] },
-];
-
-const interactions: ModuleInteraction[] = [
-  { triggers: ['Buenos dias', 'Buenas tardes'], location: 'bank_entrance', actions: [{ type: 'talk', npcId: 'bank_guard' }], goalComplete: ['greeted_guard'] },
-  { triggers: ['Tomo un numero', 'Uso el dispensador'], actions: [{ type: 'use', objectId: 'number_dispenser' }], goalComplete: ['took_number'] },
-  { triggers: ['Buenos dias', 'Hola'], actions: [{ type: 'talk', npcId: 'bank_teller' }], goalComplete: ['greeted_teller'], note: 'Greet teller at window' },
-  { triggers: ['Quisiera consultar mi saldo'], actions: [{ type: 'talk', npcId: 'bank_teller' }], goalComplete: ['checked_balance'] },
-  { triggers: ['Quisiera depositar quinientos pesos'], actions: [{ type: 'talk', npcId: 'bank_teller' }], goalComplete: ['made_deposit'] },
-  { triggers: ['Quisiera retirar doscientos pesos'], actions: [{ type: 'talk', npcId: 'bank_teller' }], goalComplete: ['made_withdrawal'] },
-  { triggers: ['Me puede dar un recibo?'], actions: [{ type: 'talk', npcId: 'bank_teller' }], goalComplete: ['got_receipt'] },
-  { triggers: ['Muchas gracias', 'Hasta luego'], actions: [{ type: 'talk', npcId: 'bank_teller' }], goalComplete: ['said_goodbye'] },
-];
-
-const teachingNotes: TeachingNotes = {
-  title: 'KEY SPANISH FOR BANKING (teach these patterns)',
-  patterns: [
-    '"Quisiera..." (I would like...) - very polite conditional form',
-    '"Podria...?" (Could you...?) - polite requests',
-    'Large numbers: "cien" (100), "doscientos" (200), "quinientos" (500), "mil" (1000)',
-    '"El saldo" (balance), "El deposito" (deposit), "El retiro" (withdrawal)',
-    '"El recibo" / "El comprobante" (receipt)',
-    'Formal "usted" forms: "tiene", "desea", "puede"',
-  ],
-};
-
 export const bankModule: ModuleDefinition = {
   name: 'bank',
   displayName: 'Bank',
@@ -588,8 +557,33 @@ export const bankModule: ModuleDefinition = {
   startGoalId: 'bank_enter_greet',
   locationIds: Object.keys(bankLocations),
   unlockLevel: 7,
-  promptInstructions: '',
-  npcDescriptions,
-  interactions,
-  teachingNotes,
+
+  parseGuidance: `ACTION RULES:
+- Greeting guard at entrance → talk to bank_guard
+- Taking a number → use number_dispenser
+- Greeting teller at window → talk to bank_teller
+- Checking balance, depositing, withdrawing, requesting receipt → talk to bank_teller
+- Saying goodbye → talk to bank_teller
+
+TEACHING FOCUS:
+- "Quisiera..." (I would like...) — very polite conditional form
+- "Podria...?" (Could you...?) — polite requests
+- Large numbers: "cien" (100), "doscientos" (200), "quinientos" (500), "mil" (1000)
+- Banking terms: "el saldo" (balance), "el deposito" (deposit), "el retiro" (withdrawal), "el recibo" (receipt)
+- Formal "usted" forms: "tiene", "desea", "puede"`,
+
+  narrateGuidance: `NPC PERSONALITIES:
+- Roberto (bank_guard): Professional security guard. Uses "usted" exclusively. Directs customers inside and explains they need to take a number. Says "Bienvenido al banco", "Pase adelante", "Tome un numero, por favor".
+- Maria Elena (bank_teller): Friendly and efficient. Always uses formal "usted" and polite conditionals. Patient. Says "En que le puedo ayudar?", "Me permite su identificacion?", "Cuanto desea depositar/retirar?", "Algo mas en lo que le pueda servir?".
+- Senor Mendoza (bank_manager): Distinguished, very formal. Uses elaborate courtesy phrases and conditional tense. Handles special accounts, loans, and complaints. Says "Tome asiento, por favor", "En que podria ayudarle hoy?".
+
+GOAL COMPLETION:
+- Greet guard at entrance → greeted_guard
+- Take a number → took_number
+- Greet teller at window → greeted_teller
+- Check balance → checked_balance
+- Make deposit → made_deposit
+- Make withdrawal → made_withdrawal
+- Request receipt → got_receipt
+- Say goodbye → said_goodbye`,
 };

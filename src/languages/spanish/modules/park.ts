@@ -703,31 +703,6 @@ export const parkVocabulary: VocabWord[] = [
   { target: 'vacio', native: 'empty', category: 'adjective' },
 ];
 
-import type { NPCDescription, ModuleInteraction, TeachingNotes } from '../../../engine/types.js';
-
-const npcDescriptions: NPCDescription[] = [
-  { id: 'ice_cream_vendor', personality: 'Friendly elderly ice cream vendor at the kiosk. Talks about weather constantly. Recommends flavors based on temperature. Speaks slowly and clearly.' },
-  { id: 'pigeon_feeder', personality: 'Quiet elderly man at the fountain who feeds pigeons. Observes nature and uses present progressive to describe ongoing actions. Very patient and kind.' },
-];
-
-const interactions: ModuleInteraction[] = [
-  { triggers: ['hace buen tiempo', 'hace sol'], goalComplete: ['commented_weather', 'check_weather'], note: 'present tense weather expressions' },
-  { triggers: ['estoy caminando por el sendero'], goalComplete: ['walk_the_path'], note: 'practice present progressive' },
-  { triggers: ['la ardilla esta corriendo', 'los pajaros estan volando'], goalComplete: ['observed_animals', 'observe_nature'], note: 'describe what animals are doing' },
-  { triggers: ['hola senor, que esta haciendo?'], actions: [{ type: 'talk', npcId: 'pigeon_feeder' }], goalComplete: ['talked_to_ramon', 'talk_to_don_ramon'] },
-  { triggers: ['quiero un helado de chocolate'], actions: [{ type: 'talk', npcId: 'ice_cream_vendor' }], goalComplete: ['got_ice_cream', 'buy_ice_cream'] },
-  { triggers: ['esta nublado', 'va a llover'], goalComplete: ['weather_reaction', 'weather_changes'], note: 'react to weather' },
-];
-
-const teachingNotes: TeachingNotes = {
-  title: 'KEY SPANISH FOR WEATHER (teach these patterns)',
-  patterns: [
-    '"Hace + noun" - Hace sol (it\'s sunny), Hace frio (it\'s cold), Hace calor (it\'s hot)',
-    '"Esta + adjective" - Esta nublado (it\'s cloudy), Esta lloviendo (it\'s raining)',
-    'Present progressive: "estar + gerund" - Estoy caminando (I am walking), Esta comiendo (he/she is eating)',
-  ],
-};
-
 export const parkModule: ModuleDefinition = {
   name: 'park',
   displayName: 'Park',
@@ -739,8 +714,26 @@ export const parkModule: ModuleDefinition = {
   startGoalId: 'arrive_at_park',
   locationIds: Object.keys(parkLocations),
   unlockLevel: 3,
-  promptInstructions: '',
-  npcDescriptions,
-  interactions,
-  teachingNotes,
+
+  parseGuidance: `ACTION RULES:
+- Weather comments ("hace sol", "esta nublado") and nature observations ("la ardilla esta corriendo") are valid even without object/NPC actions. Set valid=true with empty actions array — these are speech-only interactions.
+- Talking to Don Ramon (pigeon_feeder) or the ice cream vendor → talk to their npcId.
+- Buying ice cream → talk to ice_cream_vendor.
+
+TEACHING FOCUS:
+- "Hace + noun" — Hace sol (sunny), Hace frio (cold), Hace calor (hot)
+- "Esta + adjective" — Esta nublado (cloudy), Esta lloviendo (raining)
+- Present progressive: "estar + gerund" — Estoy caminando (I am walking), Esta comiendo (he/she is eating)`,
+
+  narrateGuidance: `NPC PERSONALITIES:
+- Ice cream vendor (ice_cream_vendor): Friendly elderly vendor at the kiosk. Talks about weather constantly. Recommends flavors based on temperature. Speaks slowly and clearly.
+- Don Ramon (pigeon_feeder): Quiet elderly man at the fountain. Feeds pigeons. Uses present progressive to describe what he sees. Very patient and kind.
+
+GOAL COMPLETION:
+- Any weather comment (present tense) → check_weather, commented_weather
+- Walking along the path (present progressive practice) → walk_the_path
+- Describing animal actions (present progressive) → observe_nature, observed_animals
+- Talking to Don Ramon → talk_to_don_ramon, talked_to_ramon
+- Buying ice cream → buy_ice_cream, got_ice_cream
+- Reacting to weather changes → weather_changes, weather_reaction`,
 };

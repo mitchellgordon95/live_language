@@ -841,34 +841,6 @@ export const sampleDialogs = {
   },
 };
 
-import type { NPCDescription, ModuleInteraction, TeachingNotes } from '../../../engine/types.js';
-
-const npcDescriptions: NPCDescription[] = [
-  { id: 'dona_maria', personality: 'Elderly fruit vendor at fruit_stand. Friendly, uses diminutives (frutitas, manzanitas).', keyPhrases: ['Buenos dias, mi amor! Que busca hoy?', 'Estas naranjas estan muy dulces!'] },
-  { id: 'senor_pedro', personality: 'Vegetable vendor at vegetable_stand. Direct but friendly. Uses demonstratives for comparisons.', keyPhrases: ['Esas papas son mas grandes, pero estas son mas frescas.'] },
-  { id: 'carlos_carnicero', personality: 'Butcher at meat_counter. Uses ticket system.', keyPhrases: ['Que numero tiene?', 'Cuantos gramos quiere?'] },
-];
-
-const interactions: ModuleInteraction[] = [
-  { triggers: ['cuanto cuestan las manzanas?'], actions: [{ type: 'talk', npcId: 'dona_maria' }], goalComplete: ['asked_price'], note: 'npcResponse with price info' },
-  { triggers: ['quiero estas naranjas'], goalComplete: ['used_demonstrative'], note: 'actions: [{ "type": "talk", "npcId": relevant vendor }] — use the vendor for whichever stand the player is at' },
-  { triggers: ['cuales son mas frescas?'], goalComplete: ['compared_items'], note: 'actions: [{ "type": "talk", "npcId": relevant vendor }], npcResponse comparing' },
-  { triggers: ['quiero un kilo de manzanas'], goalComplete: ['made_purchase'], note: 'actions: [{ "type": "talk", "npcId": relevant vendor }], npcResponse confirming' },
-  { triggers: ['pago con efectivo', 'pago con tarjeta'], actions: [{ type: 'use', objectId: 'cash_register' }], goalComplete: ['paid_at_checkout'] },
-];
-
-const teachingNotes: TeachingNotes = {
-  title: 'KEY SPANISH FOR MARKET (teach these patterns)',
-  patterns: [
-    '"Cuanto cuesta?" / "Cuanto cuestan?" (How much does it/they cost?)',
-    '"Este/Esta/Estos/Estas" (This/These - near speaker)',
-    '"Ese/Esa/Esos/Esas" (That/Those - near listener)',
-    '"Aquel/Aquella" (That over there - far from both)',
-    '"Un kilo de..." / "Medio kilo de..." (A kilo of... / Half kilo of...)',
-    '"Mas fresco/grande/barato que..." (Fresher/bigger/cheaper than...)',
-  ],
-};
-
 export const marketModule: ModuleDefinition = {
   name: 'market',
   displayName: 'Market',
@@ -880,8 +852,29 @@ export const marketModule: ModuleDefinition = {
   startGoalId: 'market_explore',
   locationIds: Object.keys(marketLocations),
   unlockLevel: 3,
-  promptInstructions: '',
-  npcDescriptions,
-  interactions,
-  teachingNotes,
+
+  parseGuidance: `ACTION RULES:
+- Asking about prices → talk to whichever vendor the player is near (dona_maria at fruit_stand, senor_pedro at vegetable_stand, carlos_carnicero at meat_counter)
+- Using demonstratives to point at items → talk to the relevant vendor
+- Comparing items or asking which is better → talk to the relevant vendor
+- Buying items (requesting a kilo, half kilo, etc.) → talk to the relevant vendor
+- Paying at checkout → use cash_register
+
+TEACHING FOCUS:
+- "Cuanto cuesta?" / "Cuanto cuestan?" (How much?)
+- Demonstratives: "Este/Esta/Estos/Estas" (this), "Ese/Esa/Esos/Esas" (that), "Aquel/Aquella" (that over there)
+- Quantities: "Un kilo de..." / "Medio kilo de..."
+- Comparatives: "Mas fresco/grande/barato que..." (Fresher/bigger/cheaper than...)`,
+
+  narrateGuidance: `NPC PERSONALITIES:
+- Dona Maria (dona_maria): Elderly fruit vendor at fruit_stand. Friendly, uses diminutives (frutitas, manzanitas). Says "Buenos dias, mi amor! Que busca hoy?" and "Estas naranjas estan muy dulces!".
+- Senor Pedro (senor_pedro): Vegetable vendor at vegetable_stand. Direct but friendly. Uses demonstratives for comparisons. Says "Esas papas son mas grandes, pero estas son mas frescas."
+- Carlos (carlos_carnicero): Butcher at meat_counter. Uses ticket system. Says "Que numero tiene?" and "Cuantos gramos quiere?".
+
+GOAL COMPLETION:
+- Asking about prices → asked_price
+- Using a demonstrative (este, esta, estos, estas, etc.) → used_demonstrative
+- Comparing items → compared_items
+- Buying something (requesting a quantity) → made_purchase
+- Paying at checkout → paid_at_checkout`,
 };

@@ -22,7 +22,7 @@ import {
   type BuildingName,
 } from '../engine/game-state.js';
 import { getPetsInLocation } from '../languages/spanish/modules/home.js';
-import { allLocations as locations, getNPCsInLocation, getGoalById as getGoalByIdCombined, getStartGoalForBuilding, getAllGoalsForBuilding, getPromptInstructionsForBuilding, getAllKnownGoalIds } from '../data/module-registry.js';
+import { allLocations as locations, getNPCsInLocation, getGoalById as getGoalByIdCombined, getStartGoalForBuilding, getAllGoalsForBuilding, getParseGuidanceForBuilding, getNarrateGuidanceForBuilding, getAllKnownGoalIds } from '../data/module-registry.js';
 import type { LanguageConfig } from '../languages/types.js';
 
 // Handle transitioning to a new building - load goals and update state
@@ -376,12 +376,12 @@ interface NarrateResult {
 async function parseIntent(input: string, state: GameState): Promise<ParseResult> {
   const contextPrompt = buildPrompt(state);
 
-  // Compose system prompt: parse rules + module interaction triggers
+  // Compose system prompt: core parse rules + module-specific parse guidance
   const currentBuilding = getBuildingForLocation(state.location.id);
-  const moduleInstructions = getPromptInstructionsForBuilding(currentBuilding);
+  const parseGuidance = getParseGuidanceForBuilding(currentBuilding);
   const corePrompt = activeLanguage.coreSystemPrompt;
-  const systemPrompt = moduleInstructions
-    ? `${corePrompt}\n\n${moduleInstructions}`
+  const systemPrompt = parseGuidance
+    ? `${corePrompt}\n\n${parseGuidance}`
     : corePrompt;
 
   try {
@@ -431,10 +431,10 @@ async function narrateTurn(
   input: string,
 ): Promise<NarrateResult> {
   const currentBuilding = getBuildingForLocation(postActionState.location.id);
-  const moduleInstructions = getPromptInstructionsForBuilding(currentBuilding);
+  const narrateGuidance = getNarrateGuidanceForBuilding(currentBuilding);
   const narratePrompt = activeLanguage.narrateSystemPrompt;
-  const systemPrompt = moduleInstructions
-    ? `${narratePrompt}\n\n${moduleInstructions}`
+  const systemPrompt = narrateGuidance
+    ? `${narratePrompt}\n\n${narrateGuidance}`
     : narratePrompt;
 
   // Build context for the narrator

@@ -570,22 +570,6 @@ export const vocabulary: VocabWord[] = [
   { target: 'para', native: 'for', category: 'other' },
 ];
 
-import type { NPCDescription, ModuleInteraction } from '../../../engine/types.js';
-
-const npcDescriptions: NPCDescription[] = [
-  { id: 'roommate', personality: 'Carlos. Sleepy, friendly, casual speech. In the morning, wants coffee or breakfast (eggs, toast).' },
-  { id: 'cat', personality: 'Luna (cat). Independent, aloof. Responds with purring or ignoring.' },
-  { id: 'dog', personality: 'Max (dog). Excited, eager. Responds with tail wagging and barking.' },
-];
-
-const interactions: ModuleInteraction[] = [
-  { triggers: ['hola carlos', 'buenos días carlos', 'hola carlos, ¿qué haces?'], actions: [{ type: 'talk', npcId: 'roommate' }], goalComplete: ['greet_roommate'], note: 'ANY greeting to Carlos completes this goal, even if the player says more after the greeting.' },
-  { triggers: ['¿qué quieres para desayunar?'], actions: [{ type: 'talk', npcId: 'roommate' }], goalComplete: ['ask_roommate_breakfast'], note: 'npcResponse with wantsItem' },
-  { triggers: ['le doy los huevos a carlos'], actions: [{ type: 'give', objectId: 'eggs', npcId: 'roommate' }] },
-  { triggers: ['acaricio al gato'], actions: [{ type: 'pet', petId: 'cat' }] },
-  { triggers: ['le doy comida al perro'], actions: [{ type: 'feed', petId: 'dog' }], goalComplete: ['feed_pets'] },
-];
-
 export const homeModule: ModuleDefinition = {
   name: 'home',
   displayName: 'Home',
@@ -597,9 +581,37 @@ export const homeModule: ModuleDefinition = {
   startGoalId: 'wake_up',
   locationIds: Object.keys(locations).filter(id => id !== 'street'),
   unlockLevel: 1,
-  promptInstructions: '',
-  npcDescriptions,
-  interactions,
+
+  parseGuidance: `COMMON HOME ACTIONS:
+- "me levanto" → position standing
+- "voy al baño" → go bathroom
+- "abro la nevera" → open refrigerator
+- "apago el despertador" → turn_off alarm_clock
+- "tomo la leche" → take milk
+- "como los huevos" → eat eggs, needsChanges: { hunger: 25 }
+- "preparo tostadas" / "hago tostadas" → cook bread then eat bread, needsChanges: { hunger: 20 }
+- "me ducho" → use shower, needsChanges: { hygiene: 50 }
+- "me cepillo los dientes" → use toothbrush, needsChanges: { hygiene: 10 }
+- "me acuesto en el sofá" / "duermo en el sofá" → use couch, needsChanges: { energy: 10 }
+- "me visto" / "me pongo ropa" / "me cambio" → use closet
+
+NPC/PET INTERACTIONS:
+- Any greeting to Carlos → talk to roommate
+- Asking Carlos about breakfast → talk to roommate
+- Giving items to Carlos → give with objectId + npcId roommate
+- Petting Luna (cat) → pet with petId cat
+- Feeding Max (dog) → feed with petId dog`,
+
+  narrateGuidance: `NPC PERSONALITIES:
+- Carlos (roommate): Sleepy, friendly, casual speech. In the morning, wants coffee or breakfast (eggs, toast). When asked about breakfast, include wantsItem in npcResponse.
+- Luna (cat): Independent, aloof. Responds with purring or ignoring.
+- Max (dog): Excited, eager. Responds with tail wagging and barking.
+
+GOAL COMPLETION:
+- Any greeting to Carlos (even with more words after) → greet_roommate
+- Asking Carlos what he wants for breakfast → ask_roommate_breakfast
+- Feeding any pet → feed_pets`,
+
   pets,
   getPetsInLocation,
 };

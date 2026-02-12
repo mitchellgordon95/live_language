@@ -734,34 +734,6 @@ export const gymVocabulary: VocabWord[] = [
   { target: 'buena sesion!', native: 'good session!', category: 'other' },
 ];
 
-import type { NPCDescription, ModuleInteraction, TeachingNotes } from '../../../engine/types.js';
-
-const npcDescriptions: NPCDescription[] = [
-  { id: 'receptionist_ana', personality: 'Friendly, energetic receptionist at gym_entrance. Uses informal "tu" with regulars.', keyPhrases: ['Bienvenido al gimnasio!', 'Tu tarjeta, por favor'] },
-  { id: 'trainer_marco', personality: 'Motivational personal trainer on training_floor. Counts reps in Spanish. Enthusiastic about fitness.', keyPhrases: ['Levanta!', 'Respira!', 'Descansa!'] },
-  { id: 'member_sofia', personality: 'Regular gym member in cardio_zone. Chatty and friendly. Happy to share tips.', keyPhrases: ['Vengo tres veces a la semana'] },
-];
-
-const interactions: ModuleInteraction[] = [
-  { triggers: ['hola', 'aqui esta mi tarjeta'], location: 'gym_entrance', actions: [{ type: 'talk', npcId: 'receptionist_ana' }], goalComplete: ['checked_in', 'gym_check_in'] },
-  { triggers: ['me estiro', 'uso la colchoneta'], location: 'stretching_area', actions: [{ type: 'use', objectId: 'yoga_mat' }], goalComplete: ['warmed_up', 'stretched', 'gym_warm_up'], needsChanges: { energy: -5 } },
-  { triggers: ['levanto los brazos'], actions: [{ type: 'use', objectId: 'training_bench' }], goalComplete: ['followed_trainer', 'gym_follow_trainer'], needsChanges: { energy: -10 }, note: 'Following trainer commands' },
-  { triggers: ['uso la cinta de correr', 'corro'], location: 'cardio_zone', actions: [{ type: 'use', objectId: 'treadmill' }], goalComplete: ['did_cardio', 'gym_cardio'], needsChanges: { energy: -15 } },
-  { triggers: ['levanto las mancuernas', 'hago repeticiones'], location: 'weight_room', actions: [{ type: 'use', objectId: 'dumbbells' }], goalComplete: ['lifted_weights', 'gym_weights'], needsChanges: { energy: -10 } },
-  { triggers: ['me ducho'], location: 'locker_room', actions: [{ type: 'use', objectId: 'gym_shower' }], goalComplete: ['showered', 'gym_cool_down'], needsChanges: { hygiene: 30 } },
-];
-
-const teachingNotes: TeachingNotes = {
-  title: 'KEY SPANISH FOR GYM (teach these patterns)',
-  patterns: [
-    'Imperatives (trainer commands): "Levanta!" (Lift!), "Baja!" (Lower!), "Respira!" (Breathe!)',
-    'Reflexive verbs: "Me estiro" (I stretch), "Me caliento" (I warm up), "Me ducho" (I shower)',
-    'Frequency: "tres veces a la semana" (three times a week), "cada dia" (every day)',
-    'Body parts: "los brazos" (arms), "las piernas" (legs), "el pecho" (chest)',
-    'Exercise terms: "las repeticiones" (reps), "las series" (sets), "el descanso" (rest)',
-  ],
-};
-
 export const gymModule: ModuleDefinition = {
   name: 'gym',
   displayName: 'Gym',
@@ -773,8 +745,31 @@ export const gymModule: ModuleDefinition = {
   startGoalId: 'gym_check_in',
   locationIds: Object.keys(gymLocations),
   unlockLevel: 5,
-  promptInstructions: '',
-  npcDescriptions,
-  interactions,
-  teachingNotes,
+
+  parseGuidance: `ACTION RULES:
+- Greeting or showing gym card at entrance → talk to receptionist_ana
+- Stretching or using yoga mat in stretching_area → use yoga_mat, needsChanges: { energy: -5 }
+- Following trainer commands (lifting, exercises) on training_floor → use training_bench, needsChanges: { energy: -10 }
+- Running or using treadmill in cardio_zone → use treadmill, needsChanges: { energy: -15 }
+- Lifting dumbbells or doing reps in weight_room → use dumbbells, needsChanges: { energy: -10 }
+- Showering in locker_room → use gym_shower, needsChanges: { hygiene: 30 }
+
+TEACHING FOCUS:
+- Imperatives (trainer commands): "Levanta!" (Lift!), "Baja!" (Lower!), "Respira!" (Breathe!)
+- Reflexive verbs: "Me estiro" (I stretch), "Me caliento" (I warm up), "Me ducho" (I shower)
+- Frequency: "tres veces a la semana" (three times a week)
+- Body parts: "los brazos" (arms), "las piernas" (legs), "el pecho" (chest)`,
+
+  narrateGuidance: `NPC PERSONALITIES:
+- Ana (receptionist_ana): Friendly, energetic receptionist at gym_entrance. Uses informal "tu" with regulars. Says "Bienvenido al gimnasio!" and "Tu tarjeta, por favor".
+- Marco (trainer_marco): Motivational personal trainer on training_floor. Counts reps in Spanish. Enthusiastic. Says "Levanta!", "Respira!", "Descansa!".
+- Sofia (member_sofia): Regular gym member in cardio_zone. Chatty and friendly. Happy to share tips. Says "Vengo tres veces a la semana".
+
+GOAL COMPLETION:
+- Check in with receptionist → gym_check_in, checked_in
+- Stretch or warm up in stretching area → gym_warm_up, warmed_up, stretched
+- Follow trainer commands → gym_follow_trainer, followed_trainer
+- Do cardio on treadmill → gym_cardio, did_cardio
+- Lift weights → gym_weights, lifted_weights
+- Shower in locker room → gym_cool_down, showered`,
 };
