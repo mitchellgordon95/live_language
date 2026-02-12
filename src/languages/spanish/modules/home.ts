@@ -37,7 +37,7 @@ export const bedroom: Location = {
       id: 'closet',
       name: { target: 'el armario', native: 'closet' },
       state: { open: false },
-      actions: ['OPEN', 'CLOSE'],
+      actions: ['OPEN', 'CLOSE', 'USE'],
     },
   ],
   exits: [
