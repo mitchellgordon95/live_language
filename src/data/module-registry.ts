@@ -129,3 +129,15 @@ export function getModuleNames(): string[] {
 export function getAllModules(): ModuleDefinition[] {
   return modules;
 }
+
+// All known goal IDs across all modules (for validation)
+const _allGoalIds: Set<string> = new Set();
+for (const mod of modules) {
+  for (const goal of mod.goals) {
+    _allGoalIds.add(goal.id);
+  }
+}
+
+export function getAllKnownGoalIds(): Set<string> {
+  return _allGoalIds;
+}

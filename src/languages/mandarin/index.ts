@@ -8,6 +8,7 @@ export const mandarinConfig: LanguageConfig = {
   displayName: 'Mandarin Chinese',
   nativeLanguage: 'english',
   coreSystemPrompt: MANDARIN_SYSTEM_PROMPT,
+  narrateSystemPrompt: MANDARIN_SYSTEM_PROMPT, // Mandarin uses single-pass for now
   ttsVoice: 'Ting-Ting',
   aiFields: {
     targetModel: 'mandarinModel',

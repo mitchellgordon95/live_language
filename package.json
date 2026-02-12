@@ -4,7 +4,8 @@
   "description": "Language learning game where you control a sim by speaking the target language",
   "type": "module",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "validate:coords": "npx tsx scripts/validate-coordinates.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",

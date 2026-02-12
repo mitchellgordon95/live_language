@@ -1,5 +1,5 @@
 import type { LanguageConfig } from '../types.js';
-import { SPANISH_SYSTEM_PROMPT } from './prompt.js';
+import { SPANISH_SYSTEM_PROMPT, SPANISH_NARRATE_PROMPT } from './prompt.js';
 import { stripArticles, findObjectByName } from './helpers.js';
 import { homeModule } from './modules/home.js';
 import { restaurantModule } from './modules/restaurant.js';
@@ -15,6 +15,7 @@ export const spanishConfig: LanguageConfig = {
   displayName: 'Spanish',
   nativeLanguage: 'english',
   coreSystemPrompt: SPANISH_SYSTEM_PROMPT,
+  narrateSystemPrompt: SPANISH_NARRATE_PROMPT,
   ttsVoice: 'Paulina',
   aiFields: {
     targetModel: 'spanishModel',

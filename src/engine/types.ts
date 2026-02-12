@@ -210,6 +210,69 @@ export interface ModuleDefinition {
   getPetsInLocation?: (locationId: string, petLocations: Record<string, string>) => Pet[];
 }
 
+// Two-pass AI types
+
+export type ActionTypeLower = 'open' | 'close' | 'turn_on' | 'turn_off' | 'take' | 'put' | 'go' | 'position' | 'eat' | 'drink' | 'use' | 'cook' | 'pet' | 'feed' | 'talk' | 'give';
+
+export interface GameAction {
+  type: ActionTypeLower;
+  objectId?: string;
+  locationId?: string;
+  position?: 'standing' | 'in_bed';
+  npcId?: string;
+  petId?: string;
+}
+
+// Pass 1: Parse Spanish input into validated actions
+export interface ParseResponse {
+  understood: boolean;
+  grammar: {
+    score: number;
+    issues: GrammarIssue[];
+  };
+  spanishModel: string;
+  valid: boolean;
+  invalidReason?: string;
+  actions: GameAction[];
+  needsChanges?: Partial<Needs>;
+}
+
+// NPC-initiated actions that affect game state
+export interface NPCActionData {
+  npcId: string;
+  type: 'add_object' | 'remove_object' | 'give_item' | 'take_item' | 'change_object' | 'move_player';
+  objectId?: string;
+  itemId?: string;
+  changes?: Record<string, unknown>;
+  locationId?: string;
+  object?: {
+    id: string;
+    spanishName: string;
+    englishName: string;
+    actions?: string[];
+    consumable?: boolean;
+    needsEffect?: { hunger?: number; energy?: number; hygiene?: number; bladder?: number };
+  };
+}
+
+// Pass 2: Narrate what happened given validated actions
+export interface NarrateResponse {
+  message: string;
+  goalComplete?: string[];
+  npcResponse?: {
+    npcId: string;
+    spanish: string;
+    english: string;
+    wantsItem?: string;
+    actionText?: string;
+  };
+  npcActions?: NPCActionData[];
+  petResponse?: {
+    petId: string;
+    reaction: string;
+  };
+}
+
 // Vocabulary familiarity tracking
 
 export type FamiliarityStage = 'new' | 'learning' | 'known';

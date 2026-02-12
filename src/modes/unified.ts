@@ -15,16 +15,14 @@ import {
   getObjectState,
   getBuildingForLocation,
   awardPoints,
-  awardGoalBonus,
   isBuildingUnlocked,
   saveLocationProgress,
   loadLocationProgress,
-  markChainComplete,
   ACTION_POINTS,
   type BuildingName,
 } from '../engine/game-state.js';
 import { getPetsInLocation } from '../languages/spanish/modules/home.js';
-import { allLocations as locations, getNPCsInLocation, getGoalById as getGoalByIdCombined, getStartGoalForBuilding, getAllGoalsForBuilding, getPromptInstructionsForBuilding } from '../data/module-registry.js';
+import { allLocations as locations, getNPCsInLocation, getGoalById as getGoalByIdCombined, getStartGoalForBuilding, getAllGoalsForBuilding, getPromptInstructionsForBuilding, getAllKnownGoalIds } from '../data/module-registry.js';
 import type { LanguageConfig } from '../languages/types.js';
 
 // Handle transitioning to a new building - load goals and update state
@@ -129,6 +127,83 @@ export interface UnifiedAIResponse {
   npcActions?: NPCAction[];
 }
 
+// --- Action Validation Layer ---
+
+const VALID_ACTION_TYPES = new Set([
+  'open', 'close', 'turn_on', 'turn_off', 'take', 'put', 'go',
+  'position', 'eat', 'drink', 'use', 'cook', 'pet', 'feed', 'talk', 'give',
+]);
+
+function getAllObjectsInScope(state: GameState, effectiveLocationId: string): string[] {
+  const loc = locations[effectiveLocationId];
+  if (!loc) return [];
+
+  const staticIds = loc.objects.map(o => o.id);
+  const dynamicIds = (state.dynamicObjects?.[effectiveLocationId] || []).map(o => o.id);
+  const inventoryIds = state.inventory.map(i => i.id);
+  return [...staticIds, ...dynamicIds, ...inventoryIds];
+}
+
+function validateResponse(response: UnifiedAIResponse, state: GameState): UnifiedAIResponse {
+  if (!response.valid || !response.actions?.length) return response;
+
+  // Track effective location as we walk through actions (for compound commands)
+  let effectiveLocationId = state.location.id;
+
+  const validatedActions = (response.actions || []).filter(action => {
+    // Check action type
+    if (!VALID_ACTION_TYPES.has(action.type)) {
+      console.warn(`[validate] Unknown action type: ${action.type}`);
+      return false;
+    }
+
+    // Validate 'go' — target must be a valid exit from effective location
+    if (action.type === 'go' && action.locationId) {
+      const effectiveLoc = locations[effectiveLocationId];
+      if (!effectiveLoc) {
+        console.warn(`[validate] Cannot resolve effective location: ${effectiveLocationId}`);
+        return false;
+      }
+      const validExits = effectiveLoc.exits.map(e => e.to);
+      if (!validExits.includes(action.locationId) && !locations[action.locationId]) {
+        console.warn(`[validate] Unknown location: ${action.locationId}`);
+        return false;
+      }
+      // Update effective location for subsequent actions
+      effectiveLocationId = action.locationId;
+      return true;
+    }
+
+    // Validate objectId for actions that use it
+    if (action.objectId && !['go', 'position'].includes(action.type)) {
+      const objectsInScope = getAllObjectsInScope(state, effectiveLocationId);
+      if (!objectsInScope.includes(action.objectId)) {
+        console.warn(`[validate] Object not found in scope: ${action.objectId} (location: ${effectiveLocationId})`);
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  // Validate goalComplete IDs
+  let validatedGoals = response.goalComplete;
+  if (validatedGoals) {
+    const goalIds = Array.isArray(validatedGoals) ? validatedGoals : [validatedGoals];
+    const knownGoalIds = getAllKnownGoalIds();
+    const filtered = goalIds.filter(id => {
+      if (!knownGoalIds.has(id)) {
+        console.warn(`[validate] Unknown goal ID: ${id}`);
+        return false;
+      }
+      return true;
+    });
+    validatedGoals = filtered.length > 0 ? filtered : undefined;
+  }
+
+  return { ...response, actions: validatedActions, goalComplete: validatedGoals };
+}
+
 function buildPrompt(state: GameState): string {
   // Combine static location objects with dynamically added objects (from NPCs)
   const staticObjects = state.location.objects.filter(obj => {
@@ -178,6 +253,13 @@ function buildPrompt(state: GameState): string {
   const completedGoalsDesc = state.completedGoals.length > 0
     ? state.completedGoals.join(', ')
     : '(none)';
+
+  // Dynamic goal IDs for current building
+  const currentBuilding = getBuildingForLocation(state.location.id);
+  const buildingGoals = getAllGoalsForBuilding(currentBuilding);
+  const goalIdsDesc = buildingGoals.length > 0
+    ? buildingGoals.map(g => `  - "${g.id}" - ${g.title}`).join('\n')
+    : '  (none)';
 
   // NPCs in current location
   const npcsHere = getNPCsInLocation(state.location.id);
@@ -238,16 +320,63 @@ Needs (0-100, higher is better):
 - bladder: ${state.needs.bladder}
 
 ${goalDesc}
-Completed goals: ${completedGoalsDesc}`;
+Completed goals: ${completedGoalsDesc}
+
+Available goal IDs for this location:
+${goalIdsDesc}`;
 }
 
 // Active language config - set by runUnifiedMode
 let activeLanguage: LanguageConfig;
 
-async function processInput(input: string, state: GameState): Promise<UnifiedAIResponse> {
+// --- Two-Pass AI ---
+
+const AI_MODEL = 'claude-opus-4-6';
+
+// Helper to extract JSON from AI response text
+function extractJSON(text: string): Record<string, unknown> {
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error('No JSON found in response');
+  return JSON.parse(jsonMatch[0]);
+}
+
+// Parse result from Pass 1 (before narration)
+interface ParseResult {
+  understood: boolean;
+  grammar: { score: number; issues: GrammarIssue[] };
+  spanishModel: string;
+  valid: boolean;
+  invalidReason?: string;
+  actions: Action[];
+  needsChanges?: Partial<Needs>;
+}
+
+// Narrate result from Pass 2
+interface NarrateResult {
+  message: string;
+  goalComplete?: string[];
+  npcResponse?: {
+    npcId: string;
+    spanish: string;
+    english: string;
+    wantsItem?: string;
+    actionText?: string;
+  };
+  npcActions?: NPCAction[];
+  petResponse?: {
+    petId: string;
+    reaction: string;
+  };
+}
+
+/**
+ * Pass 1: Parse Spanish input into grammar feedback + ordered actions.
+ * Does NOT narrate or generate NPC dialogue.
+ */
+async function parseIntent(input: string, state: GameState): Promise<ParseResult> {
   const contextPrompt = buildPrompt(state);
 
-  // Compose system prompt: core rules + current building's module instructions
+  // Compose system prompt: parse rules + module interaction triggers
   const currentBuilding = getBuildingForLocation(state.location.id);
   const moduleInstructions = getPromptInstructionsForBuilding(currentBuilding);
   const corePrompt = activeLanguage.coreSystemPrompt;
@@ -257,7 +386,7 @@ async function processInput(input: string, state: GameState): Promise<UnifiedAIR
 
   try {
     const response = await getClient().messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: AI_MODEL,
       max_tokens: 1024,
       system: systemPrompt,
       messages: [
@@ -269,26 +398,18 @@ async function processInput(input: string, state: GameState): Promise<UnifiedAIR
     });
 
     const content = response.content[0];
-    if (content.type !== 'text') {
-      throw new Error('Unexpected response type');
-    }
+    if (content.type !== 'text') throw new Error('Unexpected response type');
 
-    const jsonMatch = content.text.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('No JSON found in response');
-    }
+    const parsed = extractJSON(content.text) as unknown as ParseResult;
 
-    const parsed = JSON.parse(jsonMatch[0]) as UnifiedAIResponse;
-
-    // Debug: show raw AI response
     if (process.env.DEBUG_UNIFIED) {
-      console.log('\n\x1b[2m[DEBUG AI Response]:\x1b[0m');
+      console.log('\n\x1b[2m[DEBUG Pass 1 - Parse]:\x1b[0m');
       console.log('\x1b[2m' + JSON.stringify(parsed, null, 2) + '\x1b[0m\n');
     }
 
     return parsed;
   } catch (error) {
-    console.error('AI error:', error);
+    console.error('AI Parse error:', error);
     return {
       understood: false,
       grammar: { score: 0, issues: [] },
@@ -296,7 +417,76 @@ async function processInput(input: string, state: GameState): Promise<UnifiedAIR
       valid: false,
       invalidReason: 'Something went wrong. Try again.',
       actions: [],
-      message: 'Error processing input.',
+    };
+  }
+}
+
+/**
+ * Pass 2: Narrate what happened given validated actions and post-action state.
+ * Generates English message, NPC dialogue, goal completions, and NPC actions.
+ */
+async function narrateTurn(
+  parseResult: ParseResult,
+  postActionState: GameState,
+  input: string,
+): Promise<NarrateResult> {
+  const currentBuilding = getBuildingForLocation(postActionState.location.id);
+  const moduleInstructions = getPromptInstructionsForBuilding(currentBuilding);
+  const narratePrompt = activeLanguage.narrateSystemPrompt;
+  const systemPrompt = moduleInstructions
+    ? `${narratePrompt}\n\n${moduleInstructions}`
+    : narratePrompt;
+
+  // Build context for the narrator
+  const stateContext = buildPrompt(postActionState);
+  const actionsDesc = parseResult.actions.map(a => {
+    const parts = [`type: "${a.type}"`];
+    if (a.objectId) parts.push(`objectId: "${a.objectId}"`);
+    if (a.locationId) parts.push(`locationId: "${a.locationId}"`);
+    if (a.npcId) parts.push(`npcId: "${a.npcId}"`);
+    if (a.petId) parts.push(`petId: "${a.petId}"`);
+    if (a.position) parts.push(`position: "${a.position}"`);
+    return `{ ${parts.join(', ')} }`;
+  }).join(', ');
+
+  const userMessage = `PLAYER SAID (in Spanish): "${input}"
+CORRECTED SPANISH: "${parseResult.spanishModel}"
+
+VALIDATED ACTIONS: [${actionsDesc}]
+NEEDS CHANGES: ${JSON.stringify(parseResult.needsChanges || {})}
+
+${stateContext}
+
+Generate the narrative response for these actions.`;
+
+  try {
+    const response = await getClient().messages.create({
+      model: AI_MODEL,
+      max_tokens: 1024,
+      system: systemPrompt,
+      messages: [
+        {
+          role: 'user',
+          content: userMessage,
+        },
+      ],
+    });
+
+    const content = response.content[0];
+    if (content.type !== 'text') throw new Error('Unexpected response type');
+
+    const parsed = extractJSON(content.text) as unknown as NarrateResult;
+
+    if (process.env.DEBUG_UNIFIED) {
+      console.log('\n\x1b[2m[DEBUG Pass 2 - Narrate]:\x1b[0m');
+      console.log('\x1b[2m' + JSON.stringify(parsed, null, 2) + '\x1b[0m\n');
+    }
+
+    return parsed;
+  } catch (error) {
+    console.error('AI Narrate error:', error);
+    return {
+      message: 'You do that.',
     };
   }
 }
@@ -424,18 +614,22 @@ export interface ApplyEffectsResult {
   buildingBlocked?: BuildingName;  // If tried to enter locked building
 }
 
-function applyEffects(state: GameState, response: UnifiedAIResponse): ApplyEffectsResult {
+/**
+ * Apply mechanical effects from Parse (actions + needs + time + points).
+ * Does NOT handle goalComplete, npcResponse, or npcActions — those come from Narrate.
+ */
+function applyMechanicalEffects(state: GameState, parseResult: ParseResult): ApplyEffectsResult {
   let newState = { ...state };
   let totalActionPoints = 0;
   let buildingChanged = false;
   let newBuilding: BuildingName | undefined;
   let buildingBlocked: BuildingName | undefined;
 
-  const grammarScore = response.grammar?.score ?? 100;
+  const grammarScore = parseResult.grammar?.score ?? 100;
   const oldBuilding = getBuildingForLocation(state.location.id);
 
   // Process actions in order - this is the key to handling compound commands correctly
-  for (const action of response.actions || []) {
+  for (const action of parseResult.actions || []) {
     // Award points for valid actions
     const actionPoints = ACTION_POINTS[action.type] || 5;
     totalActionPoints += actionPoints;
@@ -448,9 +642,7 @@ function applyEffects(state: GameState, response: UnifiedAIResponse): ApplyEffec
           // Check if building is unlocked - only when ENTERING a new building from outside
           if (targetBuilding !== oldBuilding && !isBuildingUnlocked(newState, targetBuilding)) {
             buildingBlocked = targetBuilding;
-            // Don't award points for blocked action
             totalActionPoints -= actionPoints;
-            // Don't move - building is locked
             break;
           }
 
@@ -458,8 +650,6 @@ function applyEffects(state: GameState, response: UnifiedAIResponse): ApplyEffec
           if (targetBuilding !== oldBuilding) {
             buildingChanged = true;
             newBuilding = targetBuilding;
-
-            // Save current building's goal progress
             newState = saveLocationProgress(newState, oldBuilding);
           }
 
@@ -493,7 +683,6 @@ function applyEffects(state: GameState, response: UnifiedAIResponse): ApplyEffec
 
       case 'turn_off':
         if (action.objectId) {
-          // Turn off also stops ringing (for alarm clock)
           newState = applyObjectChange(newState, action.objectId, { on: false, ringing: false });
         }
         break;
@@ -501,7 +690,6 @@ function applyEffects(state: GameState, response: UnifiedAIResponse): ApplyEffec
       case 'take':
         if (action.objectId) {
           const obj = newState.location.objects.find(o => o.id === action.objectId);
-          // Only add if not already in inventory (prevent duplicates)
           const alreadyHave = newState.inventory.some(i => i.id === action.objectId);
           if (obj && !alreadyHave) {
             newState = {
@@ -515,12 +703,10 @@ function applyEffects(state: GameState, response: UnifiedAIResponse): ApplyEffec
       case 'eat':
       case 'drink':
         if (action.objectId) {
-          // Remove from inventory if present
           newState = {
             ...newState,
             inventory: newState.inventory.filter(i => i.id !== action.objectId),
           };
-          // Also remove from dynamic objects if it's a delivered item (food/drink from waiter)
           const locationId = newState.location.id;
           const dynamicObjs = newState.dynamicObjects?.[locationId] || [];
           if (dynamicObjs.some(obj => obj.id === action.objectId)) {
@@ -541,10 +727,7 @@ function applyEffects(state: GameState, response: UnifiedAIResponse): ApplyEffec
       case 'feed':
       case 'talk':
       case 'give':
-        // These actions don't have direct state changes beyond needs/goals
-        // which are handled below
         if (action.type === 'give' && action.objectId) {
-          // Remove item from inventory when giving
           newState = {
             ...newState,
             inventory: newState.inventory.filter(i => i.id !== action.objectId),
@@ -554,52 +737,17 @@ function applyEffects(state: GameState, response: UnifiedAIResponse): ApplyEffec
     }
   }
 
-  // Apply needs changes (summarized across all actions)
-  if (response.needsChanges) {
+  // Apply needs changes from Parse
+  if (parseResult.needsChanges) {
     newState = {
       ...newState,
       needs: {
-        energy: Math.max(0, Math.min(100, newState.needs.energy + (response.needsChanges.energy || 0))),
-        hunger: Math.max(0, Math.min(100, newState.needs.hunger + (response.needsChanges.hunger || 0))),
-        hygiene: Math.max(0, Math.min(100, newState.needs.hygiene + (response.needsChanges.hygiene || 0))),
-        bladder: Math.max(0, Math.min(100, newState.needs.bladder + (response.needsChanges.bladder || 0))),
+        energy: Math.max(0, Math.min(100, newState.needs.energy + (parseResult.needsChanges.energy || 0))),
+        hunger: Math.max(0, Math.min(100, newState.needs.hunger + (parseResult.needsChanges.hunger || 0))),
+        hygiene: Math.max(0, Math.min(100, newState.needs.hygiene + (parseResult.needsChanges.hygiene || 0))),
+        bladder: Math.max(0, Math.min(100, newState.needs.bladder + (parseResult.needsChanges.bladder || 0))),
       },
     };
-  }
-
-  // Track goal-completing actions
-  if (response.goalComplete) {
-    const goals = Array.isArray(response.goalComplete)
-      ? response.goalComplete
-      : [response.goalComplete];
-    if (goals.length > 0) {
-      newState = {
-        ...newState,
-        completedGoals: [...newState.completedGoals, ...goals],
-      };
-    }
-  }
-
-  // Track NPC responses and state
-  if (response.npcResponse) {
-    const npcId = response.npcResponse.npcId;
-    const currentNpcState = newState.npcState[npcId] || { mood: 'neutral' };
-    newState = {
-      ...newState,
-      npcState: {
-        ...newState.npcState,
-        [npcId]: {
-          ...currentNpcState,
-          lastResponse: response.npcResponse.spanish,
-          wantsItem: response.npcResponse.wantsItem || currentNpcState.wantsItem,
-        },
-      },
-    };
-  }
-
-  // Apply NPC actions (waiter delivers food, host seats player, etc.)
-  if (response.npcActions && response.npcActions.length > 0) {
-    newState = applyNPCActions(newState, response.npcActions);
   }
 
   // Advance time
@@ -609,9 +757,8 @@ function applyEffects(state: GameState, response: UnifiedAIResponse): ApplyEffec
   let pointsAwarded = 0;
   let leveledUp = false;
 
-  if (response.valid && totalActionPoints > 0) {
-    // Compound commands get bonus multiplier
-    const compoundBonus = (response.actions?.length || 1) > 1 ? 2 : 1;
+  if (parseResult.valid && totalActionPoints > 0) {
+    const compoundBonus = (parseResult.actions?.length || 1) > 1 ? 2 : 1;
     const basePoints = totalActionPoints * compoundBonus;
 
     const result = awardPoints(newState, basePoints, grammarScore);
@@ -630,6 +777,45 @@ function applyEffects(state: GameState, response: UnifiedAIResponse): ApplyEffec
   };
 }
 
+/**
+ * Apply narrative effects from Narrate (goalComplete + npcResponse + npcActions).
+ */
+function applyNarrativeEffects(state: GameState, narrateResult: NarrateResult): GameState {
+  let newState = state;
+
+  // Track goal-completing actions
+  if (narrateResult.goalComplete && narrateResult.goalComplete.length > 0) {
+    newState = {
+      ...newState,
+      completedGoals: [...newState.completedGoals, ...narrateResult.goalComplete],
+    };
+  }
+
+  // Track NPC responses and state
+  if (narrateResult.npcResponse) {
+    const npcId = narrateResult.npcResponse.npcId;
+    const currentNpcState = newState.npcState[npcId] || { mood: 'neutral' };
+    newState = {
+      ...newState,
+      npcState: {
+        ...newState.npcState,
+        [npcId]: {
+          ...currentNpcState,
+          lastResponse: narrateResult.npcResponse.spanish,
+          wantsItem: narrateResult.npcResponse.wantsItem || currentNpcState.wantsItem,
+        },
+      },
+    };
+  }
+
+  // Apply NPC actions (waiter delivers food, host seats player, etc.)
+  if (narrateResult.npcActions && narrateResult.npcActions.length > 0) {
+    newState = applyNPCActions(newState, narrateResult.npcActions);
+  }
+
+  return newState;
+}
+
 // --- Exported turn processing for web server and terminal ---
 
 export interface TurnResult {
@@ -640,7 +826,10 @@ export interface TurnResult {
 }
 
 /**
- * Process a single game turn: AI input → effects → vocabulary → goals.
+ * Process a single game turn using two-pass AI:
+ *   Pass 1 (Parse): Spanish input → grammar + validated actions
+ *   Pass 2 (Narrate): Actions + state → message + NPC dialogue + goals
+ *
  * Used by both terminal mode and the web server.
  */
 export async function processTurn(
@@ -648,55 +837,108 @@ export async function processTurn(
   state: GameState,
   languageConfig: LanguageConfig,
 ): Promise<TurnResult> {
-  // Set active language for processInput's system prompt
   activeLanguage = languageConfig;
 
-  const response = await processInput(input, state);
+  // --- Pass 1: Parse Spanish into actions ---
+  const parseResult = await parseIntent(input, state);
 
-  let newState = state;
-  let effectsResult: ApplyEffectsResult | null = null;
-  const goalsCompleted: Goal[] = [];
+  // Validate the parse result
+  const parseAsUnified = { ...parseResult, message: '', goalComplete: undefined, npcResponse: undefined, npcActions: undefined } as UnifiedAIResponse;
+  const validated = validateResponse(parseAsUnified, state);
+  const validatedParse: ParseResult = {
+    understood: validated.understood,
+    grammar: validated.grammar,
+    spanishModel: validated.spanishModel,
+    valid: validated.valid,
+    invalidReason: validated.invalidReason,
+    actions: validated.actions,
+    needsChanges: validated.needsChanges,
+  };
 
-  if (response.valid) {
-    effectsResult = applyEffects(newState, response);
-    newState = effectsResult.state;
-
-    // Track vocabulary
-    if (response.understood && response.grammar.score >= 80) {
-      const wordsUsed = extractWordsFromText(input, newState.vocabulary);
-      for (const wordId of wordsUsed) {
-        newState = {
-          ...newState,
-          vocabulary: recordWordUse(newState.vocabulary, wordId, true),
-        };
-      }
-    }
-  } else {
-    newState = { ...newState, failedCurrentGoal: true };
+  // If not understood or invalid, return early (no Pass 2 needed)
+  if (!validatedParse.valid) {
+    const errorResponse: UnifiedAIResponse = {
+      ...validatedParse,
+      message: validatedParse.invalidReason || "I didn't understand that.",
+      actions: validatedParse.actions || [],
+    };
+    return {
+      newState: { ...state, failedCurrentGoal: true },
+      response: errorResponse,
+      effectsResult: null,
+      goalsCompleted: [],
+    };
   }
 
-  // Handle building transition
-  if (effectsResult?.buildingChanged && effectsResult.newBuilding) {
+  // --- Apply mechanical effects (go, open, take, etc.) ---
+  const effectsResult = applyMechanicalEffects(state, validatedParse);
+  let newState = effectsResult.state;
+
+  // Track vocabulary
+  if (validatedParse.understood && validatedParse.grammar.score >= 80) {
+    const wordsUsed = extractWordsFromText(input, newState.vocabulary);
+    for (const wordId of wordsUsed) {
+      newState = {
+        ...newState,
+        vocabulary: recordWordUse(newState.vocabulary, wordId, true),
+      };
+    }
+  }
+
+  // Handle building transition before narration (so narrator sees correct building)
+  if (effectsResult.buildingChanged && effectsResult.newBuilding) {
     newState = handleBuildingTransition(newState, effectsResult.newBuilding);
   }
 
-  // Collect goals completed by AI response
-  if (response.goalComplete) {
-    const completedIds = Array.isArray(response.goalComplete)
-      ? response.goalComplete
-      : [response.goalComplete];
-    for (const goalId of completedIds) {
+  // --- Pass 2: Narrate what happened ---
+  const narrateResult = await narrateTurn(validatedParse, newState, input);
+
+  // Validate goal IDs from narration
+  if (narrateResult.goalComplete) {
+    const knownGoalIds = getAllKnownGoalIds();
+    narrateResult.goalComplete = narrateResult.goalComplete.filter(id => {
+      if (!knownGoalIds.has(id)) {
+        console.warn(`[validate] Narrate returned unknown goal ID: ${id}`);
+        return false;
+      }
+      return true;
+    });
+    if (narrateResult.goalComplete.length === 0) {
+      narrateResult.goalComplete = undefined;
+    }
+  }
+
+  // Apply narrative effects (goals, NPC state, NPC actions)
+  newState = applyNarrativeEffects(newState, narrateResult);
+
+  // Build combined response for backward compatibility
+  const response: UnifiedAIResponse = {
+    understood: validatedParse.understood,
+    grammar: validatedParse.grammar,
+    spanishModel: validatedParse.spanishModel,
+    valid: validatedParse.valid,
+    invalidReason: validatedParse.invalidReason,
+    actions: validatedParse.actions,
+    needsChanges: validatedParse.needsChanges,
+    message: narrateResult.message,
+    goalComplete: narrateResult.goalComplete,
+    npcResponse: narrateResult.npcResponse,
+    npcActions: narrateResult.npcActions,
+    petResponse: narrateResult.petResponse,
+  };
+
+  // Collect goals completed by AI narration
+  const goalsCompleted: Goal[] = [];
+  if (narrateResult.goalComplete) {
+    for (const goalId of narrateResult.goalComplete) {
       const goal = getGoalByIdCombined(goalId);
       if (goal) goalsCompleted.push(goal);
     }
   }
 
-  // Check ALL goals in current building for completion (not just the chain)
-  // Skip goal checking if the AI response was an error (understood: false, valid: false)
+  // Check ALL goals in current building for completion (engine-driven)
   const currentBuilding = getBuildingForLocation(newState.location.id);
-  const allBuildingGoals = (response.understood === false && response.valid === false)
-    ? []
-    : getAllGoalsForBuilding(currentBuilding);
+  const allBuildingGoals = getAllGoalsForBuilding(currentBuilding);
 
   for (const goal of allBuildingGoals) {
     if (!newState.completedGoals.includes(goal.id) && goal.checkComplete(newState)) {
@@ -723,7 +965,10 @@ export async function processTurn(
     failedCurrentGoal: false,
   };
 
-  return { newState, response, effectsResult, goalsCompleted };
+  // Update effectsResult with final state (includes narrative effects)
+  const finalEffectsResult = { ...effectsResult, state: newState };
+
+  return { newState, response, effectsResult: finalEffectsResult, goalsCompleted };
 }
 
 export function loadVocabulary(profile?: string): VocabularyProgress {

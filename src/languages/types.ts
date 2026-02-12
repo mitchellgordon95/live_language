@@ -4,7 +4,8 @@ export interface LanguageConfig {
   id: string;                    // 'spanish', 'mandarin'
   displayName: string;           // 'Spanish', 'Mandarin Chinese'
   nativeLanguage: string;        // 'english'
-  coreSystemPrompt: string;      // Full CORE_SYSTEM_PROMPT for this language
+  coreSystemPrompt: string;      // Pass 1: Parse prompt (Spanish → actions)
+  narrateSystemPrompt: string;   // Pass 2: Narrate prompt (actions → story)
   ttsVoice: string;              // 'Paulina' for Spanish, 'Ting-Ting' for Mandarin
 
   // AI response field mapping (language-specific field names → generic)
