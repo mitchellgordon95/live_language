@@ -69,6 +69,31 @@ export default function Home() {
       return;
     }
 
+    const lower = input.trim().toLowerCase();
+    if (lower === 'help' || lower === 'ayuda' || lower === '/help') {
+      if (!game) return;
+      const suggestedGoal = game.goals.find(g => g.suggested) || game.goals.find(g => !g.completed);
+      const lines: string[] = [];
+      lines.push(`You are in: ${game.locationName.target} (${game.locationName.native})`);
+      if (suggestedGoal) {
+        lines.push(`Current goal: ${suggestedGoal.title}`);
+        if (suggestedGoal.hint) lines.push(`Hint: ${suggestedGoal.hint}`);
+      }
+      const exitNames = game.exits.map(e => `${e.name.target} (${e.name.native})`).join(', ');
+      if (exitNames) lines.push(`Exits: ${exitNames}`);
+      const objNames = game.objects.slice(0, 5).map(o => `${o.name.target} (${o.name.native})`).join(', ');
+      if (objNames) lines.push(`Objects: ${objNames}${game.objects.length > 5 ? '...' : ''}`);
+      lines.push('');
+      lines.push('Commands: /learn [topic], /say [text], /help');
+      chatIdRef.current += 1;
+      setChatHistory(prev => [...prev, {
+        id: chatIdRef.current,
+        playerInput: input,
+        systemHint: lines.join('\n'),
+      }]);
+      return;
+    }
+
     if (!game || isProcessing) return;
     setIsProcessing(true);
     setError(null);
