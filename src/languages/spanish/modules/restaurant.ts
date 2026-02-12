@@ -625,36 +625,105 @@ export const restaurantVocabulary: VocabWord[] = [
   { target: 'donde esta el bano?', native: 'where is the bathroom?', category: 'other' },
 ];
 
-export const promptInstructions = `RESTAURANT NPCs:
-- Host (anfitrion): Professional, welcoming. Greets with "Buenas noches" or "Buenas tardes". Asks "Mesa para cuantos?" (Table for how many?). Uses formal "usted".
-- Waiter (mesero, Diego): Friendly, attentive. Takes drink orders first with "Que desea tomar?", then food with "Ya decidio?". Says "Enseguida" (right away) and "Algo mas?" (anything else?).
-- Chef (Rosa): Busy, passionate about food. Occasionally checks on diners. Speaks quickly.
+import type { NPCDescription, ModuleInteraction, TeachingNotes } from '../../../engine/types.js';
 
-RESTAURANT INTERACTIONS:
-- "buenas noches" or "hola" at entrance → actions: [{ "type": "talk", "npcId": "host" }], goalComplete: ["restaurant_enter"], npcResponse from host: "Buenas noches! Mesa para uno? Siganme, por favor." (Good evening! Table for one? Follow me, please.) Do NOT move the player yet — let them practice navigation.
-- "sigo al anfitrion" / "te sigo" / "lo sigo" (I follow the host) → actions: [{ "type": "go", "locationId": "restaurant_table" }], goalComplete: ["seated_by_host"], message: "You follow the host to a nice table."
-- "una mesa para uno, por favor" or "voy a las mesas" AFTER greeting host → actions: [{ "type": "go", "locationId": "restaurant_table" }], goalComplete: ["seated_by_host"], message: "The host leads you to a nice table by the window."
-- "me siento en una mesa" / "me siento" (self-seating) → actions: [{ "type": "go", "locationId": "restaurant_table" }], goalComplete: ["seated_by_host"], message: "You find an empty table and sit down."
-NOTE: Both asking the host AND seating yourself are valid paths. The host path teaches polite greetings; self-seating teaches action verbs. Do NOT block self-seating.
-- "quiero una limonada" → actions: [{ "type": "talk", "npcId": "waiter" }], goalComplete: ["ordered_drink"], npcResponse from waiter, npcActions: [{ "npcId": "waiter", "type": "add_object", "locationId": "restaurant_table", "object": { "id": "my_limonada", "spanishName": "la limonada", "englishName": "lemonade", "actions": ["DRINK"], "consumable": true, "needsEffect": { "hunger": 5 } } }]
-- "quisiera agua" → actions: [{ "type": "talk", "npcId": "waiter" }], goalComplete: ["ordered_drink"], npcResponse from waiter, npcActions: [{ "npcId": "waiter", "type": "add_object", "locationId": "restaurant_table", "object": { "id": "my_agua", "spanishName": "el agua", "englishName": "water", "actions": ["DRINK"], "consumable": true } }]
-- "abro el menu" or "miro el menu" or "leo el menu" → actions: [{ "type": "open", "objectId": "menu" }], goalComplete: ["read_menu"]
-  IMPORTANT: When player opens/reads the menu, your message MUST include the menu contents:
-  "You open the menu and see: BEBIDAS: agua (gratis), refresco ($25), limonada ($30), cerveza ($45), vino ($65), cafe ($35). ENTRADAS: sopa del dia ($55), ensalada ($50), guacamole ($60). PLATOS: pollo asado ($120), carne asada ($150), pescado ($140), tacos ($95), enchiladas ($105), hamburguesa ($100). POSTRES: flan ($50), helado ($45), churros ($40)."
-- "quiero el pollo asado" → actions: [{ "type": "talk", "npcId": "waiter" }], goalComplete: ["ordered_food"], npcResponse from waiter, npcActions: [{ "npcId": "waiter", "type": "add_object", "locationId": "restaurant_table", "object": { "id": "my_pollo", "spanishName": "el pollo asado", "englishName": "grilled chicken", "actions": ["EAT"], "consumable": true, "needsEffect": { "hunger": 40 } } }]
-- "quisiera los tacos" → actions: [{ "type": "talk", "npcId": "waiter" }], goalComplete: ["ordered_food"], npcResponse from waiter, npcActions: [{ "npcId": "waiter", "type": "add_object", "locationId": "restaurant_table", "object": { "id": "my_tacos", "spanishName": "los tacos", "englishName": "tacos", "actions": ["EAT"], "consumable": true, "needsEffect": { "hunger": 35 } } }]
-- "como el pollo" or "como los tacos" → actions: [{ "type": "eat", "objectId": "my_pollo" or "my_tacos" (use the actual delivered food ID) }], goalComplete: ["ate_meal"], needsChanges: { hunger: 40 }
-- "la cuenta, por favor" → actions: [{ "type": "talk", "npcId": "waiter" }], goalComplete: ["asked_for_bill"], npcResponse from waiter, npcActions: [{ "npcId": "waiter", "type": "change_object", "objectId": "bill", "changes": { "delivered": true, "total": 150 } }]
-- "pago la cuenta" → actions: [{ "type": "use", "objectId": "bill" }], goalComplete: ["paid_bill"]
-- "donde esta el bano?" or "voy al bano" → Player can go to restaurant_bathroom
-NOTE: When player orders food/drink, use add_object with an ID like "my_pollo", "my_tacos", "my_limonada", etc. The ID should match what they ordered!
+const npcDescriptions: NPCDescription[] = [
+  { id: 'host', personality: 'Professional, welcoming. Uses formal "usted".', keyPhrases: ['Buenas noches', 'Buenas tardes', 'Mesa para cuantos?'] },
+  { id: 'waiter', personality: 'Diego. Friendly, attentive. Takes drink orders first, then food.', keyPhrases: ['Que desea tomar?', 'Ya decidio?', 'Enseguida', 'Algo mas?'] },
+  { id: 'chef', personality: 'Rosa. Busy, passionate about food. Occasionally checks on diners. Speaks quickly.' },
+];
 
-KEY SPANISH FOR ORDERING (teach these patterns):
-- "Quiero..." (I want...) - direct but acceptable
-- "Quisiera..." (I would like...) - more polite
-- "Me trae...?" (Can you bring me...?)
-- "sin" (without) - "sin cebolla" (without onion)
-- "con" (with) - "con arroz" (with rice)`;
+const interactions: ModuleInteraction[] = [
+  {
+    triggers: ['buenas noches', 'hola'],
+    location: 'restaurant_entrance',
+    actions: [{ type: 'talk', npcId: 'host' }],
+    goalComplete: ['restaurant_enter'],
+    note: 'npcResponse from host: "Buenas noches! Mesa para uno? Siganme, por favor." Do NOT move the player yet — let them practice navigation.',
+  },
+  {
+    triggers: ['sigo al anfitrion', 'te sigo', 'lo sigo'],
+    actions: [{ type: 'go', locationId: 'restaurant_table' }],
+    goalComplete: ['seated_by_host'],
+  },
+  {
+    triggers: ['una mesa para uno, por favor', 'voy a las mesas'],
+    actions: [{ type: 'go', locationId: 'restaurant_table' }],
+    goalComplete: ['seated_by_host'],
+    note: 'AFTER greeting host',
+  },
+  {
+    triggers: ['me siento en una mesa', 'me siento'],
+    actions: [{ type: 'go', locationId: 'restaurant_table' }],
+    goalComplete: ['seated_by_host'],
+    note: 'Both asking the host AND seating yourself are valid paths. The host path teaches polite greetings; self-seating teaches action verbs. Do NOT block self-seating.',
+  },
+  {
+    triggers: ['quiero una limonada'],
+    actions: [{ type: 'talk', npcId: 'waiter' }],
+    goalComplete: ['ordered_drink'],
+    npcActions: [{ npcId: 'waiter', type: 'add_object', locationId: 'restaurant_table', object: { id: 'my_limonada', spanishName: 'la limonada', englishName: 'lemonade', actions: ['DRINK'], consumable: true, needsEffect: { hunger: 5 } } }],
+  },
+  {
+    triggers: ['quisiera agua'],
+    actions: [{ type: 'talk', npcId: 'waiter' }],
+    goalComplete: ['ordered_drink'],
+    npcActions: [{ npcId: 'waiter', type: 'add_object', locationId: 'restaurant_table', object: { id: 'my_agua', spanishName: 'el agua', englishName: 'water', actions: ['DRINK'], consumable: true } }],
+  },
+  {
+    triggers: ['abro el menu', 'miro el menu', 'leo el menu'],
+    actions: [{ type: 'open', objectId: 'menu' }],
+    goalComplete: ['read_menu'],
+    note: 'IMPORTANT: When player opens/reads the menu, your message MUST include the menu contents: "You open the menu and see: BEBIDAS: agua (gratis), refresco ($25), limonada ($30), cerveza ($45), vino ($65), cafe ($35). ENTRADAS: sopa del dia ($55), ensalada ($50), guacamole ($60). PLATOS: pollo asado ($120), carne asada ($150), pescado ($140), tacos ($95), enchiladas ($105), hamburguesa ($100). POSTRES: flan ($50), helado ($45), churros ($40)."',
+  },
+  {
+    triggers: ['quiero el pollo asado'],
+    actions: [{ type: 'talk', npcId: 'waiter' }],
+    goalComplete: ['ordered_food'],
+    npcActions: [{ npcId: 'waiter', type: 'add_object', locationId: 'restaurant_table', object: { id: 'my_pollo', spanishName: 'el pollo asado', englishName: 'grilled chicken', actions: ['EAT'], consumable: true, needsEffect: { hunger: 40 } } }],
+  },
+  {
+    triggers: ['quisiera los tacos'],
+    actions: [{ type: 'talk', npcId: 'waiter' }],
+    goalComplete: ['ordered_food'],
+    npcActions: [{ npcId: 'waiter', type: 'add_object', locationId: 'restaurant_table', object: { id: 'my_tacos', spanishName: 'los tacos', englishName: 'tacos', actions: ['EAT'], consumable: true, needsEffect: { hunger: 35 } } }],
+  },
+  {
+    triggers: ['como el pollo', 'como los tacos'],
+    goalComplete: ['ate_meal'],
+    needsChanges: { hunger: 40 },
+    note: 'actions: [{ "type": "eat", "objectId": "my_pollo" or "my_tacos" (use the actual delivered food ID) }]',
+  },
+  {
+    triggers: ['la cuenta, por favor'],
+    actions: [{ type: 'talk', npcId: 'waiter' }],
+    goalComplete: ['asked_for_bill'],
+    npcActions: [{ npcId: 'waiter', type: 'change_object', objectId: 'bill', changes: { delivered: true, total: 150 } }],
+  },
+  {
+    triggers: ['pago la cuenta'],
+    actions: [{ type: 'use', objectId: 'bill' }],
+    goalComplete: ['paid_bill'],
+  },
+  {
+    triggers: ['donde esta el bano?', 'voy al bano'],
+    actions: [{ type: 'go', locationId: 'restaurant_bathroom' }],
+  },
+];
+
+// Standalone note appended after interactions
+const restaurantNote = 'NOTE: When player orders food/drink, use add_object with an ID like "my_pollo", "my_tacos", "my_limonada", etc. The ID should match what they ordered!';
+
+const teachingNotes: TeachingNotes = {
+  title: 'KEY SPANISH FOR ORDERING (teach these patterns)',
+  patterns: [
+    '"Quiero..." (I want...) - direct but acceptable',
+    '"Quisiera..." (I would like...) - more polite',
+    '"Me trae...?" (Can you bring me...?)',
+    '"sin" (without) - "sin cebolla" (without onion)',
+    '"con" (with) - "con arroz" (with rice)',
+  ],
+};
 
 export const restaurantModule: ModuleDefinition = {
   name: 'restaurant',
@@ -667,5 +736,8 @@ export const restaurantModule: ModuleDefinition = {
   startGoalId: 'restaurant_enter',
   locationIds: Object.keys(restaurantLocations),
   unlockLevel: 2,
-  promptInstructions,
+  promptInstructions: restaurantNote,
+  npcDescriptions,
+  interactions,
+  teachingNotes,
 };

@@ -81,7 +81,7 @@ IMPORTANT RULES:
 
 IMPORTANT: Let the player do whatever valid action they want, even if it doesn't match the current goal. The player is in control.
 
-ENGLISH INPUT: If the player writes in English, still try to understand and execute their intended action. Set understood=true, valid=true (if the action itself is valid), but set grammar.score to 20 and include a single grammar issue with type "other", original set to their English phrase, corrected set to the natural Spanish equivalent, and explanation "Try saying it in Spanish!" This teaches the Spanish phrase without blocking gameplay.
+ENGLISH INPUT: If the player writes in English, do NOT execute any action. Set understood=true, valid=false, actions=[], grammar.score=0, and set invalidReason to a helpful message like "Try saying it in Spanish: [Spanish translation of what they meant]". Include a single grammar issue with type "other", original set to their English phrase, corrected set to the natural Spanish equivalent, and explanation "Type this in Spanish to perform the action!" This teaches the Spanish phrase while encouraging them to practice.
 
 UNSUPPORTED ACTIONS: If the player tries an action that no objects support (e.g., cleaning when no cleaning supplies exist), set valid=false and give a helpful invalidReason explaining what IS available. Don't imply the action would work with items that don't exist.
 
@@ -152,6 +152,7 @@ NPC ACTION TEXT examples:
 
 NARRATION STYLE:
 - Messages should be vivid and encouraging
+- NEVER mention goals, objectives, or progress in the message. Just describe what happened. The UI shows goals separately.
 - COOKING narration: Describe the transformation (e.g., "You toast the bread and eat it. Delicious!") even though the actions reference the raw ingredient
 - DECORATIVE OBJECTS: Give vivid 1-sentence descriptions when the player looks at or briefly interacts with decorative items (bookshelf, mirror, bench). Don't describe items that would need to exist as separate game objects.
 - Keep NPC Spanish responses simple and appropriate for language learners (1-2 sentences)

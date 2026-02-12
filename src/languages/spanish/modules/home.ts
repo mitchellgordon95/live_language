@@ -570,19 +570,21 @@ export const vocabulary: VocabWord[] = [
   { target: 'para', native: 'for', category: 'other' },
 ];
 
-export const promptInstructions = `NPC INTERACTIONS:
-- "hola carlos" / "buenos días carlos" / "hola carlos, ¿qué haces?" → actions: [{ "type": "talk", "npcId": "roommate" }], goalComplete: ["greet_roommate"]. ANY greeting to Carlos completes this goal, even if the player says more after the greeting.
-- "¿qué quieres para desayunar?" → actions: [{ "type": "talk", "npcId": "roommate" }], goalComplete: ["ask_roommate_breakfast"], npcResponse with wantsItem
-- "le doy los huevos a carlos" → actions: [{ "type": "give", "objectId": "eggs", "npcId": "roommate" }]
+import type { NPCDescription, ModuleInteraction } from '../../../engine/types.js';
 
-PET INTERACTIONS:
-- "acaricio al gato" → actions: [{ "type": "pet", "petId": "cat" }]
-- "le doy comida al perro" → actions: [{ "type": "feed", "petId": "dog" }], goalComplete: ["feed_pets"]
+const npcDescriptions: NPCDescription[] = [
+  { id: 'roommate', personality: 'Carlos. Sleepy, friendly, casual speech. In the morning, wants coffee or breakfast (eggs, toast).' },
+  { id: 'cat', personality: 'Luna (cat). Independent, aloof. Responds with purring or ignoring.' },
+  { id: 'dog', personality: 'Max (dog). Excited, eager. Responds with tail wagging and barking.' },
+];
 
-NPC PERSONALITIES:
-- Carlos (roommate): Sleepy, friendly, casual speech. In the morning, wants coffee or breakfast (eggs, toast).
-- Luna (cat): Independent, aloof. Responds with purring or ignoring.
-- Max (dog): Excited, eager. Responds with tail wagging and barking.`;
+const interactions: ModuleInteraction[] = [
+  { triggers: ['hola carlos', 'buenos días carlos', 'hola carlos, ¿qué haces?'], actions: [{ type: 'talk', npcId: 'roommate' }], goalComplete: ['greet_roommate'], note: 'ANY greeting to Carlos completes this goal, even if the player says more after the greeting.' },
+  { triggers: ['¿qué quieres para desayunar?'], actions: [{ type: 'talk', npcId: 'roommate' }], goalComplete: ['ask_roommate_breakfast'], note: 'npcResponse with wantsItem' },
+  { triggers: ['le doy los huevos a carlos'], actions: [{ type: 'give', objectId: 'eggs', npcId: 'roommate' }] },
+  { triggers: ['acaricio al gato'], actions: [{ type: 'pet', petId: 'cat' }] },
+  { triggers: ['le doy comida al perro'], actions: [{ type: 'feed', petId: 'dog' }], goalComplete: ['feed_pets'] },
+];
 
 export const homeModule: ModuleDefinition = {
   name: 'home',
@@ -595,7 +597,9 @@ export const homeModule: ModuleDefinition = {
   startGoalId: 'wake_up',
   locationIds: Object.keys(locations).filter(id => id !== 'street'),
   unlockLevel: 1,
-  promptInstructions,
+  promptInstructions: '',
+  npcDescriptions,
+  interactions,
   pets,
   getPetsInLocation,
 };

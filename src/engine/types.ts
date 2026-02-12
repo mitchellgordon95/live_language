@@ -193,6 +193,29 @@ export interface ActionResult {
   wordsUsed?: string[];  // Words the player successfully used in this action
 }
 
+// Structured module interaction data
+
+export interface NPCDescription {
+  id: string;
+  personality: string;
+  keyPhrases?: string[];
+}
+
+export interface ModuleInteraction {
+  triggers: string[];
+  location?: string;
+  actions?: GameAction[];
+  goalComplete?: string[];
+  needsChanges?: Partial<Needs>;
+  npcActions?: NPCActionData[];
+  note?: string;
+}
+
+export interface TeachingNotes {
+  title: string;
+  patterns: string[];
+}
+
 // Module definition - each module exports one of these
 export interface ModuleDefinition {
   name: string;
@@ -208,6 +231,9 @@ export interface ModuleDefinition {
   promptInstructions: string;
   pets?: Pet[];
   getPetsInLocation?: (locationId: string, petLocations: Record<string, string>) => Pet[];
+  npcDescriptions?: NPCDescription[];
+  interactions?: ModuleInteraction[];
+  teachingNotes?: TeachingNotes;
 }
 
 // Two-pass AI types

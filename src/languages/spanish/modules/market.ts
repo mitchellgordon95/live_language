@@ -841,25 +841,33 @@ export const sampleDialogs = {
   },
 };
 
-export const promptInstructions = `MARKET NPCs:
-- Dona Maria (dona_maria): Elderly fruit vendor at fruit_stand. Friendly, uses diminutives (frutitas, manzanitas). Says "Buenos dias, mi amor! Que busca hoy?" and "Estas naranjas estan muy dulces!"
-- Senor Pedro (senor_pedro): Vegetable vendor at vegetable_stand. Direct but friendly. Uses demonstratives for comparisons: "Esas papas son mas grandes, pero estas son mas frescas."
-- Carlos el Carnicero (carlos_carnicero): Butcher at meat_counter. Uses ticket system. Asks "Que numero tiene?" and "Cuantos gramos quiere?"
+import type { NPCDescription, ModuleInteraction, TeachingNotes } from '../../../engine/types.js';
 
-MARKET INTERACTIONS:
-- "cuanto cuestan las manzanas?" or asking prices → actions: [{ "type": "talk", "npcId": "dona_maria" }], goalComplete: ["asked_price"], npcResponse with price info
-- "quiero estas naranjas" or using demonstratives → actions: [{ "type": "talk", "npcId": relevant vendor }], goalComplete: ["used_demonstrative"]
-- "cuales son mas frescas?" or comparing items → actions: [{ "type": "talk", "npcId": relevant vendor }], goalComplete: ["compared_items"], npcResponse comparing
-- "quiero un kilo de manzanas" or specifying quantity → actions: [{ "type": "talk", "npcId": relevant vendor }], goalComplete: ["made_purchase"], npcResponse confirming
-- "pago con efectivo" or "pago con tarjeta" at checkout → actions: [{ "type": "use", "objectId": "cash_register" }], goalComplete: ["paid_at_checkout"]
+const npcDescriptions: NPCDescription[] = [
+  { id: 'dona_maria', personality: 'Elderly fruit vendor at fruit_stand. Friendly, uses diminutives (frutitas, manzanitas).', keyPhrases: ['Buenos dias, mi amor! Que busca hoy?', 'Estas naranjas estan muy dulces!'] },
+  { id: 'senor_pedro', personality: 'Vegetable vendor at vegetable_stand. Direct but friendly. Uses demonstratives for comparisons.', keyPhrases: ['Esas papas son mas grandes, pero estas son mas frescas.'] },
+  { id: 'carlos_carnicero', personality: 'Butcher at meat_counter. Uses ticket system.', keyPhrases: ['Que numero tiene?', 'Cuantos gramos quiere?'] },
+];
 
-KEY SPANISH FOR MARKET (teach these patterns):
-- "Cuanto cuesta?" / "Cuanto cuestan?" (How much does it/they cost?)
-- "Este/Esta/Estos/Estas" (This/These - near speaker)
-- "Ese/Esa/Esos/Esas" (That/Those - near listener)
-- "Aquel/Aquella" (That over there - far from both)
-- "Un kilo de..." / "Medio kilo de..." (A kilo of... / Half kilo of...)
-- "Mas fresco/grande/barato que..." (Fresher/bigger/cheaper than...)`;
+const interactions: ModuleInteraction[] = [
+  { triggers: ['cuanto cuestan las manzanas?'], actions: [{ type: 'talk', npcId: 'dona_maria' }], goalComplete: ['asked_price'], note: 'npcResponse with price info' },
+  { triggers: ['quiero estas naranjas'], goalComplete: ['used_demonstrative'], note: 'actions: [{ "type": "talk", "npcId": relevant vendor }] — use the vendor for whichever stand the player is at' },
+  { triggers: ['cuales son mas frescas?'], goalComplete: ['compared_items'], note: 'actions: [{ "type": "talk", "npcId": relevant vendor }], npcResponse comparing' },
+  { triggers: ['quiero un kilo de manzanas'], goalComplete: ['made_purchase'], note: 'actions: [{ "type": "talk", "npcId": relevant vendor }], npcResponse confirming' },
+  { triggers: ['pago con efectivo', 'pago con tarjeta'], actions: [{ type: 'use', objectId: 'cash_register' }], goalComplete: ['paid_at_checkout'] },
+];
+
+const teachingNotes: TeachingNotes = {
+  title: 'KEY SPANISH FOR MARKET (teach these patterns)',
+  patterns: [
+    '"Cuanto cuesta?" / "Cuanto cuestan?" (How much does it/they cost?)',
+    '"Este/Esta/Estos/Estas" (This/These - near speaker)',
+    '"Ese/Esa/Esos/Esas" (That/Those - near listener)',
+    '"Aquel/Aquella" (That over there - far from both)',
+    '"Un kilo de..." / "Medio kilo de..." (A kilo of... / Half kilo of...)',
+    '"Mas fresco/grande/barato que..." (Fresher/bigger/cheaper than...)',
+  ],
+};
 
 export const marketModule: ModuleDefinition = {
   name: 'market',
@@ -872,5 +880,8 @@ export const marketModule: ModuleDefinition = {
   startGoalId: 'market_explore',
   locationIds: Object.keys(marketLocations),
   unlockLevel: 3,
-  promptInstructions,
+  promptInstructions: '',
+  npcDescriptions,
+  interactions,
+  teachingNotes,
 };

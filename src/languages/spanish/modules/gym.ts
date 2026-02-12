@@ -734,25 +734,33 @@ export const gymVocabulary: VocabWord[] = [
   { target: 'buena sesion!', native: 'good session!', category: 'other' },
 ];
 
-export const promptInstructions = `GYM NPCs:
-- Ana (receptionist_ana): Friendly, energetic receptionist at gym_entrance. Greets with "Bienvenido al gimnasio!" Asks for membership card: "Tu tarjeta, por favor". Uses informal "tu" with regulars.
-- Marco (trainer_marco): Motivational personal trainer on training_floor. Uses imperative commands: "Levanta!" (Lift!), "Respira!" (Breathe!), "Descansa!" (Rest!). Counts reps in Spanish. Enthusiastic about fitness.
-- Sofia (member_sofia): Regular gym member in cardio_zone. Chatty and friendly. Talks about frequency: "Vengo tres veces a la semana" (I come three times a week). Happy to share tips.
+import type { NPCDescription, ModuleInteraction, TeachingNotes } from '../../../engine/types.js';
 
-GYM INTERACTIONS:
-- "hola" or "aqui esta mi tarjeta" at gym_entrance → actions: [{ "type": "talk", "npcId": "receptionist_ana" }], goalComplete: ["checked_in", "gym_check_in"], npcResponse from Ana
-- "me estiro" or "uso la colchoneta" in stretching_area → actions: [{ "type": "use", "objectId": "yoga_mat" }], goalComplete: ["warmed_up", "stretched", "gym_warm_up"], needsChanges: { energy: -5 }
-- Following trainer commands like "levanto los brazos" → actions: [{ "type": "use", "objectId": "training_bench" }], goalComplete: ["followed_trainer", "gym_follow_trainer"], needsChanges: { energy: -10 }
-- "uso la cinta de correr" or "corro" in cardio_zone → actions: [{ "type": "use", "objectId": "treadmill" }], goalComplete: ["did_cardio", "gym_cardio"], needsChanges: { energy: -15 }
-- "levanto las mancuernas" or "hago repeticiones" in weight_room → actions: [{ "type": "use", "objectId": "dumbbells" }], goalComplete: ["lifted_weights", "gym_weights"], needsChanges: { energy: -10 }
-- "me ducho" in locker_room → actions: [{ "type": "use", "objectId": "gym_shower" }], goalComplete: ["showered", "gym_cool_down"], needsChanges: { hygiene: 30 }
+const npcDescriptions: NPCDescription[] = [
+  { id: 'receptionist_ana', personality: 'Friendly, energetic receptionist at gym_entrance. Uses informal "tu" with regulars.', keyPhrases: ['Bienvenido al gimnasio!', 'Tu tarjeta, por favor'] },
+  { id: 'trainer_marco', personality: 'Motivational personal trainer on training_floor. Counts reps in Spanish. Enthusiastic about fitness.', keyPhrases: ['Levanta!', 'Respira!', 'Descansa!'] },
+  { id: 'member_sofia', personality: 'Regular gym member in cardio_zone. Chatty and friendly. Happy to share tips.', keyPhrases: ['Vengo tres veces a la semana'] },
+];
 
-KEY SPANISH FOR GYM (teach these patterns):
-- Imperatives (trainer commands): "Levanta!" (Lift!), "Baja!" (Lower!), "Respira!" (Breathe!)
-- Reflexive verbs: "Me estiro" (I stretch), "Me caliento" (I warm up), "Me ducho" (I shower)
-- Frequency: "tres veces a la semana" (three times a week), "cada dia" (every day)
-- Body parts: "los brazos" (arms), "las piernas" (legs), "el pecho" (chest)
-- Exercise terms: "las repeticiones" (reps), "las series" (sets), "el descanso" (rest)`;
+const interactions: ModuleInteraction[] = [
+  { triggers: ['hola', 'aqui esta mi tarjeta'], location: 'gym_entrance', actions: [{ type: 'talk', npcId: 'receptionist_ana' }], goalComplete: ['checked_in', 'gym_check_in'] },
+  { triggers: ['me estiro', 'uso la colchoneta'], location: 'stretching_area', actions: [{ type: 'use', objectId: 'yoga_mat' }], goalComplete: ['warmed_up', 'stretched', 'gym_warm_up'], needsChanges: { energy: -5 } },
+  { triggers: ['levanto los brazos'], actions: [{ type: 'use', objectId: 'training_bench' }], goalComplete: ['followed_trainer', 'gym_follow_trainer'], needsChanges: { energy: -10 }, note: 'Following trainer commands' },
+  { triggers: ['uso la cinta de correr', 'corro'], location: 'cardio_zone', actions: [{ type: 'use', objectId: 'treadmill' }], goalComplete: ['did_cardio', 'gym_cardio'], needsChanges: { energy: -15 } },
+  { triggers: ['levanto las mancuernas', 'hago repeticiones'], location: 'weight_room', actions: [{ type: 'use', objectId: 'dumbbells' }], goalComplete: ['lifted_weights', 'gym_weights'], needsChanges: { energy: -10 } },
+  { triggers: ['me ducho'], location: 'locker_room', actions: [{ type: 'use', objectId: 'gym_shower' }], goalComplete: ['showered', 'gym_cool_down'], needsChanges: { hygiene: 30 } },
+];
+
+const teachingNotes: TeachingNotes = {
+  title: 'KEY SPANISH FOR GYM (teach these patterns)',
+  patterns: [
+    'Imperatives (trainer commands): "Levanta!" (Lift!), "Baja!" (Lower!), "Respira!" (Breathe!)',
+    'Reflexive verbs: "Me estiro" (I stretch), "Me caliento" (I warm up), "Me ducho" (I shower)',
+    'Frequency: "tres veces a la semana" (three times a week), "cada dia" (every day)',
+    'Body parts: "los brazos" (arms), "las piernas" (legs), "el pecho" (chest)',
+    'Exercise terms: "las repeticiones" (reps), "las series" (sets), "el descanso" (rest)',
+  ],
+};
 
 export const gymModule: ModuleDefinition = {
   name: 'gym',
@@ -765,5 +773,8 @@ export const gymModule: ModuleDefinition = {
   startGoalId: 'gym_check_in',
   locationIds: Object.keys(gymLocations),
   unlockLevel: 5,
-  promptInstructions,
+  promptInstructions: '',
+  npcDescriptions,
+  interactions,
+  teachingNotes,
 };
