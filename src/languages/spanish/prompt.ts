@@ -162,6 +162,7 @@ COMMON ACTIONS:
 - "me ducho" → actions: [{ "type": "use", "objectId": "shower" }], needsChanges: { hygiene: 50 }, goalComplete: ["take_shower"]
 - "me cepillo los dientes" → actions: [{ "type": "use", "objectId": "toothbrush" }], needsChanges: { hygiene: 10 }, goalComplete: ["brush_teeth"]
 - "me acuesto en el sofá" / "duermo en el sofá" → actions: [{ "type": "use", "objectId": "couch" }], needsChanges: { energy: 10 }, message: "You rest on the couch."
+- "me visto" / "me pongo ropa" / "me cambio" → actions: [{ "type": "use", "objectId": "closet" }], message: "You get dressed."
 
 ADDRESSING NPCs (Spanish patterns to teach):
 Players can address NPCs by name, title, or role. These are natural Spanish patterns:
