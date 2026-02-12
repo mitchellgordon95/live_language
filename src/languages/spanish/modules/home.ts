@@ -496,6 +496,7 @@ export const vocabulary: VocabWord[] = [
   { target: 'el cepillo de dientes', native: 'toothbrush', category: 'noun', gender: 'masculine' },
   { target: 'la toalla', native: 'towel', category: 'noun', gender: 'feminine' },
   { target: 'el jabón', native: 'soap', category: 'noun', gender: 'masculine' },
+  { target: 'el inodoro', native: 'toilet', category: 'noun', gender: 'masculine' },
 
   // Kitchen objects
   { target: 'la nevera', native: 'refrigerator', category: 'noun', gender: 'feminine' },
@@ -505,6 +506,7 @@ export const vocabulary: VocabWord[] = [
   { target: 'la taza', native: 'cup', category: 'noun', gender: 'feminine' },
   { target: 'el plato', native: 'plate', category: 'noun', gender: 'masculine' },
   { target: 'la sartén', native: 'pan', category: 'noun', gender: 'feminine' },
+  { target: 'la cafetera', native: 'coffee maker', category: 'noun', gender: 'feminine' },
 
   // Food
   { target: 'la leche', native: 'milk', category: 'noun', gender: 'feminine' },
