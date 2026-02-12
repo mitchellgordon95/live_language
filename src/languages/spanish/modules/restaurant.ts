@@ -631,8 +631,11 @@ export const promptInstructions = `RESTAURANT NPCs:
 - Chef (Rosa): Busy, passionate about food. Occasionally checks on diners. Speaks quickly.
 
 RESTAURANT INTERACTIONS:
-- When player greets the host with ANY Spanish greeting ("hola", "buenas noches", "buenas tardes"), emit goalComplete: ["restaurant_enter"] along with the host greeting response. This confirms arrival.
-- "buenas noches" or "una mesa para uno, por favor" at entrance → actions: [{ "type": "talk", "npcId": "host" }], goalComplete: ["restaurant_enter", "seated_by_host"], npcResponse from host, npcActions: [{ "npcId": "host", "type": "move_player", "locationId": "restaurant_table" }]
+- "buenas noches" or "hola" at entrance → actions: [{ "type": "talk", "npcId": "host" }], goalComplete: ["restaurant_enter"], npcResponse from host: "Buenas noches! Mesa para uno? Siganme, por favor." (Good evening! Table for one? Follow me, please.) Do NOT move the player yet — let them practice navigation.
+- "sigo al anfitrion" / "te sigo" / "lo sigo" (I follow the host) → actions: [{ "type": "go", "locationId": "restaurant_table" }], goalComplete: ["seated_by_host"], message: "You follow the host to a nice table."
+- "una mesa para uno, por favor" or "voy a las mesas" AFTER greeting host → actions: [{ "type": "go", "locationId": "restaurant_table" }], goalComplete: ["seated_by_host"], message: "The host leads you to a nice table by the window."
+- "me siento en una mesa" / "me siento" (self-seating) → actions: [{ "type": "go", "locationId": "restaurant_table" }], goalComplete: ["seated_by_host"], message: "You find an empty table and sit down."
+NOTE: Both asking the host AND seating yourself are valid paths. The host path teaches polite greetings; self-seating teaches action verbs. Do NOT block self-seating.
 - "quiero una limonada" → actions: [{ "type": "talk", "npcId": "waiter" }], goalComplete: ["ordered_drink"], npcResponse from waiter, npcActions: [{ "npcId": "waiter", "type": "add_object", "locationId": "restaurant_table", "object": { "id": "my_limonada", "spanishName": "la limonada", "englishName": "lemonade", "actions": ["DRINK"], "consumable": true, "needsEffect": { "hunger": 5 } } }]
 - "quisiera agua" → actions: [{ "type": "talk", "npcId": "waiter" }], goalComplete: ["ordered_drink"], npcResponse from waiter, npcActions: [{ "npcId": "waiter", "type": "add_object", "locationId": "restaurant_table", "object": { "id": "my_agua", "spanishName": "el agua", "englishName": "water", "actions": ["DRINK"], "consumable": true } }]
 - "abro el menu" or "miro el menu" or "leo el menu" → actions: [{ "type": "open", "objectId": "menu" }], goalComplete: ["read_menu"]
