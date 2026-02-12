@@ -92,7 +92,7 @@ function TurnFeedback({ result, onSpeak }: { result: TurnResultView; onSpeak?: (
       )}
 
       {/* NPC response */}
-      {result.npcResponse && (
+      {result.npcResponse && result.npcResponse.npcName && (
         <div className="flex gap-2 items-start">
           {result.npcResponse.portrait ? (
             // eslint-disable-next-line @next/next/no-img-element
