@@ -104,6 +104,7 @@ export interface GameView {
 
 export interface TurnResultView {
   valid: boolean;
+  understood: boolean;
   message: string;
   invalidReason?: string;
   grammarScore: number;

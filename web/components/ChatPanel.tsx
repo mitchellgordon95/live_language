@@ -127,12 +127,12 @@ function TurnFeedback({ result, onSpeak }: { result: TurnResultView; onSpeak?: (
       )}
 
       {/* Grammar feedback */}
-      {result.grammarScore === 100 && result.valid && (
+      {result.grammarScore === 100 && result.valid && result.understood && (
         <div className="text-green-400 text-sm">
           Perfect! <span className="text-gray-400">&quot;{result.targetModel}&quot;</span>
         </div>
       )}
-      {result.grammarIssues.length > 0 && result.grammarIssues[0].original.toLowerCase() !== result.grammarIssues[0].corrected.toLowerCase() && (
+      {result.understood && result.grammarIssues.length > 0 && result.grammarIssues[0].original.toLowerCase() !== result.grammarIssues[0].corrected.toLowerCase() && (
         <div className="text-sm">
           <span className="text-yellow-400">Tip:</span>{' '}
           <span className="text-gray-300">&quot;{result.grammarIssues[0].corrected}&quot; is more natural</span>

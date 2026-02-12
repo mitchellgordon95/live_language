@@ -483,6 +483,7 @@ function buildTurnResultView(result: any, state: any): TurnResultView {
   const response = result.response;
   const view: TurnResultView = {
     valid: response.valid,
+    understood: response.understood ?? true,
     message: response.message || '',
     invalidReason: response.invalidReason,
     grammarScore: response.grammar?.score ?? 0,
