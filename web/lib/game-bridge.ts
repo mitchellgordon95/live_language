@@ -2,6 +2,8 @@
  * Server-only bridge to the game engine.
  * Uses dynamic imports with webpackIgnore to load the compiled game engine
  * from the parent project's dist/ directory at runtime (Node.js resolves it).
+ *
+ * Maps the engine's mutation-based state model to GameView types for the UI.
  */
 import 'server-only';
 import { join } from 'path';
@@ -21,6 +23,7 @@ let engine: {
   getStartGoalForBuilding: (building: string) => unknown;
   getModuleByName: (name: string) => unknown;
   allLocations: Record<string, unknown>;
+  allNPCs: unknown[];
   getLanguage: (id: string) => unknown;
   getDefaultLanguage: () => string;
   getAvailableLanguages: () => string[];
@@ -55,6 +58,7 @@ async function getEngine() {
     getStartGoalForBuilding: registryMod.getStartGoalForBuilding,
     getModuleByName: registryMod.getModuleByName,
     allLocations: registryMod.allLocations,
+    allNPCs: registryMod.allNPCs,
     getNPCsInLocation: registryMod.getNPCsInLocation,
     getLanguage: languagesMod.getLanguage,
     getDefaultLanguage: languagesMod.getDefaultLanguage,
@@ -102,31 +106,39 @@ export async function initGame(options: {
   const vocab = eng.loadVocabulary(options.profile || undefined);
 
   // Determine start location and goal from module
-  let startLocationId = 'bedroom';
-  let startGoalId: string | undefined;
-  let forceStanding = false;
-
+  let moduleName = 'home';
   if (options.module) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const mod = eng.getModuleByName(options.module) as any;
     if (mod) {
-      startLocationId = mod.startLocationId;
-      startGoalId = mod.startGoalId;
-      forceStanding = mod.name !== 'home';
+      moduleName = mod.name;
     }
   }
 
-  const startLocation = eng.allLocations[startLocationId] || eng.allLocations['bedroom'];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mod = eng.getModuleByName(moduleName) as any;
+  const startLocationId = mod?.startLocationId || 'bedroom';
+  const startGoalId = mod?.startGoalId;
+  const forceStanding = moduleName !== 'home';
+
   let startGoal = eng.getStartGoalForBuilding('home');
   if (startGoalId) {
     startGoal = eng.getGoalByIdCombined(startGoalId) || startGoal;
   }
 
+  // New createInitialState takes (startLocationId, startGoal, objects, npcs, existingVocabulary)
+  const objects = mod?.objects || [];
+  const npcs = mod?.npcs || [];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let state = eng.createInitialState(startLocation, startGoal, vocab) as any;
+  let state = eng.createInitialState(startLocationId, startGoal, objects, npcs, vocab) as any;
 
   if (forceStanding) {
-    state = { ...state, playerPosition: 'standing' };
+    state = {
+      ...state,
+      playerTags: state.playerTags.filter((t: string) => t !== 'in_bed').concat(
+        state.playerTags.includes('standing') ? [] : ['standing']
+      ),
+    };
   }
 
   // Disable audio in web mode, set vocab profile
@@ -160,7 +172,7 @@ export async function playTurn(sessionId: string, input: string): Promise<GameVi
   eng.saveVocabulary(session.state.vocabulary, session.state.profile);
 
   const turnResult = buildTurnResultView(result, session.state);
-  return buildGameView(sessionId, session.state, turnResult, result.response);
+  return buildGameView(sessionId, session.state, turnResult, result);
 }
 
 // --- Scene Manifest Loading ---
@@ -228,54 +240,61 @@ function loadPortraitManifest(module: string): PortraitManifest | null {
   }
 }
 
-// Action types that map to transient player portrait variants
-const ACTION_TO_PORTRAIT: Record<string, string> = {
-  eat: 'eat',
-  drink: 'eat',       // eating portrait covers drinking too
-  cook: 'cook',
-  use: 'use',          // resolved further by goal context
-};
-
 // Goal IDs that map to specific player portrait actions
 const GOAL_TO_PORTRAIT_ACTION: Record<string, string> = {
   brush_teeth: 'brush_teeth',
   take_shower: 'shower',
 };
 
+// Convert tags array to a key-value state object for portrait matching
+function tagsToStateObject(tags: string[]): Record<string, boolean> {
+  const obj: Record<string, boolean> = {};
+  for (const tag of tags) obj[tag] = true;
+  return obj;
+}
+
+// Check if a portrait variant's match conditions are met by a state object
+function matchesPortraitCondition(match: Record<string, unknown>, state: Record<string, unknown>): boolean {
+  return Object.entries(match).every(([key, val]) => {
+    if (val === true) return state[key] === true;
+    if (val === false) return !state[key];
+    return state[key] === val;
+  });
+}
+
+// Derive the "last action" from mutations for portrait selection
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function resolvePortraits(state: any, response: any | null, module: string): PortraitHint | null {
+function deriveLastAction(result: any): string | null {
+  const mutations = result?.mutations || [];
+  const goalsCompleted: string[] = (result?.goalsCompleted || []).map((g: { id?: string; title?: string }) => g.id || '');
+
+  // Check goal-based portrait first (more specific)
+  for (const goalId of goalsCompleted) {
+    if (GOAL_TO_PORTRAIT_ACTION[goalId]) {
+      return GOAL_TO_PORTRAIT_ACTION[goalId];
+    }
+  }
+
+  // Derive from mutations
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  for (const m of mutations as any[]) {
+    if (m.type === 'tag' && m.add?.includes('cooked')) return 'cook';
+    if (m.type === 'remove') return 'eat';
+  }
+
+  return null;
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function resolvePortraits(state: any, result: any | null, module: string): PortraitHint | null {
   const manifest = loadPortraitManifest(module);
   if (!manifest) return null;
 
   const hint: PortraitHint = {};
 
   // 1. Player portrait — check transient actions first, fall back to persistent state
-  if (response?.actions?.length) {
-    // Check if a goal was just completed that maps to a portrait
-    const completedGoals: string[] = response.goalComplete
-      ? (Array.isArray(response.goalComplete) ? response.goalComplete : [response.goalComplete])
-      : [];
-
-    let lastAction: string | null = null;
-
-    // Check goal-based portrait first (more specific)
-    for (const goalId of completedGoals) {
-      if (GOAL_TO_PORTRAIT_ACTION[goalId]) {
-        lastAction = GOAL_TO_PORTRAIT_ACTION[goalId];
-        break;
-      }
-    }
-
-    // Fall back to action-type-based portrait
-    if (!lastAction) {
-      for (const action of response.actions) {
-        const mapped = ACTION_TO_PORTRAIT[action.type];
-        if (mapped) {
-          lastAction = mapped;
-        }
-      }
-    }
-
+  if (result?.mutations?.length) {
+    const lastAction = deriveLastAction(result);
     if (lastAction) {
       const transientMatch = manifest.player.variants.find(
         v => v.match.lastAction === lastAction
@@ -286,40 +305,43 @@ function resolvePortraits(state: any, response: any | null, module: string): Por
     }
   }
 
-  // Fall back to persistent state (playerPosition)
+  // Fall back to persistent state (playerTags → playerPosition mapping for manifest compat)
   if (!hint.player) {
+    const playerTags: string[] = state.playerTags || [];
+    // Map playerTags to a playerPosition value for manifest compatibility
+    const playerPosition = playerTags.includes('in_bed') ? 'in_bed' : 'standing';
     const persistentMatch = manifest.player.variants.find(
-      v => v.match.playerPosition === state.playerPosition
+      v => v.match.playerPosition === playerPosition
     );
     hint.player = persistentMatch?.image || manifest.player.default;
   }
 
   // 2. Active NPC portrait (when NPC speaks this turn)
-  if (response?.npcResponse?.npcId) {
-    const npcId = response.npcResponse.npcId;
+  if (result?.npcResponse?.npcId) {
+    const npcId = result.npcResponse.npcId;
     const npcPortrait = manifest.npcs[npcId]?.default || manifest.pets[npcId]?.default;
     if (npcPortrait) {
       hint.activeNpc = npcPortrait;
     }
   }
 
-  // 3. Object state portraits — show current state for all objects with portrait definitions
-  const locationObjects = state.location?.objects || [];
+  // 3. Object state portraits — match tags against portrait manifest conditions
   const objectChanges: Array<{ objectId: string; image: string }> = [];
+  const allObjects: Array<{ id: string; tags: string[]; location: string }> = state.objects || [];
 
-  for (const obj of locationObjects) {
-    const objectId = obj.id;
-    if (!manifest.objects[objectId]) continue;
+  // Get objects in current location (including containers)
+  const objectsInLocation = allObjects.filter(
+    (o: { location: string }) => o.location === state.currentLocation
+  );
 
-    // Merge base object state with any runtime overrides (same as engine's getObjectState)
-    const effectiveState = { ...(obj.state || {}), ...(state.objectStates?.[objectId] || {}) };
+  for (const obj of objectsInLocation) {
+    if (!manifest.objects[obj.id]) continue;
 
-    for (const variant of manifest.objects[objectId]) {
-      const matches = Object.entries(variant.match).every(
-        ([key, val]) => effectiveState[key] === val
-      );
-      if (matches) {
-        objectChanges.push({ objectId, image: variant.image });
+    const effectiveState = tagsToStateObject(obj.tags || []);
+
+    for (const variant of manifest.objects[obj.id]) {
+      if (matchesPortraitCondition(variant.match, effectiveState)) {
+        objectChanges.push({ objectId: obj.id, image: variant.image });
         break;
       }
     }
@@ -350,93 +372,98 @@ const LOCATION_TO_MODULE: Record<string, string> = {
 // --- View Model Builders ---
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function buildGameView(sessionId: string, state: any, turnResult: TurnResultView | null, response?: any): GameView {
-  const locationId = state.location.id;
+function buildGameView(sessionId: string, state: any, turnResult: TurnResultView | null, result?: any): GameView {
+  const locationId = state.currentLocation;
   const module = LOCATION_TO_MODULE[locationId] || 'home';
   const manifest = loadManifest(module, locationId);
 
-  // Build objects list with vocab stages and coordinates
-  // Filter out fridge items unless the fridge is open (same logic as CLI buildPrompt)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const visibleObjects = (state.location.objects || []).filter((obj: any) => {
-    const effectiveState = { ...(obj.state || {}), ...(state.objectStates?.[obj.id] || {}) };
-    if (effectiveState.inFridge) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const fridge = (state.location.objects || []).find((o: any) => o.id === 'refrigerator');
-      if (!fridge) return false;
-      const fridgeState = { ...(fridge.state || {}), ...(state.objectStates?.['refrigerator'] || {}) };
-      return fridgeState.open;
-    }
-    return true;
+  // Objects in current location from flat list
+  const allObjects: Array<{ id: string; name: { target: string; native: string }; location: string; tags: string[] }> = state.objects || [];
+
+  // Visible objects: in current location + in open containers at current location
+  const objectsHere = allObjects.filter(o => o.location === locationId);
+  const inOpenContainers = allObjects.filter(o => {
+    if (o.location === 'removed') return false;
+    const container = allObjects.find(c => c.id === o.location);
+    return container?.location === locationId && container.tags.includes('open');
   });
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const objects = visibleObjects.map((obj: any) => {
-    const effectiveState = { ...(obj.state || {}), ...(state.objectStates?.[obj.id] || {}) };
+  const visibleObjects = [...objectsHere, ...inOpenContainers];
+
+  const objects = visibleObjects.map(obj => {
+    // Determine containerId: if object's location is another object (not a location ID and not 'inventory')
+    const isInContainer = obj.location !== locationId && obj.location !== 'inventory' && obj.location !== 'removed';
     return {
       id: obj.id,
       name: obj.name,
       vocabStage: getVocabStageForObject(state.vocabulary, obj.id),
       coords: manifest?.objects?.[obj.id] || undefined,
-      containerId: effectiveState.inFridge ? 'refrigerator' : undefined,
+      containerId: isInContainer ? obj.location : undefined,
     };
   });
-
-  // Add dynamic objects (no coordinates — they weren't in the generated image)
-  const dynamicObjs = state.dynamicObjects?.[locationId] || [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  for (const obj of dynamicObjs as any[]) {
-    objects.push({
-      id: obj.id,
-      name: obj.name,
-      vocabStage: 'new' as const,
-    });
-  }
 
   // Scene info
   const scene: SceneInfo | null = manifest
     ? { image: manifest.image, module }
     : null;
 
-  // Exits
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const exits: ExitView[] = (state.location.exits || []).map((exit: any) => ({
+  // Exits from allLocations lookup
+  const currentLoc = (engine as NonNullable<typeof engine>).allLocations[locationId] as { exits: Array<{ to: string; name: { target: string; native: string } }>; name: { target: string; native: string } } | undefined;
+  const exits: ExitView[] = (currentLoc?.exits || []).map(exit => ({
     to: exit.to,
     name: exit.name,
   }));
 
-  // NPCs in this location
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const npcsHere = (engine as any).getNPCsInLocation(locationId) as any[];
+  // NPCs in this location (check runtime npcStates for current location)
   const portraitManifest = loadPortraitManifest(module);
-  const npcs: NPCView[] = npcsHere.map((npc: { id: string; name: { target: string; native: string } }) => ({
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const allNPCsDef = (engine as any).allNPCs as Array<{ id: string; name: { target: string; native: string }; location: string; isPet?: boolean; gender?: string }>;
+  const npcsHere = allNPCsDef.filter(npc => {
+    const runtimeState = state.npcStates?.[npc.id];
+    return runtimeState
+      ? runtimeState.location === locationId
+      : npc.location === locationId;
+  });
+  const npcs: NPCView[] = npcsHere.map(npc => ({
     id: npc.id,
     name: npc.name,
-    mood: state.npcState?.[npc.id]?.mood || '',
+    mood: state.npcStates?.[npc.id]?.mood || '',
     portrait: portraitManifest?.npcs[npc.id]?.default || portraitManifest?.pets?.[npc.id]?.default || undefined,
   }));
+
+  // Inventory from flat object list
+  const inventory = allObjects
+    .filter(o => o.location === 'inventory')
+    .map(o => ({
+      id: o.id,
+      name: o.name,
+      cooked: (o.tags || []).includes('cooked'),
+    }));
 
   // Points to next level: 150 * level
   const pointsToNextLevel = 150 * state.level;
 
   // Resolve portraits for this turn
-  const portraitHint = resolvePortraits(state, response || null, module);
+  const portraitHint = resolvePortraits(state, result || null, module);
 
   // Attach NPC portrait to turn result if applicable
   if (turnResult?.npcResponse && portraitHint?.activeNpc) {
     turnResult.npcResponse.portrait = `/scenes/${module}/portraits/${portraitHint.activeNpc}`;
   }
 
+  // Location name from allLocations
+  const locationName = currentLoc?.name || { target: locationId, native: locationId };
+
   return {
     sessionId,
     locationId,
-    locationName: state.location.name,
+    locationName,
     module,
     objects,
     npcs,
     exits,
     needs: state.needs,
-    goals: buildGoalChecklist(state, module),
-    inventory: state.inventory,
+    goals: buildGoalChecklist(state),
+    inventory,
     level: state.level,
     points: state.points,
     pointsToNextLevel,
@@ -448,13 +475,13 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function buildGoalChecklist(state: any, module: string): GoalView[] {
-  const building = (engine as any).getBuildingForLocation(state.location.id) as string;
+function buildGoalChecklist(state: any): GoalView[] {
+  const building = (engine as NonNullable<typeof engine>).getBuildingForLocation(state.currentLocation);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const allGoals = (engine as any).getAllGoalsForBuilding(building) as any[];
+  const allGoals = (engine as NonNullable<typeof engine>).getAllGoalsForBuilding(building) as any[];
   const suggestedId = state.currentGoal?.id || null;
 
-  return allGoals.map((g: { id: string; title: string; hint?: string; nextGoalId?: string }) => ({
+  return allGoals.map((g: { id: string; title: string; hint?: string }) => ({
     id: g.id,
     title: g.title,
     hint: g.hint || '',
@@ -470,10 +497,10 @@ function getVocabStageForObject(vocabulary: { words: Record<string, { stage: str
 }
 
 // Map NPC gender to Gemini TTS voice
-function npcVoice(npcId: string, locationId: string): string {
+function npcVoice(npcId: string): string {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const npcsHere = (engine as any).getNPCsInLocation(locationId) as any[];
-  const npc = npcsHere.find((n: { id: string }) => n.id === npcId);
+  const allNPCsDef = (engine as any).allNPCs as Array<{ id: string; gender?: string; isPet?: boolean }>;
+  const npc = allNPCsDef.find(n => n.id === npcId);
   if (npc?.gender === 'female') return 'Leda';
   if (npc?.gender === 'male') return 'Charon';
   return 'Puck'; // default for pets, unknown
@@ -481,35 +508,35 @@ function npcVoice(npcId: string, locationId: string): string {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildTurnResultView(result: any, state: any): TurnResultView {
-  const response = result.response;
+  // TurnResult fields are now flat (no more result.response wrapper)
   const view: TurnResultView = {
-    valid: response.valid,
-    understood: response.understood ?? true,
-    message: response.message || '',
-    invalidReason: response.invalidReason,
-    grammarScore: response.grammar?.score ?? 0,
-    grammarIssues: (response.grammar?.issues || []).map((issue: { type: string; original: string; corrected: string; explanation: string }) => ({
+    valid: result.valid,
+    understood: result.understood ?? true,
+    message: result.message || '',
+    invalidReason: result.invalidReason,
+    grammarScore: result.grammar?.score ?? 0,
+    grammarIssues: (result.grammar?.issues || []).map((issue: { type: string; original: string; corrected: string; explanation: string }) => ({
       type: issue.type,
       original: issue.original,
       corrected: issue.corrected,
       explanation: issue.explanation,
     })),
-    targetModel: response.spanishModel || '',
-    npcResponse: response.npcResponse?.npcId ? {
-      npcName: response.npcResponse.npcId,
-      target: response.npcResponse.spanish || '',
-      native: response.npcResponse.english || '',
-      actionText: response.npcResponse.actionText,
-      voice: npcVoice(response.npcResponse.npcId, state.location.id),
+    targetModel: result.spanishModel || '',
+    npcResponse: result.npcResponse?.npcId ? {
+      npcName: result.npcResponse.npcId,
+      target: result.npcResponse.spanish || '',
+      native: result.npcResponse.english || '',
+      actionText: result.npcResponse.actionText,
+      voice: npcVoice(result.npcResponse.npcId),
     } : null,
-    pointsAwarded: result.effectsResult?.pointsAwarded || 0,
-    leveledUp: result.effectsResult?.leveledUp || false,
+    pointsAwarded: result.pointsAwarded || 0,
+    leveledUp: result.leveledUp || false,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     goalsCompleted: (result.goalsCompleted || []).map((g: any) => g.title || g.id),
   };
 
   // Include hint when action failed and there's a current goal with a hint
-  if (!response.valid && state.currentGoal?.hint) {
+  if (!result.valid && state.currentGoal?.hint) {
     view.hint = state.currentGoal.hint;
   }
 
@@ -517,8 +544,7 @@ function buildTurnResultView(result: any, state: any): TurnResultView {
 }
 
 export function getAvailableModules(): string[] {
-  // Hard-coded for now; could load from engine
-  return ['home', 'restaurant', 'market', 'gym', 'park', 'clinic', 'bank'];
+  return ['home'];
 }
 
 // --- /learn Command ---
@@ -530,7 +556,6 @@ export async function handleLearnCommand(sessionId: string, topic: string): Prom
   }
 
   try {
-    // Dynamic import of Anthropic client (already loaded by engine via dotenv)
     const Anthropic = (await import(/* webpackIgnore: true */ '@anthropic-ai/sdk')).default;
     const client = new Anthropic();
 

@@ -278,8 +278,8 @@ export default function ScenePanel({ game }: ScenePanelProps) {
             <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Inventory</div>
             <div className="flex flex-wrap gap-1.5">
               {game.inventory.map((item) => (
-                <span key={item.id} className="text-xs px-2 py-1 bg-gray-700/50 text-gray-300 rounded border border-gray-600/50">
-                  {item.name.target}
+                <span key={item.id} className={`text-xs px-2 py-1 rounded border ${item.cooked ? 'bg-orange-900/30 text-orange-200 border-orange-600/50' : 'bg-gray-700/50 text-gray-300 border-gray-600/50'}`}>
+                  {item.name.target}{item.cooked ? ' (cocinado)' : ''}
                 </span>
               ))}
             </div>

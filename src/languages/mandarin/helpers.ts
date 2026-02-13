@@ -1,4 +1,4 @@
-import type { GameObject } from '../../engine/types.js';
+import type { WorldObject } from '../../engine/types.js';
 
 /**
  * Mandarin has no articles to strip. Returns the word as-is.
@@ -11,7 +11,7 @@ export function stripArticles(word: string): string[] {
  * Find a game object by its Mandarin name.
  * Matches against both characters and pinyin (stored in target field).
  */
-export function findObjectByName(objects: GameObject[], name: string): GameObject | undefined {
+export function findObjectByName(objects: WorldObject[], name: string): WorldObject | undefined {
   const normalized = name.toLowerCase().trim();
   return objects.find((obj) => {
     const objName = obj.name.target.toLowerCase();

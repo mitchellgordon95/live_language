@@ -52,7 +52,7 @@ export default function Home() {
       setError(err instanceof Error ? err.message : 'Failed to start game');
       setAppState('error');
     }
-  }, []);
+  }, [profile]);
 
   const handleInput = useCallback(async (input: string) => {
     // /say command: entirely client-side TTS

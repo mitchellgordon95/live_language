@@ -2,9 +2,9 @@ import type {
   WordFamiliarity,
   VocabularyProgress,
   FamiliarityStage,
-  GameObject,
+  WorldObject,
 } from './types.js';
-import { vocabulary as vocabData } from '../languages/spanish/modules/home.js';
+import { allVocabulary } from '../data/module-registry.js';
 
 // Stage transition thresholds
 const THRESHOLDS = {
@@ -22,8 +22,8 @@ const THRESHOLDS = {
 export function createInitialVocabulary(): VocabularyProgress {
   const words: Record<string, WordFamiliarity> = {};
 
-  // Initialize from vocab data
-  for (const word of vocabData) {
+  // Initialize from all registered vocabulary
+  for (const word of allVocabulary) {
     const wordId = word.native.toLowerCase().replace(/[^a-z0-9]/g, '_');
     words[wordId] = {
       wordId,
@@ -172,7 +172,7 @@ export function recordHintUsed(
   };
 }
 
-export function getWordIdFromObject(obj: GameObject): string {
+export function getWordIdFromObject(obj: WorldObject): string {
   return obj.name.native.toLowerCase().replace(/[^a-z0-9]/g, '_');
 }
 
@@ -194,21 +194,18 @@ export function getWordIdFromTarget(
 }
 
 export function getObjectLabel(
-  obj: GameObject,
+  obj: WorldObject,
   vocab: VocabularyProgress
 ): string {
   const wordId = getWordIdFromObject(obj);
   const word = vocab.words[wordId];
 
   if (!word || word.stage === 'new') {
-    // Full label: Spanish (English)
     return `${obj.name.target} (${obj.name.native})`;
   } else if (word.stage === 'learning') {
-    // Spanish only
     return obj.name.target;
   } else {
-    // Known - minimal label
-    return obj.name.target; // Still show Spanish for now, could be just icon later
+    return obj.name.target;
   }
 }
 

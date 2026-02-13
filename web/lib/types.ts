@@ -67,6 +67,7 @@ export interface NPCResponseView {
 export interface ItemView {
   id: string;
   name: BilingualText;
+  cooked?: boolean;
 }
 
 export interface SceneInfo {

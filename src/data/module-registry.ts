@@ -1,24 +1,19 @@
-import type { Location, Goal, VocabWord, NPC, Pet, ModuleDefinition } from '../engine/types.js';
+import type { Location, Goal, VocabWord, NPC, WorldObject, ModuleDefinition } from '../engine/types.js';
 
-// Import self-describing module definitions from Spanish language
+// Import home module (only module converted for this experiment)
 import { homeModule } from '../languages/spanish/modules/home.js';
-import { restaurantModule } from '../languages/spanish/modules/restaurant.js';
-import { clinicModule } from '../languages/spanish/modules/clinic.js';
-import { gymModule } from '../languages/spanish/modules/gym.js';
-import { parkModule } from '../languages/spanish/modules/park.js';
-import { marketModule } from '../languages/spanish/modules/market.js';
-import { bankModule } from '../languages/spanish/modules/bank.js';
-import { street } from '../languages/spanish/modules/home.js';
 
 export type { ModuleDefinition };
 
 // The registry: one entry per module
+// NOTE: For this experiment, only home module is implemented. Others are stubbed.
 const modules: ModuleDefinition[] = [
   homeModule,
   {
     name: 'street',
     displayName: 'Street',
-    locations: { street },
+    locations: { street: homeModule.locations.street },
+    objects: [],
     npcs: [],
     goals: [],
     vocabulary: [],
@@ -26,15 +21,8 @@ const modules: ModuleDefinition[] = [
     startGoalId: '',
     locationIds: ['street'],
     unlockLevel: 1,
-    parseGuidance: '',
-    narrateGuidance: '',
+    guidance: '',
   },
-  restaurantModule,
-  marketModule,
-  parkModule,
-  gymModule,
-  clinicModule,
-  bankModule,
 ];
 
 // --- Derived lookups (computed once at import time) ---
@@ -52,6 +40,9 @@ export const allNPCs: NPC[] = modules.flatMap(m => m.npcs);
 
 // All vocabulary merged
 export const allVocabulary: VocabWord[] = modules.flatMap(m => m.vocabulary);
+
+// All objects merged
+export const allObjects: WorldObject[] = modules.flatMap(m => m.objects);
 
 // Location ID -> building name mapping
 const locationToBuildingMap: Record<string, string> = {};
@@ -106,7 +97,7 @@ export function getStartGoalForBuilding(building: string): Goal | null {
   return mod.goals.find(g => g.id === mod.startGoalId) || null;
 }
 
-// NPCs in a specific location
+// NPCs in a specific location (from definitions — runtime locations are in npcStates)
 export function getNPCsInLocation(locationId: string): NPC[] {
   return allNPCs.filter(npc => npc.location === locationId);
 }
@@ -116,14 +107,9 @@ export function getDisplayName(building: string): string {
   return modulesByName[building]?.displayName || building;
 }
 
-// Parse guidance for current building (Pass 1)
-export function getParseGuidanceForBuilding(building: string): string {
-  return modulesByName[building]?.parseGuidance || '';
-}
-
-// Narrate guidance for current building (Pass 2)
-export function getNarrateGuidanceForBuilding(building: string): string {
-  return modulesByName[building]?.narrateGuidance || '';
+// Guidance for current building (used by both AI passes)
+export function getGuidanceForBuilding(building: string): string {
+  return modulesByName[building]?.guidance || '';
 }
 
 // All registered module names (for help text, etc.)
@@ -147,4 +133,3 @@ for (const mod of modules) {
 export function getAllKnownGoalIds(): Set<string> {
   return _allGoalIds;
 }
-

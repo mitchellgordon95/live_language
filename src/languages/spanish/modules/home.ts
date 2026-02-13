@@ -1,319 +1,121 @@
-import type { Location, Goal, VocabWord, GameState, NPC, Pet, ModuleDefinition } from '../../../engine/types.js';
-import { getObjectState } from '../../../engine/game-state.js';
+import type { Location, Goal, VocabWord, GameState, NPC, WorldObject, ModuleDefinition } from '../../../engine/types.js';
 
 // ============================================================================
-// LOCATIONS
+// LOCATIONS (exits only — objects are in the flat list below)
 // ============================================================================
 
-export const bedroom: Location = {
-  id: 'bedroom',
-  name: { target: 'el dormitorio', native: 'bedroom' },
-  objects: [
-    {
-      id: 'bed',
-      name: { target: 'la cama', native: 'bed' },
-      state: {},
-      actions: [],
-    },
-    {
-      id: 'alarm_clock',
-      name: { target: 'el despertador', native: 'alarm clock' },
-      state: { ringing: true, on: true },
-      actions: ['TURN_OFF'],
-    },
-    {
-      id: 'window',
-      name: { target: 'la ventana', native: 'window' },
-      state: { open: false },
-      actions: ['OPEN', 'CLOSE'],
-    },
-    {
-      id: 'lamp',
-      name: { target: 'la lámpara', native: 'lamp' },
-      state: { on: false },
-      actions: ['TURN_ON', 'TURN_OFF'],
-    },
-    {
-      id: 'closet',
-      name: { target: 'el armario', native: 'closet' },
-      state: { open: false },
-      actions: ['OPEN', 'CLOSE', 'USE'],
-    },
-  ],
-  exits: [
-    { to: 'bathroom', name: { target: 'el baño', native: 'bathroom' } },
-    { to: 'kitchen', name: { target: 'la cocina', native: 'kitchen' } },
-    { to: 'living_room', name: { target: 'la sala', native: 'living room' } },
-  ],
-};
-
-export const bathroom: Location = {
-  id: 'bathroom',
-  name: { target: 'el baño', native: 'bathroom' },
-  objects: [
-    {
-      id: 'sink',
-      name: { target: 'el lavabo', native: 'sink' },
-      state: {},
-      actions: ['USE'],
-    },
-    {
-      id: 'mirror',
-      name: { target: 'el espejo', native: 'mirror' },
-      state: {},
-      actions: [],
-    },
-    {
-      id: 'toilet',
-      name: { target: 'el inodoro', native: 'toilet' },
-      state: {},
-      actions: ['USE'],
-    },
-    {
-      id: 'shower',
-      name: { target: 'la ducha', native: 'shower' },
-      state: { on: false },
-      actions: ['USE'],
-    },
-    {
-      id: 'toothbrush',
-      name: { target: 'el cepillo de dientes', native: 'toothbrush' },
-      state: {},
-      actions: ['USE'],
-    },
-    {
-      id: 'towel',
-      name: { target: 'la toalla', native: 'towel' },
-      state: {},
-      actions: ['USE', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'soap',
-      name: { target: 'el jabón', native: 'soap' },
-      state: {},
-      actions: ['USE'],
-    },
-  ],
-  exits: [
-    { to: 'bedroom', name: { target: 'el dormitorio', native: 'bedroom' } },
-    { to: 'kitchen', name: { target: 'la cocina', native: 'kitchen' } },
-    { to: 'living_room', name: { target: 'la sala', native: 'living room' } },
-  ],
-};
-
-export const kitchen: Location = {
-  id: 'kitchen',
-  name: { target: 'la cocina', native: 'kitchen' },
-  objects: [
-    {
-      id: 'refrigerator',
-      name: { target: 'la nevera', native: 'refrigerator' },
-      state: { open: false, contains: ['milk', 'eggs', 'butter', 'juice'] },
-      actions: ['OPEN', 'CLOSE'],
-    },
-    {
-      id: 'stove',
-      name: { target: 'la estufa', native: 'stove' },
-      state: { on: false },
-      actions: ['TURN_ON', 'TURN_OFF', 'COOK'],
-    },
-    {
-      id: 'table',
-      name: { target: 'la mesa', native: 'table' },
-      state: {},
-      actions: [],
-    },
-    {
-      id: 'chair',
-      name: { target: 'la silla', native: 'chair' },
-      state: {},
-      actions: [],
-    },
-    {
-      id: 'coffee_maker',
-      name: { target: 'la cafetera', native: 'coffee maker' },
-      state: { on: false },
-      actions: ['TURN_ON', 'TURN_OFF'],
-    },
-    {
-      id: 'cup',
-      name: { target: 'la taza', native: 'cup' },
-      state: {},
-      actions: ['TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'plate',
-      name: { target: 'el plato', native: 'plate' },
-      state: {},
-      actions: ['TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'pan',
-      name: { target: 'la sartén', native: 'pan' },
-      state: {},
-      actions: ['TAKE', 'USE'],
-      takeable: true,
-    },
-    // Food items (inside fridge, shown when fridge is open)
-    {
-      id: 'milk',
-      name: { target: 'la leche', native: 'milk' },
-      state: { inFridge: true },
-      actions: ['TAKE', 'DRINK'],
-      takeable: true,
-      consumable: true,
-      needsEffect: { hunger: 10 },
-    },
-    {
-      id: 'eggs',
-      name: { target: 'los huevos', native: 'eggs' },
-      state: { inFridge: true },
-      actions: ['TAKE', 'COOK'],
-      takeable: true,
-    },
-    {
-      id: 'bread',
-      name: { target: 'el pan', native: 'bread' },
-      state: {},
-      actions: ['TAKE', 'EAT'],
-      takeable: true,
-      consumable: true,
-      needsEffect: { hunger: 15 },
-    },
-    {
-      id: 'butter',
-      name: { target: 'la mantequilla', native: 'butter' },
-      state: { inFridge: true },
-      actions: ['TAKE', 'USE'],
-      takeable: true,
-    },
-    {
-      id: 'coffee',
-      name: { target: 'el café', native: 'coffee' },
-      state: {},
-      actions: ['DRINK'],
-      consumable: true,
-      needsEffect: { energy: 20 },
-    },
-    {
-      id: 'water',
-      name: { target: 'el agua', native: 'water' },
-      state: {},
-      actions: ['DRINK'],
-      consumable: true,
-      needsEffect: { hunger: 5 },
-    },
-    {
-      id: 'juice',
-      name: { target: 'el jugo', native: 'juice' },
-      state: { inFridge: true },
-      actions: ['TAKE', 'DRINK'],
-      takeable: true,
-      consumable: true,
-      needsEffect: { hunger: 10 },
-    },
-  ],
-  exits: [
-    { to: 'bedroom', name: { target: 'el dormitorio', native: 'bedroom' } },
-    { to: 'bathroom', name: { target: 'el baño', native: 'bathroom' } },
-    { to: 'living_room', name: { target: 'la sala', native: 'living room' } },
-  ],
-};
-
-export const livingRoom: Location = {
-  id: 'living_room',
-  name: { target: 'la sala', native: 'living room' },
-  objects: [
-    {
-      id: 'couch',
-      name: { target: 'el sofá', native: 'couch' },
-      state: {},
-      actions: [],
-    },
-    {
-      id: 'tv',
-      name: { target: 'la televisión', native: 'TV' },
-      state: { on: false },
-      actions: ['TURN_ON', 'TURN_OFF'],
-    },
-    {
-      id: 'coffee_table',
-      name: { target: 'la mesa de centro', native: 'coffee table' },
-      state: {},
-      actions: [],
-    },
-    {
-      id: 'bookshelf',
-      name: { target: 'la estantería', native: 'bookshelf' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'remote',
-      name: { target: 'el control remoto', native: 'remote control' },
-      state: {},
-      actions: ['TAKE', 'USE'],
-      takeable: true,
-    },
-    {
-      id: 'pet_food',
-      name: { target: 'la comida para mascotas', native: 'pet food' },
-      state: {},
-      actions: ['TAKE'],
-      takeable: true,
-    },
-  ],
-  exits: [
-    { to: 'bedroom', name: { target: 'el dormitorio', native: 'bedroom' } },
-    { to: 'kitchen', name: { target: 'la cocina', native: 'kitchen' } },
-    { to: 'street', name: { target: 'la calle', native: 'street' } },
-  ],
-};
-
-export const street: Location = {
-  id: 'street',
-  name: { target: 'la calle', native: 'street' },
-  objects: [
-    {
-      id: 'streetlamp',
-      name: { target: 'la farola', native: 'streetlamp' },
-      state: { on: true },
-      actions: ['LOOK'],
-    },
-    {
-      id: 'bench',
-      name: { target: 'el banco', native: 'bench' },
-      state: {},
-      actions: [],
-    },
-  ],
-  exits: [
-    { to: 'living_room', name: { target: 'la casa', native: 'home' } },
-    { to: 'restaurant_entrance', name: { target: 'el restaurante', native: 'restaurant' } },
-    { to: 'clinic_reception', name: { target: 'la clinica', native: 'clinic' } },
-    { to: 'gym_entrance', name: { target: 'el gimnasio', native: 'gym' } },
-    { to: 'market_entrance', name: { target: 'el mercado', native: 'market' } },
-    { to: 'park_entrance', name: { target: 'el parque', native: 'park' } },
-    { to: 'bank_entrance', name: { target: 'el banco', native: 'bank' } },
-  ],
-};
-
-export const locations: Record<string, Location> = {
-  bedroom,
-  bathroom,
-  kitchen,
-  living_room: livingRoom,
-  street,
+const locations: Record<string, Location> = {
+  bedroom: {
+    id: 'bedroom',
+    name: { target: 'el dormitorio', native: 'bedroom' },
+    exits: [
+      { to: 'bathroom', name: { target: 'el baño', native: 'bathroom' } },
+      { to: 'kitchen', name: { target: 'la cocina', native: 'kitchen' } },
+      { to: 'living_room', name: { target: 'la sala', native: 'living room' } },
+    ],
+  },
+  bathroom: {
+    id: 'bathroom',
+    name: { target: 'el baño', native: 'bathroom' },
+    exits: [
+      { to: 'bedroom', name: { target: 'el dormitorio', native: 'bedroom' } },
+      { to: 'kitchen', name: { target: 'la cocina', native: 'kitchen' } },
+      { to: 'living_room', name: { target: 'la sala', native: 'living room' } },
+    ],
+  },
+  kitchen: {
+    id: 'kitchen',
+    name: { target: 'la cocina', native: 'kitchen' },
+    exits: [
+      { to: 'bedroom', name: { target: 'el dormitorio', native: 'bedroom' } },
+      { to: 'bathroom', name: { target: 'el baño', native: 'bathroom' } },
+      { to: 'living_room', name: { target: 'la sala', native: 'living room' } },
+    ],
+  },
+  living_room: {
+    id: 'living_room',
+    name: { target: 'la sala', native: 'living room' },
+    exits: [
+      { to: 'bedroom', name: { target: 'el dormitorio', native: 'bedroom' } },
+      { to: 'kitchen', name: { target: 'la cocina', native: 'kitchen' } },
+      { to: 'street', name: { target: 'la calle', native: 'street' } },
+    ],
+  },
+  street: {
+    id: 'street',
+    name: { target: 'la calle', native: 'street' },
+    exits: [
+      { to: 'living_room', name: { target: 'la casa', native: 'home' } },
+      { to: 'restaurant_entrance', name: { target: 'el restaurante', native: 'restaurant' } },
+      { to: 'clinic_reception', name: { target: 'la clinica', native: 'clinic' } },
+      { to: 'gym_entrance', name: { target: 'el gimnasio', native: 'gym' } },
+      { to: 'market_entrance', name: { target: 'el mercado', native: 'market' } },
+      { to: 'park_entrance', name: { target: 'el parque', native: 'park' } },
+      { to: 'bank_entrance', name: { target: 'el banco', native: 'bank' } },
+    ],
+  },
 };
 
 // ============================================================================
-// NPCS AND PETS
+// OBJECTS (flat list — each knows its own location)
 // ============================================================================
 
-export const npcs: NPC[] = [
+const objects: WorldObject[] = [
+  // Bedroom
+  { id: 'bed', name: { target: 'la cama', native: 'bed' }, location: 'bedroom', tags: [] },
+  { id: 'alarm_clock', name: { target: 'el despertador', native: 'alarm clock' }, location: 'bedroom', tags: ['ringing', 'on'] },
+  { id: 'window', name: { target: 'la ventana', native: 'window' }, location: 'bedroom', tags: ['closed'] },
+  { id: 'lamp', name: { target: 'la lámpara', native: 'lamp' }, location: 'bedroom', tags: ['off'] },
+  { id: 'closet', name: { target: 'el armario', native: 'closet' }, location: 'bedroom', tags: ['closed'] },
+
+  // Bathroom
+  { id: 'sink', name: { target: 'el lavabo', native: 'sink' }, location: 'bathroom', tags: [] },
+  { id: 'mirror', name: { target: 'el espejo', native: 'mirror' }, location: 'bathroom', tags: [] },
+  { id: 'toilet', name: { target: 'el inodoro', native: 'toilet' }, location: 'bathroom', tags: [] },
+  { id: 'shower', name: { target: 'la ducha', native: 'shower' }, location: 'bathroom', tags: ['off'] },
+  { id: 'toothbrush', name: { target: 'el cepillo de dientes', native: 'toothbrush' }, location: 'bathroom', tags: [] },
+  { id: 'towel', name: { target: 'la toalla', native: 'towel' }, location: 'bathroom', tags: ['takeable'] },
+  { id: 'soap', name: { target: 'el jabón', native: 'soap' }, location: 'bathroom', tags: [] },
+
+  // Kitchen
+  { id: 'refrigerator', name: { target: 'la nevera', native: 'refrigerator' }, location: 'kitchen', tags: ['closed', 'container'] },
+  { id: 'stove', name: { target: 'la estufa', native: 'stove' }, location: 'kitchen', tags: ['off'] },
+  { id: 'table', name: { target: 'la mesa', native: 'table' }, location: 'kitchen', tags: [] },
+  { id: 'chair', name: { target: 'la silla', native: 'chair' }, location: 'kitchen', tags: [] },
+  { id: 'coffee_maker', name: { target: 'la cafetera', native: 'coffee maker' }, location: 'kitchen', tags: ['off'] },
+  { id: 'cup', name: { target: 'la taza', native: 'cup' }, location: 'kitchen', tags: ['takeable'] },
+  { id: 'plate', name: { target: 'el plato', native: 'plate' }, location: 'kitchen', tags: ['takeable'] },
+  { id: 'pan', name: { target: 'la sartén', native: 'pan' }, location: 'kitchen', tags: ['takeable'] },
+
+  // Food (inside fridge — location is the container ID)
+  { id: 'milk', name: { target: 'la leche', native: 'milk' }, location: 'refrigerator', tags: ['takeable', 'consumable'], needsEffect: { hunger: 10 } },
+  { id: 'eggs', name: { target: 'los huevos', native: 'eggs' }, location: 'refrigerator', tags: ['takeable', 'consumable'], needsEffect: { hunger: 25 } },
+  { id: 'butter', name: { target: 'la mantequilla', native: 'butter' }, location: 'refrigerator', tags: ['takeable'] },
+  { id: 'juice', name: { target: 'el jugo', native: 'juice' }, location: 'refrigerator', tags: ['takeable', 'consumable'], needsEffect: { hunger: 10 } },
+
+  // Food (on counter)
+  { id: 'bread', name: { target: 'el pan', native: 'bread' }, location: 'kitchen', tags: ['takeable', 'consumable'], needsEffect: { hunger: 15 } },
+  { id: 'coffee', name: { target: 'el café', native: 'coffee' }, location: 'kitchen', tags: ['consumable'], needsEffect: { energy: 20 } },
+  { id: 'water', name: { target: 'el agua', native: 'water' }, location: 'kitchen', tags: ['consumable'], needsEffect: { hunger: 5 } },
+
+  // Living room
+  { id: 'couch', name: { target: 'el sofá', native: 'couch' }, location: 'living_room', tags: [] },
+  { id: 'tv', name: { target: 'la televisión', native: 'TV' }, location: 'living_room', tags: ['off'] },
+  { id: 'coffee_table', name: { target: 'la mesa de centro', native: 'coffee table' }, location: 'living_room', tags: [] },
+  { id: 'bookshelf', name: { target: 'la estantería', native: 'bookshelf' }, location: 'living_room', tags: [] },
+  { id: 'remote', name: { target: 'el control remoto', native: 'remote control' }, location: 'living_room', tags: ['takeable'] },
+  { id: 'pet_food', name: { target: 'la comida para mascotas', native: 'pet food' }, location: 'living_room', tags: ['takeable'] },
+
+  // Street
+  { id: 'streetlamp', name: { target: 'la farola', native: 'streetlamp' }, location: 'street', tags: ['on'] },
+  { id: 'bench', name: { target: 'el banco', native: 'bench' }, location: 'street', tags: [] },
+];
+
+// ============================================================================
+// NPCs (pets are NPCs with isPet: true)
+// ============================================================================
+
+const npcs: NPC[] = [
   {
     id: 'roommate',
     name: { target: 'Carlos', native: 'Carlos' },
@@ -321,42 +123,33 @@ export const npcs: NPC[] = [
     personality: 'Sleepy but friendly roommate. Just woke up, sitting on the couch. Wants coffee or breakfast. Speaks casually.',
     gender: 'male',
   },
-];
-
-export const pets: Pet[] = [
   {
     id: 'cat',
-    name: { target: 'el gato', native: 'cat' },
-    defaultLocation: 'living_room',
-    personality: 'Independent and aloof. Occasionally affectionate. Named Luna.',
+    name: { target: 'Luna', native: 'Luna (cat)' },
+    location: 'living_room',
+    personality: 'Independent and aloof cat. Occasionally affectionate. Purrs when petted, ignores most commands.',
+    isPet: true,
   },
   {
     id: 'dog',
-    name: { target: 'el perro', native: 'dog' },
-    defaultLocation: 'living_room',
-    personality: 'Excited and hungry. Always wants attention and food. Named Max.',
+    name: { target: 'Max', native: 'Max (dog)' },
+    location: 'living_room',
+    personality: 'Excited and hungry dog. Always wants attention and food. Wags tail enthusiastically.',
+    isPet: true,
   },
 ];
 
-export function getNPCsInLocation(locationId: string): NPC[] {
-  return npcs.filter(npc => npc.location === locationId);
-}
-
-export function getPetsInLocation(locationId: string, petLocations: Record<string, string>): Pet[] {
-  return pets.filter(pet => petLocations[pet.id] === locationId);
-}
-
 // ============================================================================
-// GOALS
+// GOALS (checkComplete uses new state model)
 // ============================================================================
 
-export const goals: Goal[] = [
+const goals: Goal[] = [
   {
     id: 'wake_up',
     title: 'Wake up and start your day',
     description: 'Get out of bed to begin your morning.',
     hint: 'Try "Me levanto" (I get up)',
-    checkComplete: (state: GameState) => state.playerPosition === 'standing',
+    checkComplete: (state: GameState) => state.playerTags.includes('standing'),
     nextGoalId: 'turn_off_alarm',
   },
   {
@@ -365,10 +158,8 @@ export const goals: Goal[] = [
     description: 'The alarm is still ringing! Turn it off.',
     hint: 'Try "Apago el despertador" (I turn off the alarm)',
     checkComplete: (state: GameState) => {
-      // Check objectStates directly - don't rely on being in bedroom
-      const alarmState = state.objectStates['alarm_clock'];
-      // Alarm starts ringing, so if we've set ringing to false, it's off
-      return alarmState?.ringing === false;
+      const alarm = state.objects.find(o => o.id === 'alarm_clock');
+      return alarm ? !alarm.tags.includes('ringing') : false;
     },
     nextGoalId: 'go_to_bathroom',
   },
@@ -377,7 +168,7 @@ export const goals: Goal[] = [
     title: 'Go to the bathroom',
     description: 'Time to get ready. Head to the bathroom.',
     hint: 'Try "Voy al baño" (I go to the bathroom)',
-    checkComplete: (state: GameState) => state.location.id === 'bathroom',
+    checkComplete: (state: GameState) => state.currentLocation === 'bathroom',
     nextGoalId: 'brush_teeth',
   },
   {
@@ -386,8 +177,7 @@ export const goals: Goal[] = [
     description: 'Good hygiene is important!',
     hint: 'Try "Me cepillo los dientes" (I brush my teeth)',
     checkComplete: (state: GameState) =>
-      state.completedGoals.includes('brush_teeth') ||
-      state.completedGoals.includes('brush_teeth_action'),
+      state.completedGoals.includes('brush_teeth'),
     nextGoalId: 'take_shower',
   },
   {
@@ -396,8 +186,7 @@ export const goals: Goal[] = [
     description: 'A shower will help you feel fresh.',
     hint: 'Try "Me ducho" (I shower)',
     checkComplete: (state: GameState) =>
-      state.completedGoals.includes('take_shower') ||
-      state.completedGoals.includes('shower_action'),
+      state.completedGoals.includes('take_shower'),
     nextGoalId: 'go_to_kitchen',
   },
   {
@@ -405,7 +194,7 @@ export const goals: Goal[] = [
     title: 'Go to the kitchen',
     description: "Your stomach is growling. Time for breakfast!",
     hint: 'Try "Voy a la cocina" (I go to the kitchen)',
-    checkComplete: (state: GameState) => state.location.id === 'kitchen',
+    checkComplete: (state: GameState) => state.currentLocation === 'kitchen',
     nextGoalId: 'make_breakfast',
   },
   {
@@ -422,7 +211,7 @@ export const goals: Goal[] = [
     title: 'Go to the living room',
     description: 'Time to check on your roommate and the pets.',
     hint: 'Try "Voy a la sala" (I go to the living room)',
-    checkComplete: (state: GameState) => state.location.id === 'living_room',
+    checkComplete: (state: GameState) => state.currentLocation === 'living_room',
     nextGoalId: 'greet_roommate',
   },
   {
@@ -431,8 +220,7 @@ export const goals: Goal[] = [
     description: 'Your roommate Carlos is on the couch. Say hi!',
     hint: 'Try "Hola Carlos" or "Buenos días, Carlos"',
     checkComplete: (state: GameState) =>
-      state.completedGoals.includes('greet_roommate') ||
-      state.completedGoals.includes('greeted_roommate'),
+      state.completedGoals.includes('greet_roommate'),
     nextGoalId: 'ask_roommate_breakfast',
   },
   {
@@ -441,8 +229,7 @@ export const goals: Goal[] = [
     description: 'Carlos looks hungry. Ask what he wants!',
     hint: 'Try "¿Qué quieres para desayunar?" or "¿Tienes hambre?"',
     checkComplete: (state: GameState) =>
-      state.completedGoals.includes('ask_roommate_breakfast') ||
-      state.completedGoals.includes('asked_breakfast'),
+      state.completedGoals.includes('ask_roommate_breakfast'),
     nextGoalId: 'feed_pets',
   },
   {
@@ -451,44 +238,32 @@ export const goals: Goal[] = [
     description: 'Luna the cat and Max the dog are hungry!',
     hint: 'Try "Le doy comida al gato" or "Le doy comida al perro"',
     checkComplete: (state: GameState) =>
-      state.completedGoals.includes('fed_cat') ||
-      state.completedGoals.includes('fed_dog') ||
       state.completedGoals.includes('feed_pets'),
     nextGoalId: 'morning_complete',
   },
   {
     id: 'morning_complete',
     title: 'Morning routine complete!',
-    description: 'Congratulations! You completed your morning routine with your roommate and pets.',
+    description: 'Congratulations! You completed your morning routine.',
     checkComplete: (state: GameState) => state.completedGoals.includes('feed_pets'),
   },
 ];
 
-export function getGoalById(id: string): Goal | undefined {
-  return goals.find((g) => g.id === id);
-}
-
-export function getStartGoal(): Goal {
-  return goals[0];
-}
-
 // ============================================================================
-// VOCABULARY
+// VOCABULARY (unchanged)
 // ============================================================================
 
-export const vocabulary: VocabWord[] = [
+const vocabulary: VocabWord[] = [
   // Rooms
   { target: 'el dormitorio', native: 'bedroom', category: 'noun', gender: 'masculine' },
   { target: 'el baño', native: 'bathroom', category: 'noun', gender: 'masculine' },
   { target: 'la cocina', native: 'kitchen', category: 'noun', gender: 'feminine' },
-
   // Bedroom objects
   { target: 'la cama', native: 'bed', category: 'noun', gender: 'feminine' },
   { target: 'la ventana', native: 'window', category: 'noun', gender: 'feminine' },
   { target: 'la lámpara', native: 'lamp', category: 'noun', gender: 'feminine' },
   { target: 'el armario', native: 'closet', category: 'noun', gender: 'masculine' },
   { target: 'el despertador', native: 'alarm clock', category: 'noun', gender: 'masculine' },
-
   // Bathroom objects
   { target: 'el lavabo', native: 'sink', category: 'noun', gender: 'masculine' },
   { target: 'el espejo', native: 'mirror', category: 'noun', gender: 'masculine' },
@@ -497,7 +272,6 @@ export const vocabulary: VocabWord[] = [
   { target: 'la toalla', native: 'towel', category: 'noun', gender: 'feminine' },
   { target: 'el jabón', native: 'soap', category: 'noun', gender: 'masculine' },
   { target: 'el inodoro', native: 'toilet', category: 'noun', gender: 'masculine' },
-
   // Kitchen objects
   { target: 'la nevera', native: 'refrigerator', category: 'noun', gender: 'feminine' },
   { target: 'la estufa', native: 'stove', category: 'noun', gender: 'feminine' },
@@ -507,17 +281,15 @@ export const vocabulary: VocabWord[] = [
   { target: 'el plato', native: 'plate', category: 'noun', gender: 'masculine' },
   { target: 'la sartén', native: 'pan', category: 'noun', gender: 'feminine' },
   { target: 'la cafetera', native: 'coffee maker', category: 'noun', gender: 'feminine' },
-
   // Food
   { target: 'la leche', native: 'milk', category: 'noun', gender: 'feminine' },
   { target: 'los huevos', native: 'eggs', category: 'noun', gender: 'masculine' },
   { target: 'el pan', native: 'bread', category: 'noun', gender: 'masculine' },
   { target: 'la mantequilla', native: 'butter', category: 'noun', gender: 'feminine' },
   { target: 'el café', native: 'coffee', category: 'noun', gender: 'masculine' },
-  { target: 'el agua', native: 'water', category: 'noun', gender: 'feminine' }, // feminine despite el
+  { target: 'el agua', native: 'water', category: 'noun', gender: 'feminine' },
   { target: 'el jugo', native: 'juice', category: 'noun', gender: 'masculine' },
-
-  // Verbs (yo form)
+  // Verbs
   { target: 'me despierto', native: 'I wake up', category: 'verb' },
   { target: 'me levanto', native: 'I get up', category: 'verb' },
   { target: 'abro', native: 'I open', category: 'verb' },
@@ -533,7 +305,6 @@ export const vocabulary: VocabWord[] = [
   { target: 'pongo', native: 'I put', category: 'verb' },
   { target: 'voy', native: 'I go', category: 'verb' },
   { target: 'uso', native: 'I use', category: 'verb' },
-
   // Living room
   { target: 'la sala', native: 'living room', category: 'noun', gender: 'feminine' },
   { target: 'el sofá', native: 'couch', category: 'noun', gender: 'masculine' },
@@ -541,25 +312,21 @@ export const vocabulary: VocabWord[] = [
   { target: 'la mesa de centro', native: 'coffee table', category: 'noun', gender: 'feminine' },
   { target: 'la estantería', native: 'bookshelf', category: 'noun', gender: 'feminine' },
   { target: 'el control remoto', native: 'remote control', category: 'noun', gender: 'masculine' },
-
   // Pets
   { target: 'el gato', native: 'cat', category: 'noun', gender: 'masculine' },
   { target: 'el perro', native: 'dog', category: 'noun', gender: 'masculine' },
   { target: 'la mascota', native: 'pet', category: 'noun', gender: 'feminine' },
   { target: 'la comida para mascotas', native: 'pet food', category: 'noun', gender: 'feminine' },
-
-  // Conversation verbs
+  // Conversation
   { target: 'hablo con', native: 'I talk to', category: 'verb' },
   { target: 'le pregunto', native: 'I ask him/her', category: 'verb' },
   { target: 'le doy', native: 'I give him/her', category: 'verb' },
   { target: 'acaricio', native: 'I pet/stroke', category: 'verb' },
   { target: 'juego con', native: 'I play with', category: 'verb' },
-
   // Greetings
   { target: 'hola', native: 'hello', category: 'other' },
   { target: 'buenos días', native: 'good morning', category: 'other' },
   { target: '¿qué quieres?', native: 'what do you want?', category: 'other' },
-
   // Other
   { target: 'a', native: 'to', category: 'other' },
   { target: 'de', native: 'of/from', category: 'other' },
@@ -570,10 +337,15 @@ export const vocabulary: VocabWord[] = [
   { target: 'para', native: 'for', category: 'other' },
 ];
 
+// ============================================================================
+// MODULE EXPORT
+// ============================================================================
+
 export const homeModule: ModuleDefinition = {
   name: 'home',
   displayName: 'Home',
   locations,
+  objects,
   npcs,
   goals,
   vocabulary,
@@ -582,36 +354,50 @@ export const homeModule: ModuleDefinition = {
   locationIds: Object.keys(locations).filter(id => id !== 'street'),
   unlockLevel: 1,
 
-  parseGuidance: `COMMON HOME ACTIONS:
-- "me levanto" → position standing
-- "voy al baño" → go bathroom
-- "abro la nevera" → open refrigerator
-- "apago el despertador" → turn_off alarm_clock
-- "tomo la leche" → take milk
-- "como los huevos" → eat eggs, needsChanges: { hunger: 25 }
-- "preparo tostadas" / "hago tostadas" → cook bread then eat bread, needsChanges: { hunger: 20 }
-- "me ducho" → use shower, needsChanges: { hygiene: 50 }
-- "me cepillo los dientes" → use toothbrush, needsChanges: { hygiene: 10 }
-- "me acuesto en el sofá" / "duermo en el sofá" → use couch, needsChanges: { energy: 10 }
-- "me visto" / "me pongo ropa" / "me cambio" → use closet
+  guidance: `HOME ENVIRONMENT:
+A cozy apartment shared with roommate Carlos and two pets (Luna the cat, Max the dog).
+The player is learning daily routine vocabulary.
 
-NPC/PET INTERACTIONS:
-- Any greeting to Carlos → talk to roommate
-- Asking Carlos about breakfast → talk to roommate
-- Giving items to Carlos → give with objectId + npcId roommate
-- Petting Luna (cat) → pet with petId cat
-- Feeding Max (dog) → feed with petId dog`,
+OBJECTS:
+- alarm_clock: Digital alarm in bedroom, starts ringing. Turn off = remove "ringing" and "on" tags.
+- bed: Player starts here in_bed. Getting up = playerTag add "standing", remove "in_bed".
+- window, lamp, closet: Can be opened/closed or turned on/off via tag changes.
+- refrigerator: Container in kitchen. Must have "open" tag (remove "closed") to access items inside.
+  Items inside have location="refrigerator". When fridge is open, they're accessible.
+- eggs: In fridge. Can be cooked (add "cooked" tag), taken to inventory, eaten, or given to Carlos.
+- milk, butter, juice: In fridge. Takeable, some consumable.
+- bread, coffee, water: On counter in kitchen. Consumable.
+- stove: Must have "on" tag to cook. Turn on = tag add "on", remove "off".
+- coffee_maker: Turn on to make coffee available.
+- shower, toilet, toothbrush, sink: Bathroom fixtures. Using them improves hygiene/bladder needs.
+- tv: Living room. Can be turned on/off.
+- pet_food: In living room. Takeable, used to feed pets.
 
-  narrateGuidance: `NPC PERSONALITIES:
-- Carlos (roommate): Sleepy, friendly, casual speech. In the morning, wants coffee or breakfast (eggs, toast). When asked about breakfast, include wantsItem in npcResponse.
-- Luna (cat): Independent, aloof. Responds with purring or ignoring.
-- Max (dog): Excited, eager. Responds with tail wagging and barking.
+COOKING FLOW:
+When the player cooks something, add "cooked" tag to the food item. The stove should get "on" tag.
+If the player wants to take cooked food elsewhere, they move it to "inventory" after cooking.
+Consuming food = "remove" mutation + "needs" mutation with the food's needsEffect.
+
+NPCs:
+- Carlos (roommate): In living_room. Sleepy but friendly. Casual Spanish.
+  When asked about breakfast, mentions wanting eggs or coffee (include wantsItem in npcResponse).
+  Loves receiving cooked food — be warm and grateful. Confused by raw ingredients.
+  Giving cooked food to Carlos = move food to "removed" (he eats it).
+- Luna (cat, isPet): Independent, aloof. Purrs when petted, ignores commands.
+  Responds in English (no Spanish dialogue). Use npcResponse with just english field.
+- Max (dog, isPet): Excited, eager. Wags tail, barks happily.
+  Responds in English. Loves pet_food. Use npcResponse with just english field.
 
 GOAL COMPLETION:
-- Any greeting to Carlos (even with more words after) → greet_roommate
-- Asking Carlos what he wants for breakfast → ask_roommate_breakfast
-- Feeding any pet → feed_pets`,
-
-  pets,
-  getPetsInLocation,
+- wake_up: Player has "standing" in playerTags
+- turn_off_alarm: alarm_clock no longer has "ringing" tag
+- go_to_bathroom: Player is in bathroom
+- brush_teeth: Player interacts with toothbrush
+- take_shower: Player uses shower
+- go_to_kitchen: Player is in kitchen
+- make_breakfast: Player cooks something (eggs, bread, etc.)
+- go_to_living_room: Player is in living_room
+- greet_roommate: Player greets Carlos
+- ask_roommate_breakfast: Player asks Carlos about breakfast
+- feed_pets: Player feeds Luna or Max`,
 };

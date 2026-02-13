@@ -1,11 +1,11 @@
-import type { GameObject, ModuleDefinition } from '../engine/types.js';
+import type { WorldObject, ModuleDefinition } from '../engine/types.js';
 
 export interface LanguageConfig {
   id: string;                    // 'spanish', 'mandarin'
   displayName: string;           // 'Spanish', 'Mandarin Chinese'
   nativeLanguage: string;        // 'english'
-  coreSystemPrompt: string;      // Pass 1: Parse prompt (Spanish → actions)
-  narrateSystemPrompt: string;   // Pass 2: Narrate prompt (actions → story)
+  coreSystemPrompt: string;      // Pass 1: Parse prompt (Spanish → mutations)
+  narrateSystemPrompt: string;   // Pass 2: Narrate prompt (mutations → story)
   ttsVoice: string;              // 'Paulina' for Spanish, 'Ting-Ting' for Mandarin
 
   // AI response field mapping (language-specific field names → generic)
@@ -17,7 +17,7 @@ export interface LanguageConfig {
 
   // Language-specific helpers
   stripArticles: (word: string) => string[];
-  findObjectByName: (objects: GameObject[], name: string) => GameObject | undefined;
+  findObjectByName: (objects: WorldObject[], name: string) => WorldObject | undefined;
 
   // All modules for this language
   modules: ModuleDefinition[];
