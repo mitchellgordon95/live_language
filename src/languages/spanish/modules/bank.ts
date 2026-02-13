@@ -12,6 +12,11 @@ const locations: Record<string, Location> = {
       { to: 'bank_waiting_area', name: { target: 'la sala de espera', native: 'waiting area' } },
       { to: 'street', name: { target: 'la calle', native: 'street' } },
     ],
+    verbs: [
+      { target: 'hablo con', native: 'I talk to' },
+      { target: 'necesito', native: 'I need' },
+      { target: 'quiero', native: 'I want' },
+    ],
   },
   bank_waiting_area: {
     id: 'bank_waiting_area',
@@ -21,6 +26,11 @@ const locations: Record<string, Location> = {
       { to: 'bank_teller_window', name: { target: 'la ventanilla', native: 'teller window' } },
       { to: 'bank_manager_office', name: { target: 'la oficina del gerente', native: 'manager office' } },
     ],
+    verbs: [
+      { target: 'espero', native: 'I wait' },
+      { target: 'me siento', native: 'I sit down' },
+      { target: 'leo', native: 'I read' },
+    ],
   },
   bank_teller_window: {
     id: 'bank_teller_window',
@@ -28,12 +38,24 @@ const locations: Record<string, Location> = {
     exits: [
       { to: 'bank_waiting_area', name: { target: 'la sala de espera', native: 'waiting area' } },
     ],
+    verbs: [
+      { target: 'deposito', native: 'I deposit' },
+      { target: 'retiro', native: 'I withdraw' },
+      { target: 'cambio', native: 'I exchange' },
+      { target: 'necesito', native: 'I need' },
+    ],
   },
   bank_manager_office: {
     id: 'bank_manager_office',
     name: { target: 'la oficina del gerente', native: 'manager office' },
     exits: [
       { to: 'bank_waiting_area', name: { target: 'la sala de espera', native: 'waiting area' } },
+    ],
+    verbs: [
+      { target: 'quiero abrir', native: 'I want to open' },
+      { target: 'necesito', native: 'I need' },
+      { target: 'firmo', native: 'I sign' },
+      { target: 'le pregunto', native: 'I ask' },
     ],
   },
 };

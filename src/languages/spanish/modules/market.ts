@@ -15,6 +15,11 @@ const locations: Record<string, Location> = {
       { to: 'market_checkout', name: { target: 'la caja', native: 'checkout' } },
       { to: 'street', name: { target: 'la calle', native: 'street' } },
     ],
+    verbs: [
+      { target: 'miro', native: 'I look at' },
+      { target: 'voy a', native: 'I go to' },
+      { target: 'busco', native: 'I look for' },
+    ],
   },
   fruit_stand: {
     id: 'fruit_stand',
@@ -24,6 +29,12 @@ const locations: Record<string, Location> = {
       { to: 'vegetable_stand', name: { target: 'el puesto de verduras', native: 'vegetable stand' } },
       { to: 'meat_counter', name: { target: 'la carniceria', native: 'meat counter' } },
       { to: 'market_checkout', name: { target: 'la caja', native: 'checkout' } },
+    ],
+    verbs: [
+      { target: 'quiero', native: 'I want' },
+      { target: 'necesito', native: 'I need' },
+      { target: 'cuanto cuesta', native: 'how much does it cost' },
+      { target: 'compro', native: 'I buy' },
     ],
   },
   vegetable_stand: {
@@ -35,6 +46,12 @@ const locations: Record<string, Location> = {
       { to: 'meat_counter', name: { target: 'la carniceria', native: 'meat counter' } },
       { to: 'market_checkout', name: { target: 'la caja', native: 'checkout' } },
     ],
+    verbs: [
+      { target: 'quiero', native: 'I want' },
+      { target: 'necesito', native: 'I need' },
+      { target: 'cuanto cuesta', native: 'how much does it cost' },
+      { target: 'compro', native: 'I buy' },
+    ],
   },
   meat_counter: {
     id: 'meat_counter',
@@ -45,6 +62,12 @@ const locations: Record<string, Location> = {
       { to: 'vegetable_stand', name: { target: 'el puesto de verduras', native: 'vegetable stand' } },
       { to: 'market_checkout', name: { target: 'la caja', native: 'checkout' } },
     ],
+    verbs: [
+      { target: 'quiero', native: 'I want' },
+      { target: 'me da', native: 'give me' },
+      { target: 'cuanto cuesta', native: 'how much does it cost' },
+      { target: 'compro', native: 'I buy' },
+    ],
   },
   market_checkout: {
     id: 'market_checkout',
@@ -52,6 +75,11 @@ const locations: Record<string, Location> = {
     exits: [
       { to: 'market_entrance', name: { target: 'la entrada', native: 'entrance' } },
       { to: 'street', name: { target: 'la calle', native: 'street' } },
+    ],
+    verbs: [
+      { target: 'pago', native: 'I pay' },
+      { target: 'cuanto es', native: 'how much is it' },
+      { target: 'necesito', native: 'I need' },
     ],
   },
 };

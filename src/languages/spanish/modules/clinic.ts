@@ -13,6 +13,11 @@ const locations: Record<string, Location> = {
       { to: 'pharmacy', name: { target: 'la farmacia', native: 'pharmacy' } },
       { to: 'street', name: { target: 'la calle', native: 'street' } },
     ],
+    verbs: [
+      { target: 'hablo con', native: 'I talk to' },
+      { target: 'tengo cita', native: 'I have an appointment' },
+      { target: 'necesito', native: 'I need' },
+    ],
   },
   waiting_room: {
     id: 'waiting_room',
@@ -21,12 +26,23 @@ const locations: Record<string, Location> = {
       { to: 'clinic_reception', name: { target: 'la recepcion', native: 'reception' } },
       { to: 'exam_room', name: { target: 'el consultorio', native: 'exam room' } },
     ],
+    verbs: [
+      { target: 'espero', native: 'I wait' },
+      { target: 'me siento', native: 'I sit down' },
+      { target: 'leo', native: 'I read' },
+    ],
   },
   exam_room: {
     id: 'exam_room',
     name: { target: 'el consultorio', native: 'exam room' },
     exits: [
       { to: 'waiting_room', name: { target: 'la sala de espera', native: 'waiting room' } },
+    ],
+    verbs: [
+      { target: 'me duele', native: 'it hurts' },
+      { target: 'me siento', native: 'I feel' },
+      { target: 'respiro', native: 'I breathe' },
+      { target: 'tengo', native: 'I have' },
     ],
   },
   pharmacy: {
@@ -35,6 +51,12 @@ const locations: Record<string, Location> = {
     exits: [
       { to: 'clinic_reception', name: { target: 'la recepcion de la clinica', native: 'clinic reception' } },
       { to: 'street', name: { target: 'la calle', native: 'street' } },
+    ],
+    verbs: [
+      { target: 'necesito', native: 'I need' },
+      { target: 'compro', native: 'I buy' },
+      { target: 'tomo', native: 'I take' },
+      { target: 'pago', native: 'I pay' },
     ],
   },
 };

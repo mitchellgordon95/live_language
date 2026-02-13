@@ -12,6 +12,11 @@ const locations: Record<string, Location> = {
       { to: 'restaurant_table', name: { target: 'las mesas', native: 'dining area' } },
       { to: 'street', name: { target: 'la calle', native: 'street' } },
     ],
+    verbs: [
+      { target: 'hablo con', native: 'I talk to' },
+      { target: 'quiero', native: 'I want' },
+      { target: 'me siento', native: 'I sit down' },
+    ],
   },
   restaurant_table: {
     id: 'restaurant_table',
@@ -22,12 +27,23 @@ const locations: Record<string, Location> = {
       { to: 'restaurant_cashier', name: { target: 'la caja', native: 'cashier' } },
       { to: 'restaurant_bathroom', name: { target: 'el bano', native: 'bathroom' } },
     ],
+    verbs: [
+      { target: 'pido', native: 'I order' },
+      { target: 'como', native: 'I eat' },
+      { target: 'bebo', native: 'I drink' },
+      { target: 'le pido', native: 'I ask for' },
+      { target: 'quiero', native: 'I want' },
+    ],
   },
   restaurant_kitchen: {
     id: 'restaurant_kitchen',
     name: { target: 'la cocina', native: 'kitchen' },
     exits: [
       { to: 'restaurant_table', name: { target: 'el comedor', native: 'dining room' } },
+    ],
+    verbs: [
+      { target: 'miro', native: 'I look at' },
+      { target: 'hablo con', native: 'I talk to' },
     ],
   },
   restaurant_cashier: {
@@ -37,12 +53,21 @@ const locations: Record<string, Location> = {
       { to: 'restaurant_table', name: { target: 'el comedor', native: 'dining room' } },
       { to: 'restaurant_entrance', name: { target: 'la entrada', native: 'entrance' } },
     ],
+    verbs: [
+      { target: 'pago', native: 'I pay' },
+      { target: 'dejo propina', native: 'I leave a tip' },
+      { target: 'le pido', native: 'I ask for' },
+    ],
   },
   restaurant_bathroom: {
     id: 'restaurant_bathroom',
     name: { target: 'el bano', native: 'bathroom' },
     exits: [
       { to: 'restaurant_table', name: { target: 'el comedor', native: 'dining room' } },
+    ],
+    verbs: [
+      { target: 'me lavo', native: 'I wash' },
+      { target: 'uso', native: 'I use' },
     ],
   },
 };

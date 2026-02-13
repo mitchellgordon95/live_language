@@ -13,6 +13,11 @@ const locations: Record<string, Location> = {
       { to: 'locker_room', name: { target: 'el vestuario', native: 'locker room' } },
       { to: 'street', name: { target: 'la calle', native: 'street' } },
     ],
+    verbs: [
+      { target: 'hablo con', native: 'I talk to' },
+      { target: 'quiero', native: 'I want' },
+      { target: 'me inscribo', native: 'I sign up' },
+    ],
   },
   stretching_area: {
     id: 'stretching_area',
@@ -22,6 +27,12 @@ const locations: Record<string, Location> = {
       { to: 'training_floor', name: { target: 'la zona de entrenamiento', native: 'training floor' } },
       { to: 'cardio_zone', name: { target: 'la zona de cardio', native: 'cardio zone' } },
     ],
+    verbs: [
+      { target: 'estiro', native: 'I stretch' },
+      { target: 'me estiro', native: 'I stretch out' },
+      { target: 'uso', native: 'I use' },
+      { target: 'respiro', native: 'I breathe' },
+    ],
   },
   training_floor: {
     id: 'training_floor',
@@ -30,6 +41,12 @@ const locations: Record<string, Location> = {
       { to: 'stretching_area', name: { target: 'la zona de estiramiento', native: 'stretching area' } },
       { to: 'weight_room', name: { target: 'la sala de pesas', native: 'weight room' } },
       { to: 'cardio_zone', name: { target: 'la zona de cardio', native: 'cardio zone' } },
+    ],
+    verbs: [
+      { target: 'entreno', native: 'I train' },
+      { target: 'hago ejercicio', native: 'I exercise' },
+      { target: 'salto', native: 'I jump' },
+      { target: 'empujo', native: 'I push' },
     ],
   },
   weight_room: {
@@ -41,6 +58,12 @@ const locations: Record<string, Location> = {
       { to: 'stretching_area', name: { target: 'la zona de estiramiento', native: 'stretching area' } },
       { to: 'locker_room', name: { target: 'el vestuario', native: 'locker room' } },
     ],
+    verbs: [
+      { target: 'levanto', native: 'I lift' },
+      { target: 'empujo', native: 'I push' },
+      { target: 'jalo', native: 'I pull' },
+      { target: 'uso', native: 'I use' },
+    ],
   },
   cardio_zone: {
     id: 'cardio_zone',
@@ -51,6 +74,12 @@ const locations: Record<string, Location> = {
       { to: 'stretching_area', name: { target: 'la zona de estiramiento', native: 'stretching area' } },
       { to: 'locker_room', name: { target: 'el vestuario', native: 'locker room' } },
     ],
+    verbs: [
+      { target: 'corro', native: 'I run' },
+      { target: 'camino', native: 'I walk' },
+      { target: 'pedaleo', native: 'I pedal' },
+      { target: 'bebo', native: 'I drink' },
+    ],
   },
   locker_room: {
     id: 'locker_room',
@@ -59,6 +88,12 @@ const locations: Record<string, Location> = {
       { to: 'gym_entrance', name: { target: 'la entrada', native: 'entrance' } },
       { to: 'weight_room', name: { target: 'la sala de pesas', native: 'weight room' } },
       { to: 'cardio_zone', name: { target: 'la zona de cardio', native: 'cardio zone' } },
+    ],
+    verbs: [
+      { target: 'me cambio', native: 'I change clothes' },
+      { target: 'guardo', native: 'I store' },
+      { target: 'me ducho', native: 'I shower' },
+      { target: 'bebo', native: 'I drink' },
     ],
   },
 };

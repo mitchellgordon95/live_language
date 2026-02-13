@@ -13,6 +13,12 @@ const locations: Record<string, Location> = {
       { to: 'kitchen', name: { target: 'la cocina', native: 'kitchen' } },
       { to: 'living_room', name: { target: 'la sala', native: 'living room' } },
     ],
+    verbs: [
+      { target: 'me levanto', native: 'I get up' },
+      { target: 'apago', native: 'I turn off' },
+      { target: 'enciendo', native: 'I turn on' },
+      { target: 'voy a', native: 'I go to' },
+    ],
   },
   bathroom: {
     id: 'bathroom',
@@ -21,6 +27,12 @@ const locations: Record<string, Location> = {
       { to: 'bedroom', name: { target: 'el dormitorio', native: 'bedroom' } },
       { to: 'kitchen', name: { target: 'la cocina', native: 'kitchen' } },
       { to: 'living_room', name: { target: 'la sala', native: 'living room' } },
+    ],
+    verbs: [
+      { target: 'me ducho', native: 'I shower' },
+      { target: 'me lavo', native: 'I wash' },
+      { target: 'me cepillo', native: 'I brush' },
+      { target: 'uso', native: 'I use' },
     ],
   },
   kitchen: {
@@ -31,6 +43,13 @@ const locations: Record<string, Location> = {
       { to: 'bathroom', name: { target: 'el baño', native: 'bathroom' } },
       { to: 'living_room', name: { target: 'la sala', native: 'living room' } },
     ],
+    verbs: [
+      { target: 'abro', native: 'I open' },
+      { target: 'cocino', native: 'I cook' },
+      { target: 'como', native: 'I eat' },
+      { target: 'tomo', native: 'I drink' },
+      { target: 'enciendo', native: 'I turn on' },
+    ],
   },
   living_room: {
     id: 'living_room',
@@ -39,6 +58,12 @@ const locations: Record<string, Location> = {
       { to: 'bedroom', name: { target: 'el dormitorio', native: 'bedroom' } },
       { to: 'kitchen', name: { target: 'la cocina', native: 'kitchen' } },
       { to: 'street', name: { target: 'la calle', native: 'street' } },
+    ],
+    verbs: [
+      { target: 'hablo con', native: 'I talk to' },
+      { target: 'le doy', native: 'I give' },
+      { target: 'acaricio', native: 'I pet' },
+      { target: 'juego con', native: 'I play with' },
     ],
   },
   street: {
@@ -52,6 +77,11 @@ const locations: Record<string, Location> = {
       { to: 'market_entrance', name: { target: 'el mercado', native: 'market' } },
       { to: 'park_entrance', name: { target: 'el parque', native: 'park' } },
       { to: 'bank_entrance', name: { target: 'el banco', native: 'bank' } },
+    ],
+    verbs: [
+      { target: 'voy a', native: 'I go to' },
+      { target: 'camino', native: 'I walk' },
+      { target: 'miro', native: 'I look at' },
     ],
   },
 };

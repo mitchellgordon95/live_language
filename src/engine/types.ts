@@ -80,6 +80,7 @@ export interface Location {
   id: string;
   name: BilingualText;
   exits: Exit[];
+  verbs?: BilingualText[];
 }
 
 export interface Exit {

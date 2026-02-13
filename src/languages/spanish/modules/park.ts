@@ -12,6 +12,11 @@ const locations: Record<string, Location> = {
       { to: 'main_path', name: { target: 'el sendero principal', native: 'main path' } },
       { to: 'street', name: { target: 'la calle', native: 'street' } },
     ],
+    verbs: [
+      { target: 'camino', native: 'I walk' },
+      { target: 'miro', native: 'I look at' },
+      { target: 'voy a', native: 'I go to' },
+    ],
   },
   main_path: {
     id: 'main_path',
@@ -22,6 +27,12 @@ const locations: Record<string, Location> = {
       { to: 'garden', name: { target: 'el jardin', native: 'garden' } },
       { to: 'playground', name: { target: 'el area de juegos', native: 'playground' } },
     ],
+    verbs: [
+      { target: 'camino', native: 'I walk' },
+      { target: 'corro', native: 'I run' },
+      { target: 'miro', native: 'I look at' },
+      { target: 'hablo con', native: 'I talk to' },
+    ],
   },
   fountain_area: {
     id: 'fountain_area',
@@ -30,12 +41,24 @@ const locations: Record<string, Location> = {
       { to: 'main_path', name: { target: 'el sendero', native: 'path' } },
       { to: 'kiosk', name: { target: 'el quiosco', native: 'kiosk' } },
     ],
+    verbs: [
+      { target: 'me siento', native: 'I sit down' },
+      { target: 'miro', native: 'I look at' },
+      { target: 'descanso', native: 'I rest' },
+      { target: 'hablo con', native: 'I talk to' },
+    ],
   },
   garden: {
     id: 'garden',
     name: { target: 'el jardin', native: 'garden' },
     exits: [
       { to: 'main_path', name: { target: 'el sendero', native: 'path' } },
+    ],
+    verbs: [
+      { target: 'miro', native: 'I look at' },
+      { target: 'huelo', native: 'I smell' },
+      { target: 'toco', native: 'I touch' },
+      { target: 'camino', native: 'I walk' },
     ],
   },
   playground: {
@@ -44,6 +67,12 @@ const locations: Record<string, Location> = {
     exits: [
       { to: 'main_path', name: { target: 'el sendero', native: 'path' } },
     ],
+    verbs: [
+      { target: 'juego', native: 'I play' },
+      { target: 'subo', native: 'I climb' },
+      { target: 'me columpio', native: 'I swing' },
+      { target: 'salto', native: 'I jump' },
+    ],
   },
   kiosk: {
     id: 'kiosk',
@@ -51,6 +80,12 @@ const locations: Record<string, Location> = {
     exits: [
       { to: 'fountain_area', name: { target: 'la fuente', native: 'fountain' } },
       { to: 'main_path', name: { target: 'el sendero', native: 'path' } },
+    ],
+    verbs: [
+      { target: 'compro', native: 'I buy' },
+      { target: 'quiero', native: 'I want' },
+      { target: 'pago', native: 'I pay' },
+      { target: 'pido', native: 'I order' },
     ],
   },
 };

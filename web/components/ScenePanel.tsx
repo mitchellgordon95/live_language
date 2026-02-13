@@ -298,6 +298,19 @@ export default function ScenePanel({ game }: ScenePanelProps) {
           <CompactNeed icon={"\ud83e\uddfc"} value={game.needs.hygiene} label="Hygiene" />
           <CompactNeed icon={"\ud83d\udebb"} value={game.needs.bladder} label="Bladder" />
         </div>
+
+        {/* Verb hints */}
+        {game.verbs.length > 0 && (
+          <div className="text-center text-xs text-gray-600 pt-1">
+            {game.verbs.map((v, i) => (
+              <span key={i}>
+                {i > 0 && <span className="mx-1">&middot;</span>}
+                <span className="text-gray-500">{v.target}</span>
+                <span className="text-gray-700 ml-0.5">({v.native})</span>
+              </span>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

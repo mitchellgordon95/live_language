@@ -470,7 +470,7 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
     : null;
 
   // Exits from allLocations lookup
-  const currentLoc = (engine as NonNullable<typeof engine>).allLocations[locationId] as { exits: Array<{ to: string; name: { target: string; native: string } }>; name: { target: string; native: string } } | undefined;
+  const currentLoc = (engine as NonNullable<typeof engine>).allLocations[locationId] as { exits: Array<{ to: string; name: { target: string; native: string } }>; name: { target: string; native: string }; verbs?: Array<{ target: string; native: string }> } | undefined;
   const exits: ExitView[] = (currentLoc?.exits || []).map(exit => ({
     to: exit.to,
     name: exit.name,
@@ -534,6 +534,7 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
     scene,
     portraitHint,
     helpText: helpText || '',
+    verbs: currentLoc?.verbs || [],
     turnResult,
   };
 }
