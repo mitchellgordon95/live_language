@@ -163,13 +163,18 @@ export default function ScenePanel({ game }: ScenePanelProps) {
           {objectPortraits.map((change) => {
             const obj = game.objects.find(o => o.id === change.objectId);
             const containedItems = game.objects.filter(o => o.containerId === change.objectId);
+            // Cached portraits use full paths (starting with /), pre-generated use relative filenames
+            const imgSrc = change.image.startsWith('/')
+              ? change.image
+              : `/scenes/${game.scene!.module}/portraits/${change.image}`;
             return (
               <PortraitWithItems
                 key={`obj-${change.objectId}`}
-                src={`/scenes/${game.scene!.module}/portraits/${change.image}`}
+                src={imgSrc}
                 alt={obj?.name.native || change.objectId}
                 label={obj?.name.target}
                 items={containedItems}
+                generating={change.generating}
               />
             );
           })}
@@ -440,11 +445,12 @@ function PortraitAvatar({ src, alt, label, mood, fallbackLetter, size }: Portrai
 
 // --- Portrait with contained item dots (e.g. open fridge with food items) ---
 
-function PortraitWithItems({ src, alt, label, items }: {
+function PortraitWithItems({ src, alt, label, items, generating }: {
   src: string;
   alt: string;
   label?: string;
   items: GameObjectView[];
+  generating?: boolean;
 }) {
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
 
@@ -455,7 +461,7 @@ function PortraitWithItems({ src, alt, label, items }: {
         <img
           src={src}
           alt={alt}
-          className="w-32 h-32 border-2 border-cyan-500/60 rounded-lg object-cover shadow-lg"
+          className={`w-32 h-32 border-2 border-cyan-500/60 rounded-lg object-cover shadow-lg ${generating ? 'animate-pulse' : ''}`}
         />
         {/* Item dots overlaid on portrait */}
         {items.length > 0 && (

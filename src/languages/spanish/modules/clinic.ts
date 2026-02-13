@@ -1,265 +1,93 @@
-import type { Location, Goal, VocabWord, GameState, NPC, ModuleDefinition } from '../../../engine/types.js';
+import type { Location, Goal, VocabWord, GameState, NPC, WorldObject, ModuleDefinition } from '../../../engine/types.js';
 
 // ============================================================================
-// CLINIC LOCATIONS
+// LOCATIONS (exits only -- objects are in the flat list below)
 // ============================================================================
 
-export const clinicReception: Location = {
-  id: 'clinic_reception',
-  name: { target: 'la recepcion de la clinica', native: 'clinic reception' },
-  objects: [
-    {
-      id: 'reception_desk',
-      name: { target: 'el escritorio de recepcion', native: 'reception desk' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'registration_form',
-      name: { target: 'el formulario de registro', native: 'registration form' },
-      state: { filled: false },
-      actions: ['TAKE', 'USE', 'LOOK'],
-      takeable: true,
-    },
-    {
-      id: 'health_insurance_card',
-      name: { target: 'la tarjeta de seguro medico', native: 'health insurance card' },
-      state: {},
-      actions: ['TAKE', 'USE'],
-      takeable: true,
-    },
-    {
-      id: 'pen',
-      name: { target: 'el boligrafo', native: 'pen' },
-      state: {},
-      actions: ['TAKE', 'USE'],
-      takeable: true,
-    },
-    {
-      id: 'clinic_brochure',
-      name: { target: 'el folleto de la clinica', native: 'clinic brochure' },
-      state: {},
-      actions: ['TAKE', 'LOOK'],
-      takeable: true,
-    },
-    {
-      id: 'appointment_sign',
-      name: { target: 'el letrero de citas', native: 'appointment sign' },
-      state: {},
-      actions: ['LOOK'],
-    },
-  ],
-  exits: [
-    { to: 'waiting_room', name: { target: 'la sala de espera', native: 'waiting room' } },
-    { to: 'pharmacy', name: { target: 'la farmacia', native: 'pharmacy' } },
-    { to: 'street', name: { target: 'la calle', native: 'street' } },
-  ],
-};
-
-export const waitingRoom: Location = {
-  id: 'waiting_room',
-  name: { target: 'la sala de espera', native: 'waiting room' },
-  objects: [
-    {
-      id: 'waiting_chair',
-      name: { target: 'la silla de espera', native: 'waiting chair' },
-      state: {},
-      actions: ['USE'],
-    },
-    {
-      id: 'magazines',
-      name: { target: 'las revistas', native: 'magazines' },
-      state: {},
-      actions: ['TAKE', 'LOOK'],
-      takeable: true,
-    },
-    {
-      id: 'water_cooler',
-      name: { target: 'el dispensador de agua', native: 'water cooler' },
-      state: {},
-      actions: ['USE'],
-      consumable: true,
-      needsEffect: { hunger: 5 },
-    },
-    {
-      id: 'tv_screen',
-      name: { target: 'la pantalla de television', native: 'TV screen' },
-      state: { on: true },
-      actions: ['LOOK'],
-    },
-    {
-      id: 'number_display',
-      name: { target: 'la pantalla de turnos', native: 'number display' },
-      state: { currentNumber: 15, yourNumber: 18 },
-      actions: ['LOOK'],
-    },
-    {
-      id: 'health_poster',
-      name: { target: 'el cartel de salud', native: 'health poster' },
-      state: {},
-      actions: ['LOOK'],
-    },
-  ],
-  exits: [
-    { to: 'clinic_reception', name: { target: 'la recepcion', native: 'reception' } },
-    { to: 'exam_room', name: { target: 'el consultorio', native: 'exam room' } },
-  ],
-};
-
-export const examRoom: Location = {
-  id: 'exam_room',
-  name: { target: 'el consultorio', native: 'exam room' },
-  objects: [
-    {
-      id: 'exam_table',
-      name: { target: 'la camilla', native: 'exam table' },
-      state: {},
-      actions: ['USE'],
-    },
-    {
-      id: 'blood_pressure_monitor',
-      name: { target: 'el tensiometro', native: 'blood pressure monitor' },
-      state: { lastReading: null },
-      actions: ['LOOK'],
-    },
-    {
-      id: 'stethoscope',
-      name: { target: 'el estetoscopio', native: 'stethoscope' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'scale',
-      name: { target: 'la bascula', native: 'scale' },
-      state: {},
-      actions: ['USE', 'LOOK'],
-    },
-    {
-      id: 'thermometer',
-      name: { target: 'el termometro', native: 'thermometer' },
-      state: { lastReading: null },
-      actions: ['USE', 'LOOK'],
-    },
-    {
-      id: 'tongue_depressor',
-      name: { target: 'el depresor de lengua', native: 'tongue depressor' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'medical_chart',
-      name: { target: 'el expediente medico', native: 'medical chart' },
-      state: { symptomsRecorded: false },
-      actions: ['LOOK'],
-    },
-    {
-      id: 'prescription_pad',
-      name: { target: 'el recetario', native: 'prescription pad' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'prescription',
-      name: { target: 'la receta medica', native: 'prescription' },
-      state: { written: false, received: false },
-      actions: ['TAKE', 'LOOK'],
-      takeable: true,
-    },
-    {
-      id: 'anatomy_poster',
-      name: { target: 'el cartel de anatomia', native: 'anatomy poster' },
-      state: {},
-      actions: ['LOOK'],
-    },
-  ],
-  exits: [
-    { to: 'waiting_room', name: { target: 'la sala de espera', native: 'waiting room' } },
-  ],
-};
-
-export const pharmacy: Location = {
-  id: 'pharmacy',
-  name: { target: 'la farmacia', native: 'pharmacy' },
-  objects: [
-    {
-      id: 'pharmacy_counter',
-      name: { target: 'el mostrador de la farmacia', native: 'pharmacy counter' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'medicine_shelf',
-      name: { target: 'el estante de medicinas', native: 'medicine shelf' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'pain_reliever',
-      name: { target: 'el analgesico', native: 'pain reliever' },
-      state: { purchased: false },
-      actions: ['TAKE', 'LOOK'],
-      takeable: true,
-      consumable: true,
-      needsEffect: { energy: 10 },
-    },
-    {
-      id: 'antibiotic',
-      name: { target: 'el antibiotico', native: 'antibiotic' },
-      state: { purchased: false, requiresPrescription: true },
-      actions: ['TAKE', 'LOOK'],
-      takeable: true,
-      consumable: true,
-    },
-    {
-      id: 'cough_syrup',
-      name: { target: 'el jarabe para la tos', native: 'cough syrup' },
-      state: { purchased: false },
-      actions: ['TAKE', 'LOOK'],
-      takeable: true,
-      consumable: true,
-    },
-    {
-      id: 'bandages',
-      name: { target: 'las vendas', native: 'bandages' },
-      state: {},
-      actions: ['TAKE', 'LOOK'],
-      takeable: true,
-    },
-    {
-      id: 'vitamins',
-      name: { target: 'las vitaminas', native: 'vitamins' },
-      state: {},
-      actions: ['TAKE', 'LOOK'],
-      takeable: true,
-      consumable: true,
-      needsEffect: { energy: 5 },
-    },
-    {
-      id: 'pharmacy_receipt',
-      name: { target: 'el recibo de la farmacia', native: 'pharmacy receipt' },
-      state: { printed: false },
-      actions: ['TAKE', 'LOOK'],
-      takeable: true,
-    },
-  ],
-  exits: [
-    { to: 'clinic_reception', name: { target: 'la recepcion de la clinica', native: 'clinic reception' } },
-    { to: 'street', name: { target: 'la calle', native: 'street' } },
-  ],
-};
-
-export const clinicLocations: Record<string, Location> = {
-  clinic_reception: clinicReception,
-  waiting_room: waitingRoom,
-  exam_room: examRoom,
-  pharmacy: pharmacy,
+const locations: Record<string, Location> = {
+  clinic_reception: {
+    id: 'clinic_reception',
+    name: { target: 'la recepcion de la clinica', native: 'clinic reception' },
+    exits: [
+      { to: 'waiting_room', name: { target: 'la sala de espera', native: 'waiting room' } },
+      { to: 'pharmacy', name: { target: 'la farmacia', native: 'pharmacy' } },
+      { to: 'street', name: { target: 'la calle', native: 'street' } },
+    ],
+  },
+  waiting_room: {
+    id: 'waiting_room',
+    name: { target: 'la sala de espera', native: 'waiting room' },
+    exits: [
+      { to: 'clinic_reception', name: { target: 'la recepcion', native: 'reception' } },
+      { to: 'exam_room', name: { target: 'el consultorio', native: 'exam room' } },
+    ],
+  },
+  exam_room: {
+    id: 'exam_room',
+    name: { target: 'el consultorio', native: 'exam room' },
+    exits: [
+      { to: 'waiting_room', name: { target: 'la sala de espera', native: 'waiting room' } },
+    ],
+  },
+  pharmacy: {
+    id: 'pharmacy',
+    name: { target: 'la farmacia', native: 'pharmacy' },
+    exits: [
+      { to: 'clinic_reception', name: { target: 'la recepcion de la clinica', native: 'clinic reception' } },
+      { to: 'street', name: { target: 'la calle', native: 'street' } },
+    ],
+  },
 };
 
 // ============================================================================
-// CLINIC NPCs
+// OBJECTS (flat list -- each knows its own location)
 // ============================================================================
 
-export const clinicNPCs: NPC[] = [
+const objects: WorldObject[] = [
+  // Reception
+  { id: 'reception_desk', name: { target: 'el escritorio de recepcion', native: 'reception desk' }, location: 'clinic_reception', tags: [] },
+  { id: 'registration_form', name: { target: 'el formulario de registro', native: 'registration form' }, location: 'clinic_reception', tags: ['takeable'] },
+  { id: 'health_insurance_card', name: { target: 'la tarjeta de seguro medico', native: 'health insurance card' }, location: 'clinic_reception', tags: ['takeable'] },
+  { id: 'pen', name: { target: 'el boligrafo', native: 'pen' }, location: 'clinic_reception', tags: ['takeable'] },
+  { id: 'clinic_brochure', name: { target: 'el folleto de la clinica', native: 'clinic brochure' }, location: 'clinic_reception', tags: ['takeable'] },
+  { id: 'appointment_sign', name: { target: 'el letrero de citas', native: 'appointment sign' }, location: 'clinic_reception', tags: [] },
+
+  // Waiting room
+  { id: 'waiting_chair', name: { target: 'la silla de espera', native: 'waiting chair' }, location: 'waiting_room', tags: [] },
+  { id: 'magazines', name: { target: 'las revistas', native: 'magazines' }, location: 'waiting_room', tags: ['takeable'] },
+  { id: 'water_cooler', name: { target: 'el dispensador de agua', native: 'water cooler' }, location: 'waiting_room', tags: ['consumable'], needsEffect: { hunger: 5 } },
+  { id: 'tv_screen', name: { target: 'la pantalla de television', native: 'TV screen' }, location: 'waiting_room', tags: ['on'] },
+  { id: 'number_display', name: { target: 'la pantalla de turnos', native: 'number display' }, location: 'waiting_room', tags: [] },
+  { id: 'health_poster', name: { target: 'el cartel de salud', native: 'health poster' }, location: 'waiting_room', tags: [] },
+
+  // Exam room
+  { id: 'exam_table', name: { target: 'la camilla', native: 'exam table' }, location: 'exam_room', tags: [] },
+  { id: 'blood_pressure_monitor', name: { target: 'el tensiometro', native: 'blood pressure monitor' }, location: 'exam_room', tags: [] },
+  { id: 'stethoscope', name: { target: 'el estetoscopio', native: 'stethoscope' }, location: 'exam_room', tags: [] },
+  { id: 'scale', name: { target: 'la bascula', native: 'scale' }, location: 'exam_room', tags: [] },
+  { id: 'thermometer', name: { target: 'el termometro', native: 'thermometer' }, location: 'exam_room', tags: [] },
+  { id: 'tongue_depressor', name: { target: 'el depresor de lengua', native: 'tongue depressor' }, location: 'exam_room', tags: [] },
+  { id: 'medical_chart', name: { target: 'el expediente medico', native: 'medical chart' }, location: 'exam_room', tags: [] },
+  { id: 'prescription_pad', name: { target: 'el recetario', native: 'prescription pad' }, location: 'exam_room', tags: [] },
+  { id: 'prescription', name: { target: 'la receta medica', native: 'prescription' }, location: 'exam_room', tags: ['takeable'] },
+  { id: 'anatomy_poster', name: { target: 'el cartel de anatomia', native: 'anatomy poster' }, location: 'exam_room', tags: [] },
+
+  // Pharmacy
+  { id: 'pharmacy_counter', name: { target: 'el mostrador de la farmacia', native: 'pharmacy counter' }, location: 'pharmacy', tags: [] },
+  { id: 'medicine_shelf', name: { target: 'el estante de medicinas', native: 'medicine shelf' }, location: 'pharmacy', tags: [] },
+  { id: 'pain_reliever', name: { target: 'el analgesico', native: 'pain reliever' }, location: 'pharmacy', tags: ['takeable', 'consumable'], needsEffect: { energy: 10 } },
+  { id: 'antibiotic', name: { target: 'el antibiotico', native: 'antibiotic' }, location: 'pharmacy', tags: ['takeable', 'consumable', 'requires-prescription'] },
+  { id: 'cough_syrup', name: { target: 'el jarabe para la tos', native: 'cough syrup' }, location: 'pharmacy', tags: ['takeable', 'consumable'] },
+  { id: 'bandages', name: { target: 'las vendas', native: 'bandages' }, location: 'pharmacy', tags: ['takeable'] },
+  { id: 'vitamins', name: { target: 'las vitaminas', native: 'vitamins' }, location: 'pharmacy', tags: ['takeable', 'consumable'], needsEffect: { energy: 5 } },
+  { id: 'pharmacy_receipt', name: { target: 'el recibo de la farmacia', native: 'pharmacy receipt' }, location: 'pharmacy', tags: ['takeable'] },
+];
+
+// ============================================================================
+// NPCs
+// ============================================================================
+
+const npcs: NPC[] = [
   {
     id: 'receptionist',
     name: { target: 'Maria', native: 'Maria' },
@@ -283,41 +111,17 @@ export const clinicNPCs: NPC[] = [
   },
 ];
 
-// Extended NPC state for clinic interactions
-export interface ClinicNPCState {
-  mood: string;
-  lastResponse?: string;
-  // Receptionist-specific
-  hasCheckedIn?: boolean;
-  hasReceivedForm?: boolean;
-  hasGivenNumber?: boolean;
-  // Doctor-specific
-  hasExaminedPatient?: boolean;
-  symptomsDescribed?: string[];
-  diagnosisMade?: boolean;
-  prescriptionWritten?: boolean;
-  commandsGiven?: string[];
-  // Pharmacist-specific
-  hasReceivedPrescription?: boolean;
-  medicineDispensed?: boolean;
-  instructionsGiven?: boolean;
-}
-
-export function getClinicNPCsInLocation(locationId: string): NPC[] {
-  return clinicNPCs.filter(npc => npc.location === locationId);
-}
-
 // ============================================================================
-// CLINIC GOALS
+// GOALS (checkComplete uses new state model)
 // ============================================================================
 
-export const clinicGoals: Goal[] = [
+const goals: Goal[] = [
   {
     id: 'clinic_arrive',
     title: 'Arrive at the clinic',
     description: 'You are not feeling well. Go to the clinic to see a doctor.',
     hint: 'Try "Voy a la clinica" (I go to the clinic)',
-    checkComplete: (state: GameState) => state.location.id === 'clinic_reception',
+    checkComplete: (state: GameState) => state.currentLocation === 'clinic_reception',
     nextGoalId: 'clinic_check_in',
   },
   {
@@ -325,10 +129,7 @@ export const clinicGoals: Goal[] = [
     title: 'Check in at reception',
     description: 'Talk to the receptionist Maria and check in for your appointment. Give her your information.',
     hint: 'Try "Buenos dias" to greet, then "Tengo cita con el doctor" (I have an appointment with the doctor) or "Necesito ver a un medico" (I need to see a doctor)',
-    checkComplete: (state: GameState) => {
-      return state.completedGoals.includes('checked_in') ||
-             state.completedGoals.includes('clinic_check_in');
-    },
+    checkComplete: (state: GameState) => state.completedGoals.includes('clinic_check_in'),
     nextGoalId: 'clinic_fill_form',
   },
   {
@@ -337,9 +138,9 @@ export const clinicGoals: Goal[] = [
     description: 'Maria gave you a form. Fill it out with your information.',
     hint: 'Try "Lleno el formulario" (I fill out the form) or "Completo el formulario"',
     checkComplete: (state: GameState) => {
-      const form = state.location.objects.find(o => o.id === 'registration_form');
-      return form?.state.filled === true ||
-             state.completedGoals.includes('filled_form');
+      const form = state.objects.find(o => o.id === 'registration_form');
+      return (form !== undefined && form.tags.includes('filled')) ||
+             state.completedGoals.includes('clinic_fill_form');
     },
     nextGoalId: 'clinic_wait',
   },
@@ -349,8 +150,8 @@ export const clinicGoals: Goal[] = [
     description: 'Go to the waiting room and wait for your turn. Check the number display.',
     hint: 'Try "Voy a la sala de espera" (I go to the waiting room) and "Me siento" (I sit down)',
     checkComplete: (state: GameState) => {
-      return state.location.id === 'waiting_room' ||
-             state.completedGoals.includes('waited');
+      return state.currentLocation === 'waiting_room' ||
+             state.completedGoals.includes('clinic_wait');
     },
     nextGoalId: 'clinic_enter_exam',
   },
@@ -359,7 +160,7 @@ export const clinicGoals: Goal[] = [
     title: 'Enter the exam room',
     description: 'Your number is called! Go to the exam room to see Dr. Garcia.',
     hint: 'Try "Voy al consultorio" (I go to the exam room) or "Entro al consultorio"',
-    checkComplete: (state: GameState) => state.location.id === 'exam_room',
+    checkComplete: (state: GameState) => state.currentLocation === 'exam_room',
     nextGoalId: 'clinic_describe_symptoms',
   },
   {
@@ -367,10 +168,7 @@ export const clinicGoals: Goal[] = [
     title: 'Describe your symptoms to the doctor',
     description: 'Tell Dr. Garcia what hurts. Use "me duele" (it hurts me) or "tengo" expressions.',
     hint: 'Try "Me duele la cabeza" (My head hurts), "Tengo fiebre" (I have a fever), or "Me duele el estomago" (My stomach hurts)',
-    checkComplete: (state: GameState) => {
-      return state.completedGoals.includes('described_symptoms') ||
-             state.completedGoals.includes('clinic_describe_symptoms');
-    },
+    checkComplete: (state: GameState) => state.completedGoals.includes('clinic_describe_symptoms'),
     nextGoalId: 'clinic_follow_commands',
   },
   {
@@ -378,10 +176,7 @@ export const clinicGoals: Goal[] = [
     title: 'Follow the doctor\'s commands',
     description: 'Dr. Garcia needs to examine you. Follow his instructions carefully.',
     hint: 'The doctor may say "Abra la boca" (Open your mouth), "Respire profundo" (Breathe deeply), "Saque la lengua" (Stick out your tongue). Respond with "Si, doctor" or perform the action.',
-    checkComplete: (state: GameState) => {
-      return state.completedGoals.includes('followed_commands') ||
-             state.completedGoals.includes('clinic_follow_commands');
-    },
+    checkComplete: (state: GameState) => state.completedGoals.includes('clinic_follow_commands'),
     nextGoalId: 'clinic_get_prescription',
   },
   {
@@ -390,10 +185,9 @@ export const clinicGoals: Goal[] = [
     description: 'The doctor has diagnosed you. Take the prescription he writes for you.',
     hint: 'Try "Tomo la receta" (I take the prescription) or wait for the doctor to give it to you',
     checkComplete: (state: GameState) => {
-      const prescription = state.location.objects.find(o => o.id === 'prescription');
-      return prescription?.state.received === true ||
-             state.inventory.some(item => item.id === 'prescription') ||
-             state.completedGoals.includes('got_prescription');
+      const prescription = state.objects.find(o => o.id === 'prescription');
+      return (prescription !== undefined && prescription.location === 'inventory') ||
+             state.completedGoals.includes('clinic_get_prescription');
     },
     nextGoalId: 'clinic_go_pharmacy',
   },
@@ -402,7 +196,7 @@ export const clinicGoals: Goal[] = [
     title: 'Go to the pharmacy',
     description: 'Take your prescription to the pharmacy to get your medicine.',
     hint: 'Try "Voy a la farmacia" (I go to the pharmacy)',
-    checkComplete: (state: GameState) => state.location.id === 'pharmacy',
+    checkComplete: (state: GameState) => state.currentLocation === 'pharmacy',
     nextGoalId: 'clinic_get_medicine',
   },
   {
@@ -411,12 +205,10 @@ export const clinicGoals: Goal[] = [
     description: 'Give your prescription to Roberto the pharmacist and get your medicine. Ask about how to take it.',
     hint: 'Try "Aqui esta mi receta" (Here is my prescription) or "Necesito esta medicina" (I need this medicine). Ask "Como lo tomo?" (How do I take it?)',
     checkComplete: (state: GameState) => {
-      return state.completedGoals.includes('got_medicine') ||
-             state.completedGoals.includes('clinic_get_medicine') ||
-             state.inventory.some(item =>
-               item.id === 'pain_reliever' ||
-               item.id === 'antibiotic' ||
-               item.id === 'cough_syrup'
+      return state.completedGoals.includes('clinic_get_medicine') ||
+             state.objects.some(o =>
+               (o.id === 'pain_reliever' || o.id === 'antibiotic' || o.id === 'cough_syrup') &&
+               o.location === 'inventory'
              );
     },
     nextGoalId: 'clinic_complete',
@@ -429,83 +221,11 @@ export const clinicGoals: Goal[] = [
   },
 ];
 
-export function getClinicGoalById(id: string): Goal | undefined {
-  return clinicGoals.find(g => g.id === id);
-}
-
-export function getClinicStartGoal(): Goal {
-  return clinicGoals[0];
-}
-
 // ============================================================================
-// SYMPTOM DATA
+// VOCABULARY
 // ============================================================================
 
-export interface Symptom {
-  id: string;
-  name: { target: string; native: string };
-  expression: string; // How to say it: "me duele..." or "tengo..."
-  bodyPart?: string; // Related body part if applicable
-}
-
-export const symptoms: Symptom[] = [
-  // "Me duele" expressions (body part pain)
-  { id: 'headache', name: { target: 'dolor de cabeza', native: 'headache' }, expression: 'Me duele la cabeza', bodyPart: 'head' },
-  { id: 'stomachache', name: { target: 'dolor de estomago', native: 'stomachache' }, expression: 'Me duele el estomago', bodyPart: 'stomach' },
-  { id: 'backache', name: { target: 'dolor de espalda', native: 'backache' }, expression: 'Me duele la espalda', bodyPart: 'back' },
-  { id: 'sore_throat', name: { target: 'dolor de garganta', native: 'sore throat' }, expression: 'Me duele la garganta', bodyPart: 'throat' },
-  { id: 'earache', name: { target: 'dolor de oido', native: 'earache' }, expression: 'Me duele el oido', bodyPart: 'ear' },
-  { id: 'toothache', name: { target: 'dolor de muelas', native: 'toothache' }, expression: 'Me duele la muela', bodyPart: 'tooth' },
-  { id: 'chest_pain', name: { target: 'dolor de pecho', native: 'chest pain' }, expression: 'Me duele el pecho', bodyPart: 'chest' },
-  { id: 'arm_pain', name: { target: 'dolor de brazo', native: 'arm pain' }, expression: 'Me duele el brazo', bodyPart: 'arm' },
-  { id: 'leg_pain', name: { target: 'dolor de pierna', native: 'leg pain' }, expression: 'Me duele la pierna', bodyPart: 'leg' },
-
-  // "Tengo" expressions (conditions)
-  { id: 'fever', name: { target: 'fiebre', native: 'fever' }, expression: 'Tengo fiebre' },
-  { id: 'cough', name: { target: 'tos', native: 'cough' }, expression: 'Tengo tos' },
-  { id: 'cold', name: { target: 'resfriado', native: 'cold' }, expression: 'Tengo un resfriado' },
-  { id: 'flu', name: { target: 'gripe', native: 'flu' }, expression: 'Tengo gripe' },
-  { id: 'nausea', name: { target: 'nauseas', native: 'nausea' }, expression: 'Tengo nauseas' },
-  { id: 'dizziness', name: { target: 'mareos', native: 'dizziness' }, expression: 'Tengo mareos' },
-  { id: 'chills', name: { target: 'escalofrios', native: 'chills' }, expression: 'Tengo escalofrios' },
-  { id: 'allergies', name: { target: 'alergias', native: 'allergies' }, expression: 'Tengo alergias' },
-
-  // "Estoy" expressions (temporary states)
-  { id: 'tired', name: { target: 'cansado/a', native: 'tired' }, expression: 'Estoy muy cansado/a' },
-  { id: 'dizzy', name: { target: 'mareado/a', native: 'dizzy' }, expression: 'Estoy mareado/a' },
-  { id: 'congested', name: { target: 'congestionado/a', native: 'congested' }, expression: 'Estoy congestionado/a' },
-];
-
-// ============================================================================
-// DOCTOR COMMANDS
-// ============================================================================
-
-export interface DoctorCommand {
-  target: string;
-  native: string;
-  formalCommand: string; // The usted command form
-  action: string; // What the player should do/say
-}
-
-export const doctorCommands: DoctorCommand[] = [
-  { target: 'Abra la boca', native: 'Open your mouth', formalCommand: 'abra', action: 'open_mouth' },
-  { target: 'Saque la lengua', native: 'Stick out your tongue', formalCommand: 'saque', action: 'stick_out_tongue' },
-  { target: 'Respire profundo', native: 'Breathe deeply', formalCommand: 'respire', action: 'breathe_deeply' },
-  { target: 'Contenga la respiracion', native: 'Hold your breath', formalCommand: 'contenga', action: 'hold_breath' },
-  { target: 'Tosa', native: 'Cough', formalCommand: 'tosa', action: 'cough' },
-  { target: 'Subase la manga', native: 'Roll up your sleeve', formalCommand: 'subase', action: 'roll_up_sleeve' },
-  { target: 'Sientese en la camilla', native: 'Sit on the exam table', formalCommand: 'sientese', action: 'sit_on_table' },
-  { target: 'Acuestese', native: 'Lie down', formalCommand: 'acuestese', action: 'lie_down' },
-  { target: 'Relajese', native: 'Relax', formalCommand: 'relajese', action: 'relax' },
-  { target: 'Mire hacia arriba', native: 'Look up', formalCommand: 'mire', action: 'look_up' },
-  { target: 'Diga "ah"', native: 'Say "ah"', formalCommand: 'diga', action: 'say_ah' },
-];
-
-// ============================================================================
-// CLINIC VOCABULARY
-// ============================================================================
-
-export const clinicVocabulary: VocabWord[] = [
+const vocabulary: VocabWord[] = [
   // Locations
   { target: 'la clinica', native: 'clinic', category: 'noun', gender: 'feminine' },
   { target: 'el hospital', native: 'hospital', category: 'noun', gender: 'masculine' },
@@ -692,44 +412,104 @@ export const clinicVocabulary: VocabWord[] = [
   { target: 'cuidese', native: 'take care (formal)', category: 'other' },
 ];
 
+// ============================================================================
+// MODULE EXPORT
+// ============================================================================
+
 export const clinicModule: ModuleDefinition = {
   name: 'clinic',
   displayName: 'Clinic',
-  locations: clinicLocations,
-  npcs: clinicNPCs,
-  goals: clinicGoals,
-  vocabulary: clinicVocabulary,
+  locations,
+  objects,
+  npcs,
+  goals,
+  vocabulary,
   startLocationId: 'clinic_reception',
   startGoalId: 'clinic_arrive',
-  locationIds: Object.keys(clinicLocations),
+  locationIds: Object.keys(locations),
   unlockLevel: 5,
 
-  parseGuidance: `ACTION RULES:
-- Greeting or checking in at reception → talk to receptionist
-- Filling out the registration form → use registration_form
-- Sitting in waiting room → valid with empty actions (flavor interaction)
-- Describing symptoms to the doctor → talk to doctor
-- Following doctor commands (open mouth, breathe, etc.) → talk to doctor
-- Taking the prescription → take prescription
-- Showing prescription to pharmacist → talk to pharmacist
+  guidance: `CLINIC ENVIRONMENT:
+A small medical clinic with reception, waiting room, exam room, and pharmacy.
+The player is feeling unwell and learning medical vocabulary, symptom descriptions,
+and formal "usted" commands used in medical settings.
 
-TEACHING FOCUS:
-- "Me duele..." (My ... hurts) — "Me duele la cabeza" (My head hurts)
-- "Tengo..." (I have...) — "Tengo fiebre" (fever), "Tengo tos" (cough)
-- "No me siento bien" (I don't feel well)
-- Formal commands (usted): "Abra" (Open), "Respire" (Breathe), "Saque" (Stick out)`,
+LANGUAGE FOCUS:
+All NPCs use formal "usted" register. This is a key teaching opportunity.
+- "Me duele..." (My ... hurts) -- "Me duele la cabeza" (My head hurts)
+- "Me duelen..." (plural) -- "Me duelen los ojos" (My eyes hurt)
+- "Tengo..." (I have...) -- "Tengo fiebre" (fever), "Tengo tos" (cough), "Tengo nauseas" (nausea)
+- "Estoy..." (I am...) -- "Estoy enfermo/a" (sick), "Estoy mareado/a" (dizzy)
+- "No me siento bien" (I don't feel well), "Me siento mal" (I feel bad)
+- Formal commands (usted): "Abra" (Open), "Respire" (Breathe), "Saque" (Stick out)
 
-  narrateGuidance: `NPC PERSONALITIES:
-- Maria (receptionist): Professional and helpful. Uses formal "usted". Says "Tiene cita?", "Cual es su nombre?", "Por favor, llene este formulario".
-- Dr. Garcia (doctor): Kind and thorough. Uses formal "usted". Explains diagnosis and writes prescriptions. Says "Que le pasa?", "Donde le duele?", "Abra la boca", "Respire profundo".
-- Roberto (pharmacist): Friendly. Explains dosage. Says "Tome una pastilla cada ocho horas", "Con comida", "Tiene la receta?".
+SYMPTOM EXPRESSIONS the player may use:
+Body pain ("me duele"): la cabeza (head), el estomago (stomach), la espalda (back),
+la garganta (throat), el oido (ear), la muela (tooth), el pecho (chest), el brazo (arm), la pierna (leg).
+Conditions ("tengo"): fiebre (fever), tos (cough), un resfriado (cold), gripe (flu),
+nauseas (nausea), mareos (dizziness), escalofrios (chills), alergias (allergies).
+States ("estoy"): enfermo/a (sick), mareado/a (dizzy), cansado/a (tired), congestionado/a (congested).
+
+DOCTOR COMMANDS the AI should use during examination:
+"Abra la boca" (Open your mouth), "Saque la lengua" (Stick out your tongue),
+"Respire profundo" (Breathe deeply), "Contenga la respiracion" (Hold your breath),
+"Tosa" (Cough), "Subase la manga" (Roll up your sleeve),
+"Sientese en la camilla" (Sit on the exam table), "Acuestese" (Lie down),
+"Relajese" (Relax), "Mire hacia arriba" (Look up), "Diga ah" (Say ah).
+
+OBJECTS:
+- registration_form: In reception. Filling it out = add "filled" tag. Player uses pen to complete it.
+- health_insurance_card: In reception. Takeable. Given to receptionist during check-in.
+- pen: In reception. Used to fill out form.
+- clinic_brochure: In reception. Readable for flavor.
+- waiting_chair: In waiting room. Player sits here while waiting.
+- water_cooler: In waiting room. Consumable, gives small hunger relief.
+- number_display: In waiting room. Shows turn numbers. Flavor object.
+- exam_table (la camilla): In exam room. Player sits/lies on it during examination.
+- blood_pressure_monitor, stethoscope, thermometer, scale: Medical equipment in exam room.
+  These are used by the doctor during examination -- flavor objects the player can look at.
+- medical_chart: In exam room. Doctor records symptoms here.
+- prescription: In exam room. Takeable. Doctor writes it after diagnosis. Move to "inventory" when taken.
+- pain_reliever: In pharmacy. Takeable, consumable. Gives energy +10.
+- antibiotic: In pharmacy. Has "requires-prescription" tag. Only dispensed with prescription.
+- cough_syrup: In pharmacy. Takeable, consumable.
+- vitamins: In pharmacy. Takeable, consumable. Gives energy +5.
+- bandages: In pharmacy. Takeable.
+
+NPCs:
+- Maria (receptionist): In clinic_reception. Professional, formal "usted".
+  Asks "Tiene cita?", "Cual es su nombre?", "Tiene seguro medico?".
+  Gives registration form. Tells player to wait: "Tome asiento en la sala de espera."
+  Checking in = talk to her and provide information. Complete goal "clinic_check_in" after successful check-in.
+- Dr. Garcia (doctor): In exam_room. Kind and thorough, formal "usted".
+  Asks "Que le pasa?", "Donde le duele?", "Desde cuando tiene estos sintomas?".
+  Gives examination commands (see DOCTOR COMMANDS above).
+  After examination, explains diagnosis and writes prescription.
+  Complete "clinic_describe_symptoms" when player describes at least one symptom.
+  Complete "clinic_follow_commands" when player follows at least 2 examination commands.
+  Complete "clinic_get_prescription" when prescription moves to inventory.
+- Roberto (pharmacist): In pharmacy. Friendly, explains dosage instructions.
+  Asks "Tiene la receta?" (Do you have the prescription?).
+  Explains: "Tome una pastilla cada ocho horas", "Con comida", "Antes de acostarse".
+  Dispenses medicine after seeing prescription. Move medicine to inventory.
+  Complete "clinic_get_medicine" when player receives medicine in inventory.
+
+PRESCRIPTION FLOW:
+1. Doctor diagnoses patient and writes prescription (tag add "written" to prescription)
+2. Player takes prescription (move prescription to "inventory")
+3. Player goes to pharmacy and shows prescription to Roberto
+4. Roberto dispenses appropriate medicine (move medicine to "inventory")
+5. Roberto explains dosage instructions
 
 GOAL COMPLETION:
-- Check in at reception → clinic_check_in
-- Fill out form → filled_form
-- Wait in waiting room → waited
-- Describe symptoms to doctor → described_symptoms
-- Follow doctor's examination commands → followed_commands
-- Take prescription → got_prescription
-- Give prescription to pharmacist → got_medicine`,
+- clinic_arrive: Player is in clinic_reception
+- clinic_check_in: Player talks to Maria and checks in
+- clinic_fill_form: registration_form has "filled" tag
+- clinic_wait: Player is in waiting_room
+- clinic_enter_exam: Player is in exam_room
+- clinic_describe_symptoms: Player describes symptoms to Dr. Garcia
+- clinic_follow_commands: Player follows doctor examination commands
+- clinic_get_prescription: prescription is in inventory
+- clinic_go_pharmacy: Player is in pharmacy
+- clinic_get_medicine: Medicine (pain_reliever, antibiotic, or cough_syrup) is in inventory`,
 };

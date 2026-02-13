@@ -1,306 +1,97 @@
-import type { Location, Goal, VocabWord, GameState, NPC, ModuleDefinition } from '../../../engine/types.js';
+import type { Location, Goal, VocabWord, GameState, NPC, WorldObject, ModuleDefinition } from '../../../engine/types.js';
 
 // ============================================================================
-// RESTAURANT LOCATIONS
+// LOCATIONS (exits only -- objects are in the flat list below)
 // ============================================================================
 
-export const restaurantEntrance: Location = {
-  id: 'restaurant_entrance',
-  name: { target: 'la entrada del restaurante', native: 'restaurant entrance' },
-  objects: [
-    {
-      id: 'host_stand',
-      name: { target: 'el podio del anfitrion', native: 'host stand' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'waiting_bench',
-      name: { target: 'el banco de espera', native: 'waiting bench' },
-      state: {},
-      actions: [],
-    },
-    {
-      id: 'restaurant_menu_display',
-      name: { target: 'el menu en la vitrina', native: 'menu display' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'coat_rack',
-      name: { target: 'el perchero', native: 'coat rack' },
-      state: {},
-      actions: ['USE'],
-    },
-  ],
-  exits: [
-    { to: 'restaurant_table', name: { target: 'las mesas', native: 'dining area' } },
-    { to: 'street', name: { target: 'la calle', native: 'street' } },
-  ],
-};
-
-export const restaurantTable: Location = {
-  id: 'restaurant_table',
-  name: { target: 'la mesa', native: 'your table' },
-  objects: [
-    {
-      id: 'menu',
-      name: { target: 'el menu', native: 'menu' },
-      state: { open: false, read: false },
-      actions: ['OPEN', 'CLOSE', 'LOOK'],
-    },
-    {
-      id: 'table_plate',
-      name: { target: 'el plato', native: 'plate' },
-      state: { hasFood: false, foodItem: null },
-      actions: ['LOOK'],
-    },
-    {
-      id: 'water_glass',
-      name: { target: 'el vaso de agua', native: 'water glass' },
-      state: { filled: true },
-      actions: ['DRINK'],
-      consumable: true,
-    },
-    {
-      id: 'wine_glass',
-      name: { target: 'la copa de vino', native: 'wine glass' },
-      state: { filled: false },
-      actions: ['DRINK'],
-      consumable: true,
-    },
-    {
-      id: 'napkin',
-      name: { target: 'la servilleta', native: 'napkin' },
-      state: {},
-      actions: ['USE', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'silverware',
-      name: { target: 'los cubiertos', native: 'silverware' },
-      state: {},
-      actions: ['USE'],
-    },
-    {
-      id: 'bread_basket',
-      name: { target: 'la cesta de pan', native: 'bread basket' },
-      state: { hasBread: true },
-      actions: ['TAKE', 'EAT'],
-      consumable: true,
-      needsEffect: { hunger: 10 },
-    },
-    // Orderable food items - initially not present, appear when delivered
-    {
-      id: 'ordered_food',
-      name: { target: 'la comida', native: 'food' },
-      state: { ordered: false, delivered: false, eaten: false, itemName: null },
-      actions: ['EAT'],
-      consumable: true,
-      needsEffect: { hunger: 40 },
-    },
-    {
-      id: 'ordered_drink',
-      name: { target: 'la bebida', native: 'drink' },
-      state: { ordered: false, delivered: false, drunk: false, itemName: null },
-      actions: ['DRINK'],
-      consumable: true,
-      needsEffect: { hunger: 10 },
-    },
-    {
-      id: 'bill',
-      name: { target: 'la cuenta', native: 'the bill' },
-      state: { requested: false, delivered: false, paid: false, total: 0 },
-      actions: ['LOOK', 'USE'],
-    },
-  ],
-  exits: [
-    { to: 'restaurant_entrance', name: { target: 'la entrada', native: 'entrance' } },
-    { to: 'restaurant_kitchen', name: { target: 'la cocina', native: 'kitchen' } },
-    { to: 'restaurant_cashier', name: { target: 'la caja', native: 'cashier' } },
-    { to: 'restaurant_bathroom', name: { target: 'el bano', native: 'bathroom' } },
-  ],
-};
-
-export const restaurantKitchen: Location = {
-  id: 'restaurant_kitchen',
-  name: { target: 'la cocina', native: 'kitchen' },
-  objects: [
-    {
-      id: 'kitchen_stove',
-      name: { target: 'la estufa', native: 'stove' },
-      state: { on: true },
-      actions: ['LOOK'],
-    },
-    {
-      id: 'prep_counter',
-      name: { target: 'el mostrador', native: 'prep counter' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'order_tickets',
-      name: { target: 'los pedidos', native: 'order tickets' },
-      state: { count: 3 },
-      actions: ['LOOK'],
-    },
-  ],
-  exits: [
-    { to: 'restaurant_table', name: { target: 'el comedor', native: 'dining room' } },
-  ],
-};
-
-export const restaurantCashier: Location = {
-  id: 'restaurant_cashier',
-  name: { target: 'la caja', native: 'cashier' },
-  objects: [
-    {
-      id: 'cash_register',
-      name: { target: 'la caja registradora', native: 'cash register' },
-      state: {},
-      actions: ['LOOK', 'USE'],
-    },
-    {
-      id: 'card_reader',
-      name: { target: 'el lector de tarjetas', native: 'card reader' },
-      state: {},
-      actions: ['USE'],
-    },
-    {
-      id: 'tip_jar',
-      name: { target: 'el frasco de propinas', native: 'tip jar' },
-      state: {},
-      actions: ['USE'],
-    },
-  ],
-  exits: [
-    { to: 'restaurant_table', name: { target: 'el comedor', native: 'dining room' } },
-    { to: 'restaurant_entrance', name: { target: 'la entrada', native: 'entrance' } },
-  ],
-};
-
-export const restaurantBathroom: Location = {
-  id: 'restaurant_bathroom',
-  name: { target: 'el bano', native: 'bathroom' },
-  objects: [
-    {
-      id: 'restaurant_toilet',
-      name: { target: 'el inodoro', native: 'toilet' },
-      state: {},
-      actions: ['USE'],
-      needsEffect: { bladder: 50 },
-    },
-    {
-      id: 'restaurant_sink',
-      name: { target: 'el lavabo', native: 'sink' },
-      state: { on: false },
-      actions: ['USE', 'TURN_ON', 'TURN_OFF'],
-      needsEffect: { hygiene: 10 },
-    },
-    {
-      id: 'restaurant_mirror',
-      name: { target: 'el espejo', native: 'mirror' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'paper_towels',
-      name: { target: 'las toallas de papel', native: 'paper towels' },
-      state: {},
-      actions: ['USE', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'hand_dryer',
-      name: { target: 'el secador de manos', native: 'hand dryer' },
-      state: { on: false },
-      actions: ['USE', 'TURN_ON'],
-    },
-    {
-      id: 'soap_dispenser',
-      name: { target: 'el dispensador de jabon', native: 'soap dispenser' },
-      state: {},
-      actions: ['USE'],
-      needsEffect: { hygiene: 5 },
-    },
-  ],
-  exits: [
-    { to: 'restaurant_table', name: { target: 'el comedor', native: 'dining room' } },
-  ],
-};
-
-export const restaurantLocations: Record<string, Location> = {
-  restaurant_entrance: restaurantEntrance,
-  restaurant_table: restaurantTable,
-  restaurant_kitchen: restaurantKitchen,
-  restaurant_cashier: restaurantCashier,
-  restaurant_bathroom: restaurantBathroom,
+const locations: Record<string, Location> = {
+  restaurant_entrance: {
+    id: 'restaurant_entrance',
+    name: { target: 'la entrada del restaurante', native: 'restaurant entrance' },
+    exits: [
+      { to: 'restaurant_table', name: { target: 'las mesas', native: 'dining area' } },
+      { to: 'street', name: { target: 'la calle', native: 'street' } },
+    ],
+  },
+  restaurant_table: {
+    id: 'restaurant_table',
+    name: { target: 'la mesa', native: 'your table' },
+    exits: [
+      { to: 'restaurant_entrance', name: { target: 'la entrada', native: 'entrance' } },
+      { to: 'restaurant_kitchen', name: { target: 'la cocina', native: 'kitchen' } },
+      { to: 'restaurant_cashier', name: { target: 'la caja', native: 'cashier' } },
+      { to: 'restaurant_bathroom', name: { target: 'el bano', native: 'bathroom' } },
+    ],
+  },
+  restaurant_kitchen: {
+    id: 'restaurant_kitchen',
+    name: { target: 'la cocina', native: 'kitchen' },
+    exits: [
+      { to: 'restaurant_table', name: { target: 'el comedor', native: 'dining room' } },
+    ],
+  },
+  restaurant_cashier: {
+    id: 'restaurant_cashier',
+    name: { target: 'la caja', native: 'cashier' },
+    exits: [
+      { to: 'restaurant_table', name: { target: 'el comedor', native: 'dining room' } },
+      { to: 'restaurant_entrance', name: { target: 'la entrada', native: 'entrance' } },
+    ],
+  },
+  restaurant_bathroom: {
+    id: 'restaurant_bathroom',
+    name: { target: 'el bano', native: 'bathroom' },
+    exits: [
+      { to: 'restaurant_table', name: { target: 'el comedor', native: 'dining room' } },
+    ],
+  },
 };
 
 // ============================================================================
-// RESTAURANT MENU DATA
+// OBJECTS (flat list -- each knows its own location)
 // ============================================================================
 
-export interface MenuItem {
-  id: string;
-  name: { target: string; native: string };
-  price: number;  // in "pesos" or generic currency
-  category: 'appetizer' | 'main' | 'dessert' | 'drink' | 'side';
-  description?: { target: string; native: string };
-}
+const objects: WorldObject[] = [
+  // Entrance
+  { id: 'host_stand', name: { target: 'el podio del anfitrion', native: 'host stand' }, location: 'restaurant_entrance', tags: [] },
+  { id: 'waiting_bench', name: { target: 'el banco de espera', native: 'waiting bench' }, location: 'restaurant_entrance', tags: [] },
+  { id: 'restaurant_menu_display', name: { target: 'el menu en la vitrina', native: 'menu display' }, location: 'restaurant_entrance', tags: [] },
+  { id: 'coat_rack', name: { target: 'el perchero', native: 'coat rack' }, location: 'restaurant_entrance', tags: [] },
 
-export const menuItems: MenuItem[] = [
-  // DRINKS (Bebidas)
-  { id: 'agua', name: { target: 'el agua', native: 'water' }, price: 0, category: 'drink' },
-  { id: 'refresco', name: { target: 'el refresco', native: 'soda' }, price: 25, category: 'drink' },
-  { id: 'limonada', name: { target: 'la limonada', native: 'lemonade' }, price: 30, category: 'drink' },
-  { id: 'cerveza', name: { target: 'la cerveza', native: 'beer' }, price: 45, category: 'drink' },
-  { id: 'vino_tinto', name: { target: 'el vino tinto', native: 'red wine' }, price: 65, category: 'drink' },
-  { id: 'vino_blanco', name: { target: 'el vino blanco', native: 'white wine' }, price: 65, category: 'drink' },
-  { id: 'cafe', name: { target: 'el cafe', native: 'coffee' }, price: 35, category: 'drink' },
+  // Table
+  { id: 'menu', name: { target: 'el menu', native: 'menu' }, location: 'restaurant_table', tags: ['closed'] },
+  { id: 'table_plate', name: { target: 'el plato', native: 'plate' }, location: 'restaurant_table', tags: [] },
+  { id: 'water_glass', name: { target: 'el vaso de agua', native: 'water glass' }, location: 'restaurant_table', tags: ['filled', 'consumable'], needsEffect: { hunger: 5 } },
+  { id: 'wine_glass', name: { target: 'la copa de vino', native: 'wine glass' }, location: 'restaurant_table', tags: ['consumable'] },
+  { id: 'napkin', name: { target: 'la servilleta', native: 'napkin' }, location: 'restaurant_table', tags: ['takeable'] },
+  { id: 'silverware', name: { target: 'los cubiertos', native: 'silverware' }, location: 'restaurant_table', tags: [] },
+  { id: 'bread_basket', name: { target: 'la cesta de pan', native: 'bread basket' }, location: 'restaurant_table', tags: ['consumable'], needsEffect: { hunger: 10 } },
+  { id: 'bill', name: { target: 'la cuenta', native: 'the bill' }, location: 'restaurant_table', tags: [] },
 
-  // APPETIZERS (Entradas)
-  { id: 'sopa', name: { target: 'la sopa del dia', native: 'soup of the day' }, price: 55, category: 'appetizer' },
-  { id: 'ensalada', name: { target: 'la ensalada', native: 'salad' }, price: 50, category: 'appetizer' },
-  { id: 'guacamole', name: { target: 'el guacamole', native: 'guacamole' }, price: 60, category: 'appetizer' },
-  { id: 'nachos', name: { target: 'los nachos', native: 'nachos' }, price: 70, category: 'appetizer' },
+  // Kitchen
+  { id: 'kitchen_stove', name: { target: 'la estufa', native: 'stove' }, location: 'restaurant_kitchen', tags: ['on'] },
+  { id: 'prep_counter', name: { target: 'el mostrador', native: 'prep counter' }, location: 'restaurant_kitchen', tags: [] },
+  { id: 'order_tickets', name: { target: 'los pedidos', native: 'order tickets' }, location: 'restaurant_kitchen', tags: [] },
 
-  // MAIN COURSES (Platos principales)
-  { id: 'pollo', name: { target: 'el pollo asado', native: 'roasted chicken' }, price: 120, category: 'main' },
-  { id: 'carne', name: { target: 'la carne asada', native: 'grilled beef' }, price: 150, category: 'main' },
-  { id: 'pescado', name: { target: 'el pescado', native: 'fish' }, price: 140, category: 'main' },
-  { id: 'tacos', name: { target: 'los tacos', native: 'tacos' }, price: 95, category: 'main' },
-  { id: 'enchiladas', name: { target: 'las enchiladas', native: 'enchiladas' }, price: 105, category: 'main' },
-  { id: 'arroz_con_pollo', name: { target: 'el arroz con pollo', native: 'rice with chicken' }, price: 110, category: 'main' },
-  { id: 'hamburguesa', name: { target: 'la hamburguesa', native: 'hamburger' }, price: 100, category: 'main' },
+  // Cashier
+  { id: 'cash_register', name: { target: 'la caja registradora', native: 'cash register' }, location: 'restaurant_cashier', tags: [] },
+  { id: 'card_reader', name: { target: 'el lector de tarjetas', native: 'card reader' }, location: 'restaurant_cashier', tags: [] },
+  { id: 'tip_jar', name: { target: 'el frasco de propinas', native: 'tip jar' }, location: 'restaurant_cashier', tags: [] },
 
-  // SIDES (Acompañamientos)
-  { id: 'arroz', name: { target: 'el arroz', native: 'rice' }, price: 25, category: 'side' },
-  { id: 'frijoles', name: { target: 'los frijoles', native: 'beans' }, price: 25, category: 'side' },
-  { id: 'papas_fritas', name: { target: 'las papas fritas', native: 'french fries' }, price: 35, category: 'side' },
-
-  // DESSERTS (Postres)
-  { id: 'flan', name: { target: 'el flan', native: 'flan' }, price: 50, category: 'dessert' },
-  { id: 'helado', name: { target: 'el helado', native: 'ice cream' }, price: 45, category: 'dessert' },
-  { id: 'pastel', name: { target: 'el pastel de chocolate', native: 'chocolate cake' }, price: 55, category: 'dessert' },
-  { id: 'churros', name: { target: 'los churros', native: 'churros' }, price: 40, category: 'dessert' },
+  // Bathroom
+  { id: 'restaurant_toilet', name: { target: 'el inodoro', native: 'toilet' }, location: 'restaurant_bathroom', tags: [], needsEffect: { bladder: 50 } },
+  { id: 'restaurant_sink', name: { target: 'el lavabo', native: 'sink' }, location: 'restaurant_bathroom', tags: [], needsEffect: { hygiene: 10 } },
+  { id: 'restaurant_mirror', name: { target: 'el espejo', native: 'mirror' }, location: 'restaurant_bathroom', tags: [] },
+  { id: 'paper_towels', name: { target: 'las toallas de papel', native: 'paper towels' }, location: 'restaurant_bathroom', tags: ['takeable'] },
+  { id: 'hand_dryer', name: { target: 'el secador de manos', native: 'hand dryer' }, location: 'restaurant_bathroom', tags: ['off'] },
+  { id: 'soap_dispenser', name: { target: 'el dispensador de jabon', native: 'soap dispenser' }, location: 'restaurant_bathroom', tags: [], needsEffect: { hygiene: 5 } },
 ];
 
-// Helper to get menu by category
-export function getMenuByCategory(category: MenuItem['category']): MenuItem[] {
-  return menuItems.filter(item => item.category === category);
-}
-
-// Helper to get item price
-export function getItemPrice(itemId: string): number {
-  return menuItems.find(item => item.id === itemId)?.price ?? 0;
-}
-
 // ============================================================================
-// RESTAURANT NPCs
+// NPCs
 // ============================================================================
 
-export const restaurantNPCs: NPC[] = [
+const npcs: NPC[] = [
   {
     id: 'host',
     name: { target: 'el anfitrion', native: 'host' },
@@ -324,45 +115,19 @@ export const restaurantNPCs: NPC[] = [
   },
 ];
 
-// Extended NPC state for restaurant interactions
-export interface RestaurantNPCState {
-  mood: string;
-  lastResponse?: string;
-  // Host-specific
-  hasGreeted?: boolean;
-  hasSeated?: boolean;
-  // Waiter-specific
-  hasTakenDrinkOrder?: boolean;
-  hasTakenFoodOrder?: boolean;
-  hasDeliveredFood?: boolean;
-  hasDeliveredBill?: boolean;
-  currentOrder?: {
-    drinks: string[];
-    food: string[];
-    total: number;
-  };
-}
-
-export function getRestaurantNPCsInLocation(locationId: string): NPC[] {
-  return restaurantNPCs.filter(npc => npc.location === locationId);
-}
-
 // ============================================================================
-// RESTAURANT GOALS
+// GOALS (checkComplete uses new state model)
 // ============================================================================
 
-export const restaurantGoals: Goal[] = [
+const goals: Goal[] = [
   {
     id: 'restaurant_enter',
     title: 'Enter the restaurant',
     description: 'You\'ve arrived at a restaurant. Go inside and get a table.',
     hint: 'Try "Entro en el restaurante" (I enter the restaurant)',
-    checkComplete: (state: GameState) => {
-      // Complete if player reached table, was seated, or AI explicitly completed it via greeting
-      return state.location.id === 'restaurant_table' ||
-             state.completedGoals.includes('seated_by_host') ||
-             state.completedGoals.includes('restaurant_enter');
-    },
+    checkComplete: (state: GameState) =>
+      state.currentLocation === 'restaurant_table' ||
+      state.completedGoals.includes('restaurant_enter'),
     nextGoalId: 'restaurant_get_seated',
   },
   {
@@ -370,11 +135,9 @@ export const restaurantGoals: Goal[] = [
     title: 'Get seated at a table',
     description: 'Talk to the host and ask for a table. Use polite language!',
     hint: 'Try "Buenas noches" to greet, then "Una mesa para uno, por favor" (A table for one, please)',
-    checkComplete: (state: GameState) => {
-      // Player is seated when they reach the table (either by asking host or going directly)
-      return state.location.id === 'restaurant_table' ||
-             state.completedGoals.includes('seated_by_host');
-    },
+    checkComplete: (state: GameState) =>
+      state.currentLocation === 'restaurant_table' ||
+      state.completedGoals.includes('restaurant_get_seated'),
     nextGoalId: 'restaurant_order_drink',
   },
   {
@@ -382,11 +145,8 @@ export const restaurantGoals: Goal[] = [
     title: 'Order a drink',
     description: 'The waiter is ready to take your drink order. Use "quiero" or "quisiera" to order.',
     hint: 'Try "Quiero una limonada, por favor" or "Quisiera un vaso de agua" (I would like a glass of water)',
-    checkComplete: (state: GameState) => {
-      const drinkObj = state.location.objects.find(o => o.id === 'ordered_drink');
-      return drinkObj?.state.ordered === true ||
-             state.completedGoals.includes('ordered_drink');
-    },
+    checkComplete: (state: GameState) =>
+      state.completedGoals.includes('restaurant_order_drink'),
     nextGoalId: 'restaurant_read_menu',
   },
   {
@@ -395,9 +155,9 @@ export const restaurantGoals: Goal[] = [
     description: 'Look at the menu and ask the waiter about the food. Try asking "Que recomienda?"',
     hint: 'Try "Abro el menu" (I open the menu) and "Que tiene la ensalada?" (What does the salad have?)',
     checkComplete: (state: GameState) => {
-      const menu = state.location.objects.find(o => o.id === 'menu');
-      return menu?.state.read === true ||
-             state.completedGoals.includes('read_menu');
+      const menu = state.objects.find(o => o.id === 'menu');
+      return (menu ? menu.tags.includes('open') : false) ||
+             state.completedGoals.includes('restaurant_read_menu');
     },
     nextGoalId: 'restaurant_order_food',
   },
@@ -406,11 +166,8 @@ export const restaurantGoals: Goal[] = [
     title: 'Order your meal',
     description: 'Decide what you want and order from the waiter. You can modify your order with "sin" (without) or "con" (with).',
     hint: 'Try "Quiero el pollo asado, por favor" or "Quisiera los tacos sin cebolla" (I would like tacos without onion)',
-    checkComplete: (state: GameState) => {
-      const foodObj = state.location.objects.find(o => o.id === 'ordered_food');
-      return foodObj?.state.ordered === true ||
-             state.completedGoals.includes('ordered_food');
-    },
+    checkComplete: (state: GameState) =>
+      state.completedGoals.includes('restaurant_order_food'),
     nextGoalId: 'restaurant_eat_meal',
   },
   {
@@ -418,11 +175,8 @@ export const restaurantGoals: Goal[] = [
     title: 'Enjoy your meal',
     description: 'Your food has arrived! Eat and maybe compliment the chef.',
     hint: 'Try "Como el pollo" (I eat the chicken) or "Esta delicioso!" (It\'s delicious!)',
-    checkComplete: (state: GameState) => {
-      const foodObj = state.location.objects.find(o => o.id === 'ordered_food');
-      return foodObj?.state.eaten === true ||
-             state.completedGoals.includes('ate_meal');
-    },
+    checkComplete: (state: GameState) =>
+      state.completedGoals.includes('restaurant_eat_meal'),
     nextGoalId: 'restaurant_ask_bill',
   },
   {
@@ -431,9 +185,9 @@ export const restaurantGoals: Goal[] = [
     description: 'You\'re finished eating. Ask the waiter for the check.',
     hint: 'Try "La cuenta, por favor" (The bill, please) or "Me trae la cuenta?" (Can you bring me the bill?)',
     checkComplete: (state: GameState) => {
-      const bill = state.location.objects.find(o => o.id === 'bill');
-      return bill?.state.delivered === true ||
-             state.completedGoals.includes('asked_for_bill');
+      const bill = state.objects.find(o => o.id === 'bill');
+      return (bill ? bill.tags.includes('delivered') : false) ||
+             state.completedGoals.includes('restaurant_ask_bill');
     },
     nextGoalId: 'restaurant_pay',
   },
@@ -443,9 +197,9 @@ export const restaurantGoals: Goal[] = [
     description: 'Look at the total and pay. Don\'t forget to thank the waiter!',
     hint: 'Try "Pago la cuenta" (I pay the bill) and "Gracias por todo" (Thank you for everything). For tip: "Dejo una propina"',
     checkComplete: (state: GameState) => {
-      const bill = state.location.objects.find(o => o.id === 'bill');
-      return bill?.state.paid === true ||
-             state.completedGoals.includes('paid_bill');
+      const bill = state.objects.find(o => o.id === 'bill');
+      return (bill ? bill.tags.includes('paid') : false) ||
+             state.completedGoals.includes('restaurant_pay');
     },
     nextGoalId: 'restaurant_complete',
   },
@@ -457,19 +211,11 @@ export const restaurantGoals: Goal[] = [
   },
 ];
 
-export function getRestaurantGoalById(id: string): Goal | undefined {
-  return restaurantGoals.find(g => g.id === id);
-}
-
-export function getRestaurantStartGoal(): Goal {
-  return restaurantGoals[0];
-}
-
 // ============================================================================
-// RESTAURANT VOCABULARY
+// VOCABULARY
 // ============================================================================
 
-export const restaurantVocabulary: VocabWord[] = [
+const vocabulary: VocabWord[] = [
   // Restaurant locations
   { target: 'el restaurante', native: 'restaurant', category: 'noun', gender: 'masculine' },
   { target: 'la entrada', native: 'entrance', category: 'noun', gender: 'feminine' },
@@ -625,54 +371,68 @@ export const restaurantVocabulary: VocabWord[] = [
   { target: 'donde esta el bano?', native: 'where is the bathroom?', category: 'other' },
 ];
 
+// ============================================================================
+// MODULE EXPORT
+// ============================================================================
+
 export const restaurantModule: ModuleDefinition = {
   name: 'restaurant',
   displayName: 'Restaurant',
-  locations: restaurantLocations,
-  npcs: restaurantNPCs,
-  goals: restaurantGoals,
-  vocabulary: restaurantVocabulary,
+  locations,
+  objects,
+  npcs,
+  goals,
+  vocabulary,
   startLocationId: 'restaurant_entrance',
   startGoalId: 'restaurant_enter',
-  locationIds: Object.keys(restaurantLocations),
+  locationIds: ['restaurant_entrance', 'restaurant_table', 'restaurant_kitchen', 'restaurant_cashier', 'restaurant_bathroom'],
   unlockLevel: 2,
 
-  parseGuidance: `ACTION RULES:
-- Greeting at the entrance → talk to host. Do NOT auto-move the player to the table.
-- Following the host, requesting a table, or seating yourself → go to restaurant_table. All paths are valid — do NOT block self-seating.
-- Ordering food or drink → talk to waiter.
-- Opening, reading, or looking at the menu → open menu.
-- Eating or drinking a delivered item → eat/drink with the delivered item's objectId (e.g., "my_pollo").
-- Asking for the bill → talk to waiter.
-- Paying the bill → use bill.
-- Asking for or going to the bathroom → go to restaurant_bathroom.
+  guidance: `RESTAURANT ENVIRONMENT:
+A casual Mexican restaurant. The player enters, gets seated, orders food and drinks, eats, pays the bill, and leaves.
 
-TEACHING FOCUS: "Quiero..." (direct) vs "Quisiera..." (polite), "Me trae...?" requests, "sin"/"con" modifiers.`,
+MENU (include prices when player reads the menu or asks):
+BEBIDAS (Drinks): agua/water (gratis), refresco/soda ($25), limonada/lemonade ($30), cerveza/beer ($45), vino tinto/red wine ($65), vino blanco/white wine ($65), cafe/coffee ($35).
+ENTRADAS (Appetizers): sopa del dia/soup of the day ($55), ensalada/salad ($50), guacamole ($60), nachos ($70).
+PLATOS PRINCIPALES (Main Courses): pollo asado/roasted chicken ($120), carne asada/grilled beef ($150), pescado/fish ($140), tacos ($95), enchiladas ($105), arroz con pollo/rice with chicken ($110), hamburguesa/hamburger ($100).
+ACOMPANAMIENTOS (Sides): arroz/rice ($25), frijoles/beans ($25), papas fritas/french fries ($35).
+POSTRES (Desserts): flan ($50), helado/ice cream ($45), pastel de chocolate/chocolate cake ($55), churros ($40).
 
-  narrateGuidance: `NPC PERSONALITIES:
-- Host (anfitrion): Professional, formal "usted". Greets with "Buenas noches", asks "Mesa para cuantos?", offers to lead player to table.
-- Waiter (mesero, Diego): Friendly, attentive. Asks "Que desea tomar?" for drinks, "Ya decidio?" for food. Says "Enseguida" and "Algo mas?".
-- Chef (Rosa): Busy, passionate about food. Occasionally checks on diners. Speaks quickly.
+OBJECTS:
+- menu: Starts "closed". Opening it = tag add "open", remove "closed". When the player opens or reads the menu, include the full menu (above) in the narration message.
+- water_glass: Pre-filled on the table. Drinking it = remove mutation + needs {hunger: 5}.
+- wine_glass: Empty until ordered. When wine is ordered, tag add "filled".
+- bread_basket: Complimentary bread. Eating = remove mutation + needs {hunger: 10}.
+- bill: Starts with no tags. When player asks for the bill, tag add "delivered". When player pays, tag add "paid".
+- hand_dryer: Starts "off". Using it = tag add "on", remove "off".
+
+ORDERING FLOW:
+When the player orders food or drinks, the waiter (Diego) acknowledges the order.
+Use "create" mutation to add the delivered item to restaurant_table with id "my_[itemname]" (e.g., my_pollo, my_limonada).
+Food items: tags=["consumable"], needsEffect={hunger: 30-40}
+Drink items: tags=["consumable"], needsEffect={hunger: 5-10}
+When player eats/drinks a delivered item: "remove" mutation + "needs" mutation with the item's needsEffect.
+
+BILL & PAYMENT FLOW:
+When the player asks for the bill ("La cuenta, por favor"), add "delivered" tag to the bill object.
+Mention the total in the narration based on what was ordered (sum up menu prices).
+When the player pays ("Pago la cuenta"), add "paid" tag to the bill object.
+The player can also leave a tip ("Dejo una propina") -- acknowledge it warmly.
+
+NPCs:
+- Host (anfitrion, male): At restaurant_entrance. Professional, formal "usted". Greets with "Buenas noches/tardes", asks "Mesa para cuantos?", offers to lead player to table. When player asks for a table or follows the host, the parser should emit a "go" mutation to restaurant_table.
+- Waiter (mesero, Diego, male): At restaurant_table. Friendly, attentive. Service flow: greets when player sits down, asks "Que desea tomar?" for drinks, "Ya decidio?" for food, brings items, asks "Algo mas?", delivers bill. Says "Enseguida" (right away) when taking orders.
+- Chef (Rosa, female): At restaurant_kitchen. Busy, passionate about food. Speaks quickly using cooking terms. Proud of the food. Occasionally comes out to check on diners.
 
 GOAL COMPLETION:
-- Player greets host or enters → restaurant_enter
-- Player reaches table by any method → seated_by_host
-- Player orders a drink → ordered_drink
-- Player opens/reads menu → read_menu
-- Player orders food → ordered_food
-- Player eats their meal → ate_meal
-- Player asks for the bill → asked_for_bill
-- Player pays → paid_bill
+- restaurant_enter: Player arrives at restaurant or goes inside
+- restaurant_get_seated: Player reaches restaurant_table (by any method -- asking host, walking directly)
+- restaurant_order_drink: Player orders any drink from the waiter
+- restaurant_read_menu: Player opens/reads the menu (menu gets "open" tag)
+- restaurant_order_food: Player orders any food item from the waiter
+- restaurant_eat_meal: Player eats their delivered food
+- restaurant_ask_bill: Player asks for the bill (bill gets "delivered" tag)
+- restaurant_pay: Player pays the bill (bill gets "paid" tag)
 
-NPC ACTIONS:
-- When the waiter takes a food/drink order, use add_object to deliver it to restaurant_table.
-  Use id "my_[itemname]" matching what they ordered (e.g., my_pollo, my_limonada).
-  Food: actions=["EAT"], consumable=true, needsEffect={hunger: 30-40}
-  Drinks: actions=["DRINK"], consumable=true, needsEffect={hunger: 5-10}
-- When player asks for the bill: change_object on "bill" with {delivered: true, total: [price sum]}
-- When player opens the menu, include the full menu in the message:
-  BEBIDAS: agua (gratis), refresco ($25), limonada ($30), cerveza ($45), vino ($65), cafe ($35).
-  ENTRADAS: sopa del dia ($55), ensalada ($50), guacamole ($60).
-  PLATOS: pollo asado ($120), carne asada ($150), pescado ($140), tacos ($95), enchiladas ($105), hamburguesa ($100).
-  POSTRES: flan ($50), helado ($45), churros ($40).`,
+TEACHING FOCUS: "Quiero..." (direct request) vs "Quisiera..." (polite conditional), "Me trae...?" (can you bring me?), "sin"/"con" modifiers for food customization, polite phrases (por favor, gracias, disculpe).`,
 };

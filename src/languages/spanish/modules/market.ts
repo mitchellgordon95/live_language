@@ -1,373 +1,137 @@
-import type { Location, Goal, VocabWord, GameState, NPC, ModuleDefinition } from '../../../engine/types.js';
+import type { Location, Goal, VocabWord, GameState, NPC, WorldObject, ModuleDefinition } from '../../../engine/types.js';
 
 // ============================================================================
-// MARKET LOCATIONS
+// LOCATIONS (exits only -- objects are in the flat list below)
 // ============================================================================
 
-export const marketEntrance: Location = {
-  id: 'market_entrance',
-  name: { target: 'la entrada del mercado', native: 'market entrance' },
-  objects: [
-    {
-      id: 'market_sign',
-      name: { target: 'el letrero del mercado', native: 'market sign' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'shopping_basket',
-      name: { target: 'la canasta', native: 'shopping basket' },
-      state: {},
-      actions: ['TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'shopping_cart',
-      name: { target: 'el carrito', native: 'shopping cart' },
-      state: {},
-      actions: ['TAKE', 'USE'],
-    },
-    {
-      id: 'market_directory',
-      name: { target: 'el directorio', native: 'directory' },
-      state: {},
-      actions: ['LOOK'],
-    },
-  ],
-  exits: [
-    { to: 'fruit_stand', name: { target: 'el puesto de frutas', native: 'fruit stand' } },
-    { to: 'vegetable_stand', name: { target: 'el puesto de verduras', native: 'vegetable stand' } },
-    { to: 'meat_counter', name: { target: 'la carniceria', native: 'meat counter' } },
-    { to: 'market_checkout', name: { target: 'la caja', native: 'checkout' } },
-    { to: 'street', name: { target: 'la calle', native: 'street' } },
-  ],
-};
-
-export const fruitStand: Location = {
-  id: 'fruit_stand',
-  name: { target: 'el puesto de frutas', native: 'fruit stand' },
-  objects: [
-    // Fruits with prices (in pesos)
-    {
-      id: 'apples',
-      name: { target: 'las manzanas', native: 'apples' },
-      state: { price: 25, unit: 'kilo', fresh: true },
-      actions: ['LOOK', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'oranges',
-      name: { target: 'las naranjas', native: 'oranges' },
-      state: { price: 30, unit: 'kilo', fresh: true },
-      actions: ['LOOK', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'bananas',
-      name: { target: 'los platanos', native: 'bananas' },
-      state: { price: 20, unit: 'kilo', fresh: true },
-      actions: ['LOOK', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'strawberries',
-      name: { target: 'las fresas', native: 'strawberries' },
-      state: { price: 45, unit: 'kilo', fresh: true },
-      actions: ['LOOK', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'grapes',
-      name: { target: 'las uvas', native: 'grapes' },
-      state: { price: 50, unit: 'kilo', fresh: true },
-      actions: ['LOOK', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'lemons',
-      name: { target: 'los limones', native: 'lemons' },
-      state: { price: 15, unit: 'kilo', fresh: true },
-      actions: ['LOOK', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'watermelon',
-      name: { target: 'la sandia', native: 'watermelon' },
-      state: { price: 35, unit: 'piece', fresh: true },
-      actions: ['LOOK', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'pineapple',
-      name: { target: 'la pina', native: 'pineapple' },
-      state: { price: 40, unit: 'piece', fresh: true },
-      actions: ['LOOK', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'fruit_scale',
-      name: { target: 'la balanza', native: 'scale' },
-      state: {},
-      actions: ['USE', 'LOOK'],
-    },
-    {
-      id: 'fruit_price_sign',
-      name: { target: 'el letrero de precios', native: 'price sign' },
-      state: {},
-      actions: ['LOOK'],
-    },
-  ],
-  exits: [
-    { to: 'market_entrance', name: { target: 'la entrada', native: 'entrance' } },
-    { to: 'vegetable_stand', name: { target: 'el puesto de verduras', native: 'vegetable stand' } },
-    { to: 'meat_counter', name: { target: 'la carniceria', native: 'meat counter' } },
-    { to: 'market_checkout', name: { target: 'la caja', native: 'checkout' } },
-  ],
-};
-
-export const vegetableStand: Location = {
-  id: 'vegetable_stand',
-  name: { target: 'el puesto de verduras', native: 'vegetable stand' },
-  objects: [
-    {
-      id: 'tomatoes',
-      name: { target: 'los tomates', native: 'tomatoes' },
-      state: { price: 22, unit: 'kilo', fresh: true },
-      actions: ['LOOK', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'onions',
-      name: { target: 'las cebollas', native: 'onions' },
-      state: { price: 18, unit: 'kilo', fresh: true },
-      actions: ['LOOK', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'potatoes',
-      name: { target: 'las papas', native: 'potatoes' },
-      state: { price: 20, unit: 'kilo', fresh: true },
-      actions: ['LOOK', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'carrots',
-      name: { target: 'las zanahorias', native: 'carrots' },
-      state: { price: 15, unit: 'kilo', fresh: true },
-      actions: ['LOOK', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'lettuce',
-      name: { target: 'la lechuga', native: 'lettuce' },
-      state: { price: 12, unit: 'piece', fresh: true },
-      actions: ['LOOK', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'peppers',
-      name: { target: 'los pimientos', native: 'peppers' },
-      state: { price: 28, unit: 'kilo', fresh: true },
-      actions: ['LOOK', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'avocados',
-      name: { target: 'los aguacates', native: 'avocados' },
-      state: { price: 55, unit: 'kilo', fresh: true },
-      actions: ['LOOK', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'garlic',
-      name: { target: 'el ajo', native: 'garlic' },
-      state: { price: 8, unit: 'head', fresh: true },
-      actions: ['LOOK', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'vegetable_scale',
-      name: { target: 'la balanza', native: 'scale' },
-      state: {},
-      actions: ['USE', 'LOOK'],
-    },
-    {
-      id: 'vegetable_price_sign',
-      name: { target: 'el letrero de precios', native: 'price sign' },
-      state: {},
-      actions: ['LOOK'],
-    },
-  ],
-  exits: [
-    { to: 'market_entrance', name: { target: 'la entrada', native: 'entrance' } },
-    { to: 'fruit_stand', name: { target: 'el puesto de frutas', native: 'fruit stand' } },
-    { to: 'meat_counter', name: { target: 'la carniceria', native: 'meat counter' } },
-    { to: 'market_checkout', name: { target: 'la caja', native: 'checkout' } },
-  ],
-};
-
-export const meatCounter: Location = {
-  id: 'meat_counter',
-  name: { target: 'la carniceria', native: 'meat counter' },
-  objects: [
-    {
-      id: 'chicken',
-      name: { target: 'el pollo', native: 'chicken' },
-      state: { price: 75, unit: 'kilo', fresh: true },
-      actions: ['LOOK', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'beef',
-      name: { target: 'la carne de res', native: 'beef' },
-      state: { price: 120, unit: 'kilo', fresh: true },
-      actions: ['LOOK', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'pork',
-      name: { target: 'la carne de cerdo', native: 'pork' },
-      state: { price: 95, unit: 'kilo', fresh: true },
-      actions: ['LOOK', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'ground_beef',
-      name: { target: 'la carne molida', native: 'ground beef' },
-      state: { price: 85, unit: 'kilo', fresh: true },
-      actions: ['LOOK', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'chorizo',
-      name: { target: 'el chorizo', native: 'chorizo' },
-      state: { price: 65, unit: 'kilo', fresh: true },
-      actions: ['LOOK', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'ham',
-      name: { target: 'el jamon', native: 'ham' },
-      state: { price: 110, unit: 'kilo', fresh: true },
-      actions: ['LOOK', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'meat_display',
-      name: { target: 'el mostrador', native: 'display counter' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'meat_scale',
-      name: { target: 'la balanza', native: 'scale' },
-      state: {},
-      actions: ['USE', 'LOOK'],
-    },
-    {
-      id: 'meat_price_sign',
-      name: { target: 'el letrero de precios', native: 'price sign' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'ticket_dispenser',
-      name: { target: 'el dispensador de numeros', native: 'ticket dispenser' },
-      state: { currentNumber: 45 },
-      actions: ['USE', 'TAKE'],
-    },
-  ],
-  exits: [
-    { to: 'market_entrance', name: { target: 'la entrada', native: 'entrance' } },
-    { to: 'fruit_stand', name: { target: 'el puesto de frutas', native: 'fruit stand' } },
-    { to: 'vegetable_stand', name: { target: 'el puesto de verduras', native: 'vegetable stand' } },
-    { to: 'market_checkout', name: { target: 'la caja', native: 'checkout' } },
-  ],
-};
-
-export const marketCheckout: Location = {
-  id: 'market_checkout',
-  name: { target: 'la caja', native: 'checkout' },
-  objects: [
-    {
-      id: 'cash_register',
-      name: { target: 'la caja registradora', native: 'cash register' },
-      state: {},
-      actions: ['LOOK', 'USE'],
-    },
-    {
-      id: 'conveyor_belt',
-      name: { target: 'la cinta transportadora', native: 'conveyor belt' },
-      state: {},
-      actions: ['USE'],
-    },
-    {
-      id: 'shopping_bags',
-      name: { target: 'las bolsas', native: 'shopping bags' },
-      state: { price: 2 },
-      actions: ['TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'receipt',
-      name: { target: 'el recibo', native: 'receipt' },
-      state: { printed: false, total: 0 },
-      actions: ['LOOK', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'card_reader',
-      name: { target: 'el lector de tarjetas', native: 'card reader' },
-      state: {},
-      actions: ['USE'],
-    },
-  ],
-  exits: [
-    { to: 'market_entrance', name: { target: 'la entrada', native: 'entrance' } },
-    { to: 'street', name: { target: 'la calle', native: 'street' } },
-  ],
-};
-
-export const marketLocations: Record<string, Location> = {
-  market_entrance: marketEntrance,
-  fruit_stand: fruitStand,
-  vegetable_stand: vegetableStand,
-  meat_counter: meatCounter,
-  market_checkout: marketCheckout,
+const locations: Record<string, Location> = {
+  market_entrance: {
+    id: 'market_entrance',
+    name: { target: 'la entrada del mercado', native: 'market entrance' },
+    exits: [
+      { to: 'fruit_stand', name: { target: 'el puesto de frutas', native: 'fruit stand' } },
+      { to: 'vegetable_stand', name: { target: 'el puesto de verduras', native: 'vegetable stand' } },
+      { to: 'meat_counter', name: { target: 'la carniceria', native: 'meat counter' } },
+      { to: 'market_checkout', name: { target: 'la caja', native: 'checkout' } },
+      { to: 'street', name: { target: 'la calle', native: 'street' } },
+    ],
+  },
+  fruit_stand: {
+    id: 'fruit_stand',
+    name: { target: 'el puesto de frutas', native: 'fruit stand' },
+    exits: [
+      { to: 'market_entrance', name: { target: 'la entrada', native: 'entrance' } },
+      { to: 'vegetable_stand', name: { target: 'el puesto de verduras', native: 'vegetable stand' } },
+      { to: 'meat_counter', name: { target: 'la carniceria', native: 'meat counter' } },
+      { to: 'market_checkout', name: { target: 'la caja', native: 'checkout' } },
+    ],
+  },
+  vegetable_stand: {
+    id: 'vegetable_stand',
+    name: { target: 'el puesto de verduras', native: 'vegetable stand' },
+    exits: [
+      { to: 'market_entrance', name: { target: 'la entrada', native: 'entrance' } },
+      { to: 'fruit_stand', name: { target: 'el puesto de frutas', native: 'fruit stand' } },
+      { to: 'meat_counter', name: { target: 'la carniceria', native: 'meat counter' } },
+      { to: 'market_checkout', name: { target: 'la caja', native: 'checkout' } },
+    ],
+  },
+  meat_counter: {
+    id: 'meat_counter',
+    name: { target: 'la carniceria', native: 'meat counter' },
+    exits: [
+      { to: 'market_entrance', name: { target: 'la entrada', native: 'entrance' } },
+      { to: 'fruit_stand', name: { target: 'el puesto de frutas', native: 'fruit stand' } },
+      { to: 'vegetable_stand', name: { target: 'el puesto de verduras', native: 'vegetable stand' } },
+      { to: 'market_checkout', name: { target: 'la caja', native: 'checkout' } },
+    ],
+  },
+  market_checkout: {
+    id: 'market_checkout',
+    name: { target: 'la caja', native: 'checkout' },
+    exits: [
+      { to: 'market_entrance', name: { target: 'la entrada', native: 'entrance' } },
+      { to: 'street', name: { target: 'la calle', native: 'street' } },
+    ],
+  },
 };
 
 // ============================================================================
-// MARKET NPCs
+// OBJECTS (flat list -- each knows its own location)
 // ============================================================================
 
-export const marketNPCs: NPC[] = [
+const objects: WorldObject[] = [
+  // Market entrance
+  { id: 'market_sign', name: { target: 'el letrero del mercado', native: 'market sign' }, location: 'market_entrance', tags: [] },
+  { id: 'shopping_basket', name: { target: 'la canasta', native: 'shopping basket' }, location: 'market_entrance', tags: ['takeable'] },
+  { id: 'shopping_cart', name: { target: 'el carrito', native: 'shopping cart' }, location: 'market_entrance', tags: [] },
+  { id: 'market_directory', name: { target: 'el directorio', native: 'directory' }, location: 'market_entrance', tags: [] },
+
+  // Fruit stand -- produce
+  { id: 'apples', name: { target: 'las manzanas', native: 'apples' }, location: 'fruit_stand', tags: ['takeable', 'produce'] },
+  { id: 'oranges', name: { target: 'las naranjas', native: 'oranges' }, location: 'fruit_stand', tags: ['takeable', 'produce'] },
+  { id: 'bananas', name: { target: 'los platanos', native: 'bananas' }, location: 'fruit_stand', tags: ['takeable', 'produce'] },
+  { id: 'strawberries', name: { target: 'las fresas', native: 'strawberries' }, location: 'fruit_stand', tags: ['takeable', 'produce'] },
+  { id: 'grapes', name: { target: 'las uvas', native: 'grapes' }, location: 'fruit_stand', tags: ['takeable', 'produce'] },
+  { id: 'lemons', name: { target: 'los limones', native: 'lemons' }, location: 'fruit_stand', tags: ['takeable', 'produce'] },
+  { id: 'watermelon', name: { target: 'la sandia', native: 'watermelon' }, location: 'fruit_stand', tags: ['takeable', 'produce'] },
+  { id: 'pineapple', name: { target: 'la pina', native: 'pineapple' }, location: 'fruit_stand', tags: ['takeable', 'produce'] },
+  { id: 'fruit_scale', name: { target: 'la balanza', native: 'scale' }, location: 'fruit_stand', tags: [] },
+  { id: 'fruit_price_sign', name: { target: 'el letrero de precios', native: 'price sign' }, location: 'fruit_stand', tags: [] },
+
+  // Vegetable stand -- produce
+  { id: 'tomatoes', name: { target: 'los tomates', native: 'tomatoes' }, location: 'vegetable_stand', tags: ['takeable', 'produce'] },
+  { id: 'onions', name: { target: 'las cebollas', native: 'onions' }, location: 'vegetable_stand', tags: ['takeable', 'produce'] },
+  { id: 'potatoes', name: { target: 'las papas', native: 'potatoes' }, location: 'vegetable_stand', tags: ['takeable', 'produce'] },
+  { id: 'carrots', name: { target: 'las zanahorias', native: 'carrots' }, location: 'vegetable_stand', tags: ['takeable', 'produce'] },
+  { id: 'lettuce', name: { target: 'la lechuga', native: 'lettuce' }, location: 'vegetable_stand', tags: ['takeable', 'produce'] },
+  { id: 'peppers', name: { target: 'los pimientos', native: 'peppers' }, location: 'vegetable_stand', tags: ['takeable', 'produce'] },
+  { id: 'avocados', name: { target: 'los aguacates', native: 'avocados' }, location: 'vegetable_stand', tags: ['takeable', 'produce'] },
+  { id: 'garlic', name: { target: 'el ajo', native: 'garlic' }, location: 'vegetable_stand', tags: ['takeable', 'produce'] },
+  { id: 'vegetable_scale', name: { target: 'la balanza', native: 'scale' }, location: 'vegetable_stand', tags: [] },
+  { id: 'vegetable_price_sign', name: { target: 'el letrero de precios', native: 'price sign' }, location: 'vegetable_stand', tags: [] },
+
+  // Meat counter -- produce
+  { id: 'chicken', name: { target: 'el pollo', native: 'chicken' }, location: 'meat_counter', tags: ['takeable', 'produce'] },
+  { id: 'beef', name: { target: 'la carne de res', native: 'beef' }, location: 'meat_counter', tags: ['takeable', 'produce'] },
+  { id: 'pork', name: { target: 'la carne de cerdo', native: 'pork' }, location: 'meat_counter', tags: ['takeable', 'produce'] },
+  { id: 'ground_beef', name: { target: 'la carne molida', native: 'ground beef' }, location: 'meat_counter', tags: ['takeable', 'produce'] },
+  { id: 'chorizo', name: { target: 'el chorizo', native: 'chorizo' }, location: 'meat_counter', tags: ['takeable', 'produce'] },
+  { id: 'ham', name: { target: 'el jamon', native: 'ham' }, location: 'meat_counter', tags: ['takeable', 'produce'] },
+  { id: 'meat_display', name: { target: 'el mostrador', native: 'display counter' }, location: 'meat_counter', tags: [] },
+  { id: 'meat_scale', name: { target: 'la balanza', native: 'scale' }, location: 'meat_counter', tags: [] },
+  { id: 'meat_price_sign', name: { target: 'el letrero de precios', native: 'price sign' }, location: 'meat_counter', tags: [] },
+  { id: 'ticket_dispenser', name: { target: 'el dispensador de numeros', native: 'ticket dispenser' }, location: 'meat_counter', tags: [] },
+
+  // Checkout
+  { id: 'cash_register', name: { target: 'la caja registradora', native: 'cash register' }, location: 'market_checkout', tags: [] },
+  { id: 'conveyor_belt', name: { target: 'la cinta transportadora', native: 'conveyor belt' }, location: 'market_checkout', tags: [] },
+  { id: 'shopping_bags', name: { target: 'las bolsas', native: 'shopping bags' }, location: 'market_checkout', tags: ['takeable'] },
+  { id: 'receipt', name: { target: 'el recibo', native: 'receipt' }, location: 'market_checkout', tags: ['takeable'] },
+  { id: 'card_reader', name: { target: 'el lector de tarjetas', native: 'card reader' }, location: 'market_checkout', tags: [] },
+];
+
+// ============================================================================
+// NPCs
+// ============================================================================
+
+const npcs: NPC[] = [
   {
     id: 'dona_maria',
     name: { target: 'Dona Maria', native: 'Mrs. Maria' },
     location: 'fruit_stand',
-    personality: `Friendly elderly fruit vendor who has worked at the market for 40 years. 
+    personality: `Friendly elderly fruit vendor who has worked at the market for 40 years.
     Speaks warmly and uses diminutives (frutitas, manzanitas). Very patient with customers.
-    Loves to give advice about picking ripe fruit. Will say things like:
-    - "Buenos dias, mi amor! Que busca hoy?"
-    - "Estas naranjas estan muy dulces!"
-    - "Le doy un poquito de descuento"
-    Uses demonstratives frequently: "Estas manzanas son las mejores" (these apples are the best).
-    When asked prices, says things like "Las fresas cuestan cuarenta y cinco pesos el kilo."`,
+    Loves to give advice about picking ripe fruit.`,
     gender: 'female',
   },
   {
     id: 'senor_pedro',
     name: { target: 'Senor Pedro', native: 'Mr. Pedro' },
     location: 'vegetable_stand',
-    personality: `Middle-aged vegetable vendor, friendly but businesslike. 
+    personality: `Middle-aged vegetable vendor, friendly but businesslike.
     Speaks clearly and directly. Knows his vegetables well.
-    Offers comparisons between products: "Esas papas son mas grandes, pero estas son mas frescas."
-    Key phrases:
-    - "Buenas tardes! En que le puedo ayudar?"
-    - "Cuanto necesita? Medio kilo? Un kilo?"
-    - "Aquellas zanahorias son de ayer, pero estas llegaron hoy"
-    Uses demonstratives for near/far: este/ese/aquel and esto/eso/aquello.
-    Patient when explaining weights and quantities.`,
+    Offers comparisons between products.`,
     gender: 'male',
   },
   {
@@ -376,102 +140,23 @@ export const marketNPCs: NPC[] = [
     location: 'meat_counter',
     personality: `Burly, friendly butcher in his 30s. Proud of his quality meat.
     Speaks with authority about cuts and preparation. Uses formal language.
-    Will ask about quantities: "Cuantos gramos quiere?" or "Cuantos kilos necesita?"
-    Key phrases:
-    - "Que numero tiene?" (What number do you have? - ticket system)
-    - "Quiere que se lo corte?" (Want me to cut it for you?)
-    - "Este chorizo es casero" (This chorizo is homemade)
-    - "La carne de res cuesta ciento veinte el kilo"
-    Likes to compare: "Este pollo es mas fresco que ese."`,
+    Uses a ticket number system.`,
     gender: 'male',
   },
 ];
 
-// Extended NPC state for market interactions
-export interface MarketNPCState {
-  mood: string;
-  lastResponse?: string;
-  hasGreeted?: boolean;
-  itemsDiscussed?: string[];
-  currentTransaction?: {
-    items: Array<{ id: string; quantity: number; unit: string; price: number }>;
-    total: number;
-  };
-}
-
-export function getMarketNPCsInLocation(locationId: string): NPC[] {
-  return marketNPCs.filter((npc) => npc.location === locationId);
-}
-
 // ============================================================================
-// MARKET ITEM DATA
+// GOALS
 // ============================================================================
 
-export interface MarketItem {
-  id: string;
-  name: { target: string; native: string };
-  price: number; // in pesos
-  unit: 'kilo' | 'piece' | 'gram' | 'head' | 'bunch';
-  category: 'fruit' | 'vegetable' | 'meat';
-  location: string;
-}
-
-export const marketItems: MarketItem[] = [
-  // FRUITS
-  { id: 'apples', name: { target: 'las manzanas', native: 'apples' }, price: 25, unit: 'kilo', category: 'fruit', location: 'fruit_stand' },
-  { id: 'oranges', name: { target: 'las naranjas', native: 'oranges' }, price: 30, unit: 'kilo', category: 'fruit', location: 'fruit_stand' },
-  { id: 'bananas', name: { target: 'los platanos', native: 'bananas' }, price: 20, unit: 'kilo', category: 'fruit', location: 'fruit_stand' },
-  { id: 'strawberries', name: { target: 'las fresas', native: 'strawberries' }, price: 45, unit: 'kilo', category: 'fruit', location: 'fruit_stand' },
-  { id: 'grapes', name: { target: 'las uvas', native: 'grapes' }, price: 50, unit: 'kilo', category: 'fruit', location: 'fruit_stand' },
-  { id: 'lemons', name: { target: 'los limones', native: 'lemons' }, price: 15, unit: 'kilo', category: 'fruit', location: 'fruit_stand' },
-  { id: 'watermelon', name: { target: 'la sandia', native: 'watermelon' }, price: 35, unit: 'piece', category: 'fruit', location: 'fruit_stand' },
-  { id: 'pineapple', name: { target: 'la pina', native: 'pineapple' }, price: 40, unit: 'piece', category: 'fruit', location: 'fruit_stand' },
-
-  // VEGETABLES
-  { id: 'tomatoes', name: { target: 'los tomates', native: 'tomatoes' }, price: 22, unit: 'kilo', category: 'vegetable', location: 'vegetable_stand' },
-  { id: 'onions', name: { target: 'las cebollas', native: 'onions' }, price: 18, unit: 'kilo', category: 'vegetable', location: 'vegetable_stand' },
-  { id: 'potatoes', name: { target: 'las papas', native: 'potatoes' }, price: 20, unit: 'kilo', category: 'vegetable', location: 'vegetable_stand' },
-  { id: 'carrots', name: { target: 'las zanahorias', native: 'carrots' }, price: 15, unit: 'kilo', category: 'vegetable', location: 'vegetable_stand' },
-  { id: 'lettuce', name: { target: 'la lechuga', native: 'lettuce' }, price: 12, unit: 'piece', category: 'vegetable', location: 'vegetable_stand' },
-  { id: 'peppers', name: { target: 'los pimientos', native: 'peppers' }, price: 28, unit: 'kilo', category: 'vegetable', location: 'vegetable_stand' },
-  { id: 'avocados', name: { target: 'los aguacates', native: 'avocados' }, price: 55, unit: 'kilo', category: 'vegetable', location: 'vegetable_stand' },
-  { id: 'garlic', name: { target: 'el ajo', native: 'garlic' }, price: 8, unit: 'head', category: 'vegetable', location: 'vegetable_stand' },
-
-  // MEAT
-  { id: 'chicken', name: { target: 'el pollo', native: 'chicken' }, price: 75, unit: 'kilo', category: 'meat', location: 'meat_counter' },
-  { id: 'beef', name: { target: 'la carne de res', native: 'beef' }, price: 120, unit: 'kilo', category: 'meat', location: 'meat_counter' },
-  { id: 'pork', name: { target: 'la carne de cerdo', native: 'pork' }, price: 95, unit: 'kilo', category: 'meat', location: 'meat_counter' },
-  { id: 'ground_beef', name: { target: 'la carne molida', native: 'ground beef' }, price: 85, unit: 'kilo', category: 'meat', location: 'meat_counter' },
-  { id: 'chorizo', name: { target: 'el chorizo', native: 'chorizo' }, price: 65, unit: 'kilo', category: 'meat', location: 'meat_counter' },
-  { id: 'ham', name: { target: 'el jamon', native: 'ham' }, price: 110, unit: 'kilo', category: 'meat', location: 'meat_counter' },
-];
-
-// Helper functions
-export function getItemsByCategory(category: MarketItem['category']): MarketItem[] {
-  return marketItems.filter((item) => item.category === category);
-}
-
-export function getItemPrice(itemId: string): number {
-  return marketItems.find((item) => item.id === itemId)?.price ?? 0;
-}
-
-export function getItemsByLocation(locationId: string): MarketItem[] {
-  return marketItems.filter((item) => item.location === locationId);
-}
-
-// ============================================================================
-// MARKET GOALS
-// ============================================================================
-
-export const marketGoals: Goal[] = [
+const goals: Goal[] = [
   {
     id: 'market_explore',
     title: 'Explore the market',
     description: 'You arrived at the market! Look around and visit the different stands.',
     hint: 'Try "Voy al puesto de frutas" (I go to the fruit stand) or "Miro el letrero" (I look at the sign)',
     checkComplete: (state: GameState) => {
-      // Complete when player visits any market stand beyond the entrance
-      return ['fruit_stand', 'vegetable_stand', 'meat_counter'].includes(state.location.id) ||
+      return ['fruit_stand', 'vegetable_stand', 'meat_counter'].includes(state.currentLocation) ||
         state.completedGoals.includes('market_explore');
     },
     nextGoalId: 'market_ask_price',
@@ -482,8 +167,7 @@ export const marketGoals: Goal[] = [
     description: 'Practice asking how much things cost. Talk to a vendor about prices.',
     hint: 'Try "Cuanto cuestan las manzanas?" (How much do the apples cost?) or "Cuanto cuesta el kilo?"',
     checkComplete: (state: GameState) =>
-      state.completedGoals.includes('market_ask_price') ||
-      state.completedGoals.includes('asked_price'),
+      state.completedGoals.includes('market_ask_price'),
     nextGoalId: 'market_demonstratives',
   },
   {
@@ -492,8 +176,7 @@ export const marketGoals: Goal[] = [
     description: 'Practice using "este/esta" (this), "ese/esa" (that), or "aquel/aquella" (that over there) to specify which item you want.',
     hint: 'Try "Quiero estas naranjas" (I want these oranges) or "Dame esos tomates" (Give me those tomatoes)',
     checkComplete: (state: GameState) =>
-      state.completedGoals.includes('market_demonstratives') ||
-      state.completedGoals.includes('used_demonstrative'),
+      state.completedGoals.includes('market_demonstratives'),
     nextGoalId: 'market_compare',
   },
   {
@@ -502,8 +185,7 @@ export const marketGoals: Goal[] = [
     description: 'Ask the vendor to help you compare items. Which ones are fresher, bigger, or better?',
     hint: 'Try "Cuales son mas frescas?" (Which ones are fresher?) or "Estas manzanas son mas grandes que esas?"',
     checkComplete: (state: GameState) =>
-      state.completedGoals.includes('market_compare') ||
-      state.completedGoals.includes('compared_items'),
+      state.completedGoals.includes('market_compare'),
     nextGoalId: 'market_purchase',
   },
   {
@@ -513,9 +195,8 @@ export const marketGoals: Goal[] = [
     hint: 'Try "Quiero un kilo de manzanas" or "Me da medio kilo de tomates, por favor"',
     checkComplete: (state: GameState) =>
       state.completedGoals.includes('market_purchase') ||
-      state.completedGoals.includes('made_purchase') ||
-      state.inventory.some((item) =>
-        marketItems.some((mi) => mi.id === item.id)
+      state.objects.some(
+        o => o.location === 'inventory' && o.tags.includes('produce')
       ),
     nextGoalId: 'market_checkout_pay',
   },
@@ -525,8 +206,7 @@ export const marketGoals: Goal[] = [
     description: 'Take your items to the checkout and pay for them.',
     hint: 'Go to "la caja" (checkout) and say "Pago con efectivo" (I pay with cash) or "Pago con tarjeta" (I pay with card)',
     checkComplete: (state: GameState) =>
-      state.completedGoals.includes('market_checkout_pay') ||
-      state.completedGoals.includes('paid_at_checkout'),
+      state.completedGoals.includes('market_checkout_pay'),
     nextGoalId: 'market_complete',
   },
   {
@@ -537,19 +217,11 @@ export const marketGoals: Goal[] = [
   },
 ];
 
-export function getMarketGoalById(id: string): Goal | undefined {
-  return marketGoals.find((g) => g.id === id);
-}
-
-export function getMarketStartGoal(): Goal {
-  return marketGoals[0];
-}
-
 // ============================================================================
-// MARKET VOCABULARY
+// VOCABULARY (unchanged)
 // ============================================================================
 
-export const marketVocabulary: VocabWord[] = [
+const vocabulary: VocabWord[] = [
   // ==================== LOCATIONS ====================
   { target: 'el mercado', native: 'market', category: 'noun', gender: 'masculine' },
   { target: 'el puesto', native: 'stand/stall', category: 'noun', gender: 'masculine' },
@@ -641,14 +313,14 @@ export const marketVocabulary: VocabWord[] = [
   { target: 'estos', native: 'these (masc)', category: 'adjective' },
   { target: 'estas', native: 'these (fem)', category: 'adjective' },
   { target: 'esto', native: 'this (neuter/abstract)', category: 'other' },
-  
+
   // Near listener (that)
   { target: 'ese', native: 'that (masc)', category: 'adjective' },
   { target: 'esa', native: 'that (fem)', category: 'adjective' },
   { target: 'esos', native: 'those (masc)', category: 'adjective' },
   { target: 'esas', native: 'those (fem)', category: 'adjective' },
   { target: 'eso', native: 'that (neuter/abstract)', category: 'other' },
-  
+
   // Far from both (that over there)
   { target: 'aquel', native: 'that over there (masc)', category: 'adjective' },
   { target: 'aquella', native: 'that over there (fem)', category: 'adjective' },
@@ -678,7 +350,7 @@ export const marketVocabulary: VocabWord[] = [
   { target: 'dieciocho', native: 'eighteen', category: 'other' },
   { target: 'diecinueve', native: 'nineteen', category: 'other' },
   { target: 'veinte', native: 'twenty', category: 'other' },
-  
+
   // 21-29 (compound form)
   { target: 'veintiuno', native: 'twenty-one', category: 'other' },
   { target: 'veintidos', native: 'twenty-two', category: 'other' },
@@ -689,7 +361,7 @@ export const marketVocabulary: VocabWord[] = [
   { target: 'veintisiete', native: 'twenty-seven', category: 'other' },
   { target: 'veintiocho', native: 'twenty-eight', category: 'other' },
   { target: 'veintinueve', native: 'twenty-nine', category: 'other' },
-  
+
   // Tens (30-90)
   { target: 'treinta', native: 'thirty', category: 'other' },
   { target: 'cuarenta', native: 'forty', category: 'other' },
@@ -699,7 +371,7 @@ export const marketVocabulary: VocabWord[] = [
   { target: 'ochenta', native: 'eighty', category: 'other' },
   { target: 'noventa', native: 'ninety', category: 'other' },
   { target: 'cien', native: 'one hundred', category: 'other' },
-  
+
   // Compound pattern for 31-99 uses "y" (e.g., treinta y uno)
   { target: 'y', native: 'and', category: 'other' },
   { target: 'treinta y cinco', native: 'thirty-five', category: 'other' },
@@ -719,7 +391,7 @@ export const marketVocabulary: VocabWord[] = [
   { target: 'pago', native: 'I pay', category: 'verb' },
   { target: 'pagas', native: 'you pay', category: 'verb' },
   { target: 'paga', native: 'he/she pays', category: 'verb' },
-  
+
   // Wanting and needing
   { target: 'quiero', native: 'I want', category: 'verb' },
   { target: 'quieres', native: 'you want', category: 'verb' },
@@ -730,18 +402,18 @@ export const marketVocabulary: VocabWord[] = [
   { target: 'busco', native: 'I look for', category: 'verb' },
   { target: 'buscas', native: 'you look for', category: 'verb' },
   { target: 'busca', native: 'he/she looks for', category: 'verb' },
-  
+
   // Giving and receiving
   { target: 'me da', native: 'give me (formal)', category: 'verb' },
   { target: 'dame', native: 'give me (informal)', category: 'verb' },
   { target: 'le doy', native: 'I give you (formal)', category: 'verb' },
-  
+
   // Cost verbs
   { target: 'cuesta', native: 'it costs', category: 'verb' },
   { target: 'cuestan', native: 'they cost', category: 'verb' },
   { target: 'vale', native: 'it is worth/costs', category: 'verb' },
   { target: 'valen', native: 'they are worth/cost', category: 'verb' },
-  
+
   // Weighing
   { target: 'peso', native: 'I weigh', category: 'verb' },
   { target: 'pesa', native: 'it weighs', category: 'verb' },
@@ -802,79 +474,111 @@ export const marketVocabulary: VocabWord[] = [
   { target: 'con tarjeta', native: 'with card', category: 'other' },
   { target: 'tiene cambio?', native: 'do you have change?', category: 'other' },
   { target: 'el recibo', native: 'the receipt', category: 'noun', gender: 'masculine' },
+
+  // ==================== MARKET-SPECIFIC OBJECTS ====================
+  { target: 'el mostrador', native: 'display counter', category: 'noun', gender: 'masculine' },
+  { target: 'el dispensador de numeros', native: 'ticket dispenser', category: 'noun', gender: 'masculine' },
+  { target: 'la cinta transportadora', native: 'conveyor belt', category: 'noun', gender: 'feminine' },
+  { target: 'la caja registradora', native: 'cash register', category: 'noun', gender: 'feminine' },
+  { target: 'el lector de tarjetas', native: 'card reader', category: 'noun', gender: 'masculine' },
+  { target: 'el directorio', native: 'directory', category: 'noun', gender: 'masculine' },
 ];
 
 // ============================================================================
-// SAMPLE DIALOG FLOWS
+// MODULE EXPORT
 // ============================================================================
-
-/**
- * These are example conversation flows to guide the AI in generating
- * natural NPC responses. Not used directly in code, but helpful for
- * understanding the expected interactions.
- */
-
-export const sampleDialogs = {
-  askingPrice: {
-    player: 'Cuanto cuestan las manzanas?',
-    npc: 'Las manzanas cuestan veinticinco pesos el kilo. Estan muy frescas hoy!',
-  },
-  usingDemonstratives: {
-    player: 'Quiero estas naranjas, no esas.',
-    npc: 'Muy bien! Estas naranjas son las mas dulces. Cuantos kilos quiere?',
-  },
-  comparingItems: {
-    player: 'Cuales tomates son mas frescos?',
-    npc: 'Estos tomates llegaron esta manana. Esos de alla son de ayer, pero todavia estan buenos.',
-  },
-  specifyingQuantity: {
-    player: 'Me da un kilo de papas, por favor.',
-    npc: 'Claro! Un kilo de papas... son veinte pesos. Algo mas?',
-  },
-  atCheckout: {
-    player: 'Cuanto es el total?',
-    npc: 'El total es ochenta y cinco pesos. Paga con efectivo o tarjeta?',
-  },
-  payingCash: {
-    player: 'Pago con efectivo. Aqui tiene cien pesos.',
-    npc: 'Perfecto. Su cambio es quince pesos. Aqui tiene su recibo. Gracias!',
-  },
-};
 
 export const marketModule: ModuleDefinition = {
   name: 'market',
   displayName: 'Market',
-  locations: marketLocations,
-  npcs: marketNPCs,
-  goals: marketGoals,
-  vocabulary: marketVocabulary,
+  locations,
+  objects,
+  npcs,
+  goals,
+  vocabulary,
   startLocationId: 'market_entrance',
   startGoalId: 'market_explore',
-  locationIds: Object.keys(marketLocations),
+  locationIds: Object.keys(locations).filter(id => id !== 'street'),
   unlockLevel: 3,
 
-  parseGuidance: `ACTION RULES:
-- Asking about prices → talk to whichever vendor the player is near (dona_maria at fruit_stand, senor_pedro at vegetable_stand, carlos_carnicero at meat_counter)
-- Using demonstratives to point at items → talk to the relevant vendor
-- Comparing items or asking which is better → talk to the relevant vendor
-- Buying items (requesting a kilo, half kilo, etc.) → talk to the relevant vendor
-- Paying at checkout → use cash_register
+  guidance: `MARKET ENVIRONMENT:
+An open-air Mexican market with three vendor stands (fruit, vegetable, meat) and a checkout area.
+The player is learning demonstratives, numbers, prices, quantities, and comparatives.
 
-TEACHING FOCUS:
-- "Cuanto cuesta?" / "Cuanto cuestan?" (How much?)
-- Demonstratives: "Este/Esta/Estos/Estas" (this), "Ese/Esa/Esos/Esas" (that), "Aquel/Aquella" (that over there)
-- Quantities: "Un kilo de..." / "Medio kilo de..."
-- Comparatives: "Mas fresco/grande/barato que..." (Fresher/bigger/cheaper than...)`,
+PRODUCE PRICES (pesos per kilo unless noted):
+Fruit stand (Dona Maria):
+  manzanas $25/kg, naranjas $30/kg, platanos $20/kg, fresas $45/kg,
+  uvas $50/kg, limones $15/kg, sandia $35/piece, pina $40/piece
+Vegetable stand (Senor Pedro):
+  tomates $22/kg, cebollas $18/kg, papas $20/kg, zanahorias $15/kg,
+  lechuga $12/piece, pimientos $28/kg, aguacates $55/kg, ajo $8/head
+Meat counter (Carlos el Carnicero):
+  pollo $75/kg, carne de res $120/kg, carne de cerdo $95/kg,
+  carne molida $85/kg, chorizo $65/kg, jamon $110/kg
 
-  narrateGuidance: `NPC PERSONALITIES:
-- Dona Maria (dona_maria): Elderly fruit vendor at fruit_stand. Friendly, uses diminutives (frutitas, manzanitas). Says "Buenos dias, mi amor! Que busca hoy?" and "Estas naranjas estan muy dulces!".
-- Senor Pedro (senor_pedro): Vegetable vendor at vegetable_stand. Direct but friendly. Uses demonstratives for comparisons. Says "Esas papas son mas grandes, pero estas son mas frescas."
-- Carlos (carlos_carnicero): Butcher at meat_counter. Uses ticket system. Says "Que numero tiene?" and "Cuantos gramos quiere?".
+WEIGHING SYSTEM:
+Each stand has a scale (la balanza). Vendors weigh items and state the price.
+Common quantities: un kilo, medio kilo, cien gramos, doscientos gramos, una docena, una pieza.
+When the player requests a quantity, the vendor weighs it and states the total.
+
+DEMONSTRATIVES (teaching focus):
+- este/esta/estos/estas = this/these (near the speaker)
+- ese/esa/esos/esas = that/those (near the listener)
+- aquel/aquella/aquellos/aquellas = that/those over there (far from both)
+Vendors should actively use demonstratives in their speech to model correct usage.
+When the player uses a demonstrative, the vendor confirms which item they mean.
+
+QUANTITY EXPRESSIONS:
+- "Un kilo de..." / "Medio kilo de..." / "Cien gramos de..."
+- "Una docena de..." / "Tres piezas de..."
+- "Cuanto pesa?" (How much does it weigh?)
+
+BARGAINING FLOW:
+Players can try to bargain. Dona Maria may offer small discounts ("Le doy un poquito de descuento").
+Senor Pedro is firm on prices. Carlos does not bargain but may throw in extras.
+
+OBJECTS:
+- Produce items (tagged "produce", "takeable"): Represent bins of produce at each stand. When a player buys
+  something, move the item to "inventory" to represent the purchase. The original bin stays.
+- Scales (fruit_scale, vegetable_scale, meat_scale): Vendors use these to weigh purchases.
+- Price signs: Looking at them reveals the prices listed above.
+- ticket_dispenser at meat_counter: Carlos uses a number system. Looking at it shows current number.
+- shopping_basket/shopping_cart at entrance: Player can take basket. Decorative context.
+- Checkout objects (cash_register, card_reader, conveyor_belt, shopping_bags, receipt):
+  Used when paying. Receipt is given after payment.
+
+NPCs:
+- Dona Maria (dona_maria, fruit_stand): Elderly, warm, uses diminutives (frutitas, manzanitas).
+  Says "Buenos dias, mi amor! Que busca hoy?" and "Estas naranjas estan muy dulces!"
+  Gives advice on picking ripe fruit. May offer small discounts. Uses demonstratives naturally:
+  "Estas manzanas son las mejores" (these apples are the best).
+  When asked prices: "Las fresas cuestan cuarenta y cinco pesos el kilo."
+- Senor Pedro (senor_pedro, vegetable_stand): Direct but friendly. Uses demonstratives for comparisons:
+  "Esas papas son mas grandes, pero estas son mas frescas."
+  "Aquellas zanahorias son de ayer, pero estas llegaron hoy."
+  Says "Buenas tardes! En que le puedo ayudar?" and "Cuanto necesita? Medio kilo? Un kilo?"
+  Firm on prices. Patient when explaining weights and quantities.
+- Carlos el Carnicero (carlos_carnicero, meat_counter): Proud of quality meat. Uses ticket system.
+  Says "Que numero tiene?" and "Cuantos gramos quiere?" and "Quiere que se lo corte?"
+  "Este chorizo es casero." Compares: "Este pollo es mas fresco que ese."
+  States prices formally: "La carne de res cuesta ciento veinte el kilo."
 
 GOAL COMPLETION:
-- Asking about prices → asked_price
-- Using a demonstrative (este, esta, estos, estas, etc.) → used_demonstrative
-- Comparing items → compared_items
-- Buying something (requesting a quantity) → made_purchase
-- Paying at checkout → paid_at_checkout`,
+- market_explore: Player visits any stand (fruit_stand, vegetable_stand, or meat_counter)
+- market_ask_price: Player asks a vendor about prices (cuanto cuesta/cuestan, a cuanto esta/estan)
+- market_demonstratives: Player uses a demonstrative (este, esta, estos, estas, ese, esa, aquel, etc.)
+- market_compare: Player compares items (mas fresco, mas grande, mas barato, cual es mejor, etc.)
+- market_purchase: Player requests a quantity and buys something from a vendor (move produce to inventory)
+- market_checkout_pay: Player pays at checkout (con efectivo or con tarjeta)
+
+TRANSACTION FLOW:
+1. Player greets vendor or asks about items
+2. Vendor responds warmly, describes available produce
+3. Player asks price or points at items using demonstratives
+4. Vendor states price per kilo/piece
+5. Player requests a quantity ("Un kilo de manzanas, por favor")
+6. Vendor weighs it, states total, asks "Algo mas?"
+7. Player says "Nada mas" or "Es todo" or requests more
+8. Produce moves to inventory
+9. Player goes to checkout and pays`,
 };

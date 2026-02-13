@@ -9,6 +9,7 @@ import 'server-only';
 import { join } from 'path';
 import { readFileSync, existsSync } from 'fs';
 import type { GameView, TurnResultView, ObjectCoords, SceneInfo, ExitView, NPCView, GoalView, PortraitHint } from './types';
+import { getCachedPortrait, getPlaceholderPath, isGenerationEnabled, isGenerating, triggerGeneration } from './portrait-generator';
 
 // Path to compiled game engine
 const ENGINE_ROOT = join(process.cwd(), '..', 'dist');
@@ -288,9 +289,43 @@ function deriveLastAction(result: any): string | null {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function resolvePortraits(state: any, result: any | null, module: string): PortraitHint | null {
   const manifest = loadPortraitManifest(module);
-  if (!manifest) return null;
 
+  // Even without a manifest, we may have cached/generated portraits
   const hint: PortraitHint = {};
+
+  if (!manifest) {
+    // No pre-generated portraits — still check cache for object portraits
+    const objectChanges: Array<{ objectId: string; image: string; generating?: boolean }> = [];
+    const allObjects: Array<{ id: string; name: { native: string }; tags: string[]; location: string }> = state.objects || [];
+    const objectsInLocation = allObjects.filter(
+      (o: { location: string }) => o.location === state.currentLocation
+    );
+
+    for (const obj of objectsInLocation) {
+      const tags = obj.tags || [];
+      const visualTags = tags.filter(t => !['takeable', 'consumable', 'container'].includes(t));
+      if (visualTags.length === 0) continue;
+
+      const cached = getCachedPortrait(module, obj.id, visualTags);
+      if (cached) {
+        objectChanges.push({ objectId: obj.id, image: cached });
+        continue;
+      }
+
+      if (isGenerationEnabled()) {
+        if (!isGenerating(module, obj.id, visualTags)) {
+          triggerGeneration(module, obj.id, obj.name.native, visualTags);
+        }
+        objectChanges.push({ objectId: obj.id, image: getPlaceholderPath(), generating: true });
+      }
+    }
+
+    if (objectChanges.length > 0) {
+      hint.objectChanges = objectChanges;
+      return hint;
+    }
+    return null;
+  }
 
   // 1. Player portrait — check transient actions first, fall back to persistent state
   if (result?.mutations?.length) {
@@ -326,8 +361,8 @@ function resolvePortraits(state: any, result: any | null, module: string): Portr
   }
 
   // 3. Object state portraits — match tags against portrait manifest conditions
-  const objectChanges: Array<{ objectId: string; image: string }> = [];
-  const allObjects: Array<{ id: string; tags: string[]; location: string }> = state.objects || [];
+  const objectChanges: Array<{ objectId: string; image: string; generating?: boolean }> = [];
+  const allObjects: Array<{ id: string; name: { native: string }; tags: string[]; location: string }> = state.objects || [];
 
   // Get objects in current location (including containers)
   const objectsInLocation = allObjects.filter(
@@ -335,16 +370,44 @@ function resolvePortraits(state: any, result: any | null, module: string): Portr
   );
 
   for (const obj of objectsInLocation) {
-    if (!manifest.objects[obj.id]) continue;
+    const tags = obj.tags || [];
 
-    const effectiveState = tagsToStateObject(obj.tags || []);
+    // First try pre-generated manifest
+    if (manifest?.objects[obj.id]) {
+      const effectiveState = tagsToStateObject(tags);
+      let found = false;
+      for (const variant of manifest.objects[obj.id]) {
+        if (matchesPortraitCondition(variant.match, effectiveState)) {
+          objectChanges.push({ objectId: obj.id, image: variant.image });
+          found = true;
+          break;
+        }
+      }
+      if (found) continue;
+    }
 
-    for (const variant of manifest.objects[obj.id]) {
-      if (matchesPortraitCondition(variant.match, effectiveState)) {
-        objectChanges.push({ objectId: obj.id, image: variant.image });
-        break;
+    // Skip objects with no meaningful visual state tags
+    const visualTags = tags.filter(t => !['takeable', 'consumable', 'container'].includes(t));
+    if (visualTags.length === 0) continue;
+
+    // Check portrait cache
+    const cached = getCachedPortrait(module, obj.id, visualTags);
+    if (cached) {
+      // Cached portrait found — image is a full URL path, extract just the filename portion
+      objectChanges.push({ objectId: obj.id, image: cached });
+      continue;
+    }
+
+    // Cache miss — trigger generation or show placeholder
+    if (isGenerationEnabled()) {
+      if (isGenerating(module, obj.id, visualTags)) {
+        objectChanges.push({ objectId: obj.id, image: getPlaceholderPath(), generating: true });
+      } else {
+        triggerGeneration(module, obj.id, obj.name.native, visualTags);
+        objectChanges.push({ objectId: obj.id, image: getPlaceholderPath(), generating: true });
       }
     }
+    // When generation is disabled and no cached portrait, don't show anything
   }
 
   if (objectChanges.length > 0) {
@@ -385,7 +448,7 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
   const inOpenContainers = allObjects.filter(o => {
     if (o.location === 'removed') return false;
     const container = allObjects.find(c => c.id === o.location);
-    return container?.location === locationId && container.tags.includes('open');
+    return container !== undefined && container.location === locationId && container.tags.includes('open');
   });
   const visibleObjects = [...objectsHere, ...inOpenContainers];
 
@@ -544,7 +607,7 @@ function buildTurnResultView(result: any, state: any): TurnResultView {
 }
 
 export function getAvailableModules(): string[] {
-  return ['home'];
+  return ['home', 'restaurant', 'bank', 'clinic', 'gym', 'park', 'market'];
 }
 
 // --- /learn Command ---

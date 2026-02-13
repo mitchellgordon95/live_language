@@ -1,322 +1,126 @@
-// /Users/mitchg/Desktop/language/src/data/gym-module.ts
-
-import type { Location, Goal, VocabWord, GameState, NPC, ModuleDefinition } from '../../../engine/types.js';
+import type { Location, Goal, VocabWord, GameState, NPC, WorldObject, ModuleDefinition } from '../../../engine/types.js';
 
 // ============================================================================
-// GYM LOCATIONS
+// LOCATIONS (exits only -- objects are in the flat list below)
 // ============================================================================
 
-export const gymEntrance: Location = {
-  id: 'gym_entrance',
-  name: { target: 'la entrada del gimnasio', native: 'gym entrance' },
-  objects: [
-    {
-      id: 'reception_desk',
-      name: { target: 'el mostrador de recepcion', native: 'reception desk' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'membership_card_scanner',
-      name: { target: 'el lector de tarjetas', native: 'card scanner' },
-      state: {},
-      actions: ['USE'],
-    },
-    {
-      id: 'gym_rules_poster',
-      name: { target: 'el cartel de reglas', native: 'rules poster' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'water_fountain',
-      name: { target: 'la fuente de agua', native: 'water fountain' },
-      state: {},
-      actions: ['USE', 'DRINK'],
-      consumable: true,
-      needsEffect: { energy: 5 },
-    },
-    {
-      id: 'gym_bag',
-      name: { target: 'la bolsa de gimnasio', native: 'gym bag' },
-      state: { packed: true },
-      actions: ['TAKE', 'OPEN'],
-      takeable: true,
-    },
-  ],
-  exits: [
-    { to: 'stretching_area', name: { target: 'la zona de estiramiento', native: 'stretching area' } },
-    { to: 'locker_room', name: { target: 'el vestuario', native: 'locker room' } },
-    { to: 'street', name: { target: 'la calle', native: 'street' } },
-  ],
-};
-
-export const stretchingArea: Location = {
-  id: 'stretching_area',
-  name: { target: 'la zona de estiramiento', native: 'stretching area' },
-  objects: [
-    {
-      id: 'yoga_mat',
-      name: { target: 'la colchoneta de yoga', native: 'yoga mat' },
-      state: { inUse: false },
-      actions: ['USE', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'foam_roller',
-      name: { target: 'el rodillo de espuma', native: 'foam roller' },
-      state: {},
-      actions: ['USE', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'resistance_bands',
-      name: { target: 'las bandas elasticas', native: 'resistance bands' },
-      state: {},
-      actions: ['USE', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'stretching_mirror',
-      name: { target: 'el espejo', native: 'mirror' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'stability_ball',
-      name: { target: 'la pelota de estabilidad', native: 'stability ball' },
-      state: {},
-      actions: ['USE'],
-    },
-  ],
-  exits: [
-    { to: 'gym_entrance', name: { target: 'la entrada', native: 'entrance' } },
-    { to: 'training_floor', name: { target: 'la zona de entrenamiento', native: 'training floor' } },
-    { to: 'cardio_zone', name: { target: 'la zona de cardio', native: 'cardio zone' } },
-  ],
-};
-
-export const trainingFloor: Location = {
-  id: 'training_floor',
-  name: { target: 'la zona de entrenamiento', native: 'training floor' },
-  objects: [
-    {
-      id: 'training_bench',
-      name: { target: 'el banco de entrenamiento', native: 'training bench' },
-      state: { inUse: false },
-      actions: ['USE'],
-    },
-    {
-      id: 'pull_up_bar',
-      name: { target: 'la barra de dominadas', native: 'pull-up bar' },
-      state: {},
-      actions: ['USE'],
-    },
-    {
-      id: 'kettlebells',
-      name: { target: 'las pesas rusas', native: 'kettlebells' },
-      state: {},
-      actions: ['USE', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'jump_rope',
-      name: { target: 'la cuerda de saltar', native: 'jump rope' },
-      state: {},
-      actions: ['USE', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'exercise_clock',
-      name: { target: 'el reloj de ejercicios', native: 'exercise timer' },
-      state: { running: false },
-      actions: ['TURN_ON', 'TURN_OFF', 'LOOK'],
-    },
-  ],
-  exits: [
-    { to: 'stretching_area', name: { target: 'la zona de estiramiento', native: 'stretching area' } },
-    { to: 'weight_room', name: { target: 'la sala de pesas', native: 'weight room' } },
-    { to: 'cardio_zone', name: { target: 'la zona de cardio', native: 'cardio zone' } },
-  ],
-};
-
-export const weightRoom: Location = {
-  id: 'weight_room',
-  name: { target: 'la sala de pesas', native: 'weight room' },
-  objects: [
-    {
-      id: 'dumbbells',
-      name: { target: 'las mancuernas', native: 'dumbbells' },
-      state: { weight: 10 },
-      actions: ['USE', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'barbell',
-      name: { target: 'la barra con pesas', native: 'barbell' },
-      state: { weight: 20 },
-      actions: ['USE'],
-    },
-    {
-      id: 'weight_rack',
-      name: { target: 'el estante de pesas', native: 'weight rack' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'bench_press',
-      name: { target: 'el banco de press', native: 'bench press' },
-      state: { inUse: false },
-      actions: ['USE'],
-    },
-    {
-      id: 'squat_rack',
-      name: { target: 'el rack de sentadillas', native: 'squat rack' },
-      state: { inUse: false },
-      actions: ['USE'],
-    },
-    {
-      id: 'leg_press_machine',
-      name: { target: 'la maquina de prensa de piernas', native: 'leg press machine' },
-      state: { inUse: false },
-      actions: ['USE'],
-    },
-    {
-      id: 'cable_machine',
-      name: { target: 'la maquina de poleas', native: 'cable machine' },
-      state: { inUse: false },
-      actions: ['USE'],
-    },
-  ],
-  exits: [
-    { to: 'training_floor', name: { target: 'la zona de entrenamiento', native: 'training floor' } },
-    { to: 'cardio_zone', name: { target: 'la zona de cardio', native: 'cardio zone' } },
-    { to: 'stretching_area', name: { target: 'la zona de estiramiento', native: 'stretching area' } },
-    { to: 'locker_room', name: { target: 'el vestuario', native: 'locker room' } },
-  ],
-};
-
-export const cardioZone: Location = {
-  id: 'cardio_zone',
-  name: { target: 'la zona de cardio', native: 'cardio zone' },
-  objects: [
-    {
-      id: 'treadmill',
-      name: { target: 'la cinta de correr', native: 'treadmill' },
-      state: { on: false, speed: 0, inUse: false },
-      actions: ['USE', 'TURN_ON', 'TURN_OFF'],
-    },
-    {
-      id: 'stationary_bike',
-      name: { target: 'la bicicleta estatica', native: 'stationary bike' },
-      state: { inUse: false },
-      actions: ['USE'],
-    },
-    {
-      id: 'elliptical',
-      name: { target: 'la eliptica', native: 'elliptical' },
-      state: { inUse: false },
-      actions: ['USE'],
-    },
-    {
-      id: 'rowing_machine',
-      name: { target: 'la maquina de remo', native: 'rowing machine' },
-      state: { inUse: false },
-      actions: ['USE'],
-    },
-    {
-      id: 'tv_screen',
-      name: { target: 'la pantalla de television', native: 'TV screen' },
-      state: { on: true },
-      actions: ['LOOK'],
-    },
-    {
-      id: 'fan',
-      name: { target: 'el ventilador', native: 'fan' },
-      state: { on: false },
-      actions: ['TURN_ON', 'TURN_OFF'],
-    },
-  ],
-  exits: [
-    { to: 'training_floor', name: { target: 'la zona de entrenamiento', native: 'training floor' } },
-    { to: 'weight_room', name: { target: 'la sala de pesas', native: 'weight room' } },
-    { to: 'stretching_area', name: { target: 'la zona de estiramiento', native: 'stretching area' } },
-    { to: 'locker_room', name: { target: 'el vestuario', native: 'locker room' } },
-  ],
-};
-
-export const lockerRoom: Location = {
-  id: 'locker_room',
-  name: { target: 'el vestuario', native: 'locker room' },
-  objects: [
-    {
-      id: 'locker',
-      name: { target: 'el casillero', native: 'locker' },
-      state: { open: false, locked: false },
-      actions: ['OPEN', 'CLOSE', 'USE'],
-    },
-    {
-      id: 'gym_shower',
-      name: { target: 'la ducha', native: 'shower' },
-      state: { on: false },
-      actions: ['USE'],
-    },
-    {
-      id: 'changing_bench',
-      name: { target: 'el banco de vestidor', native: 'changing bench' },
-      state: {},
-      actions: [],
-    },
-    {
-      id: 'gym_towel',
-      name: { target: 'la toalla', native: 'towel' },
-      state: {},
-      actions: ['USE', 'TAKE'],
-      takeable: true,
-    },
-    {
-      id: 'water_bottle',
-      name: { target: 'la botella de agua', native: 'water bottle' },
-      state: { filled: true },
-      actions: ['TAKE', 'DRINK'],
-      takeable: true,
-      consumable: true,
-      needsEffect: { energy: 10 },
-    },
-    {
-      id: 'scale',
-      name: { target: 'la bascula', native: 'scale' },
-      state: {},
-      actions: ['USE'],
-    },
-    {
-      id: 'gym_mirror',
-      name: { target: 'el espejo', native: 'mirror' },
-      state: {},
-      actions: ['LOOK'],
-    },
-  ],
-  exits: [
-    { to: 'gym_entrance', name: { target: 'la entrada', native: 'entrance' } },
-    { to: 'weight_room', name: { target: 'la sala de pesas', native: 'weight room' } },
-    { to: 'cardio_zone', name: { target: 'la zona de cardio', native: 'cardio zone' } },
-  ],
-};
-
-export const gymLocations: Record<string, Location> = {
-  gym_entrance: gymEntrance,
-  stretching_area: stretchingArea,
-  training_floor: trainingFloor,
-  weight_room: weightRoom,
-  cardio_zone: cardioZone,
-  locker_room: lockerRoom,
+const locations: Record<string, Location> = {
+  gym_entrance: {
+    id: 'gym_entrance',
+    name: { target: 'la entrada del gimnasio', native: 'gym entrance' },
+    exits: [
+      { to: 'stretching_area', name: { target: 'la zona de estiramiento', native: 'stretching area' } },
+      { to: 'locker_room', name: { target: 'el vestuario', native: 'locker room' } },
+      { to: 'street', name: { target: 'la calle', native: 'street' } },
+    ],
+  },
+  stretching_area: {
+    id: 'stretching_area',
+    name: { target: 'la zona de estiramiento', native: 'stretching area' },
+    exits: [
+      { to: 'gym_entrance', name: { target: 'la entrada', native: 'entrance' } },
+      { to: 'training_floor', name: { target: 'la zona de entrenamiento', native: 'training floor' } },
+      { to: 'cardio_zone', name: { target: 'la zona de cardio', native: 'cardio zone' } },
+    ],
+  },
+  training_floor: {
+    id: 'training_floor',
+    name: { target: 'la zona de entrenamiento', native: 'training floor' },
+    exits: [
+      { to: 'stretching_area', name: { target: 'la zona de estiramiento', native: 'stretching area' } },
+      { to: 'weight_room', name: { target: 'la sala de pesas', native: 'weight room' } },
+      { to: 'cardio_zone', name: { target: 'la zona de cardio', native: 'cardio zone' } },
+    ],
+  },
+  weight_room: {
+    id: 'weight_room',
+    name: { target: 'la sala de pesas', native: 'weight room' },
+    exits: [
+      { to: 'training_floor', name: { target: 'la zona de entrenamiento', native: 'training floor' } },
+      { to: 'cardio_zone', name: { target: 'la zona de cardio', native: 'cardio zone' } },
+      { to: 'stretching_area', name: { target: 'la zona de estiramiento', native: 'stretching area' } },
+      { to: 'locker_room', name: { target: 'el vestuario', native: 'locker room' } },
+    ],
+  },
+  cardio_zone: {
+    id: 'cardio_zone',
+    name: { target: 'la zona de cardio', native: 'cardio zone' },
+    exits: [
+      { to: 'training_floor', name: { target: 'la zona de entrenamiento', native: 'training floor' } },
+      { to: 'weight_room', name: { target: 'la sala de pesas', native: 'weight room' } },
+      { to: 'stretching_area', name: { target: 'la zona de estiramiento', native: 'stretching area' } },
+      { to: 'locker_room', name: { target: 'el vestuario', native: 'locker room' } },
+    ],
+  },
+  locker_room: {
+    id: 'locker_room',
+    name: { target: 'el vestuario', native: 'locker room' },
+    exits: [
+      { to: 'gym_entrance', name: { target: 'la entrada', native: 'entrance' } },
+      { to: 'weight_room', name: { target: 'la sala de pesas', native: 'weight room' } },
+      { to: 'cardio_zone', name: { target: 'la zona de cardio', native: 'cardio zone' } },
+    ],
+  },
 };
 
 // ============================================================================
-// GYM NPCs
+// OBJECTS (flat list -- each knows its own location)
 // ============================================================================
 
-export const gymNPCs: NPC[] = [
+const objects: WorldObject[] = [
+  // Gym entrance
+  { id: 'reception_desk', name: { target: 'el mostrador de recepcion', native: 'reception desk' }, location: 'gym_entrance', tags: [] },
+  { id: 'membership_card_scanner', name: { target: 'el lector de tarjetas', native: 'card scanner' }, location: 'gym_entrance', tags: [] },
+  { id: 'gym_rules_poster', name: { target: 'el cartel de reglas', native: 'rules poster' }, location: 'gym_entrance', tags: [] },
+  { id: 'water_fountain', name: { target: 'la fuente de agua', native: 'water fountain' }, location: 'gym_entrance', tags: ['consumable'], needsEffect: { energy: 5 } },
+  { id: 'gym_bag', name: { target: 'la bolsa de gimnasio', native: 'gym bag' }, location: 'gym_entrance', tags: ['takeable', 'closed'] },
+
+  // Stretching area
+  { id: 'yoga_mat', name: { target: 'la colchoneta de yoga', native: 'yoga mat' }, location: 'stretching_area', tags: ['takeable'] },
+  { id: 'foam_roller', name: { target: 'el rodillo de espuma', native: 'foam roller' }, location: 'stretching_area', tags: ['takeable'] },
+  { id: 'resistance_bands', name: { target: 'las bandas elasticas', native: 'resistance bands' }, location: 'stretching_area', tags: ['takeable'] },
+  { id: 'stretching_mirror', name: { target: 'el espejo', native: 'mirror' }, location: 'stretching_area', tags: [] },
+  { id: 'stability_ball', name: { target: 'la pelota de estabilidad', native: 'stability ball' }, location: 'stretching_area', tags: [] },
+
+  // Training floor
+  { id: 'training_bench', name: { target: 'el banco de entrenamiento', native: 'training bench' }, location: 'training_floor', tags: [] },
+  { id: 'pull_up_bar', name: { target: 'la barra de dominadas', native: 'pull-up bar' }, location: 'training_floor', tags: [] },
+  { id: 'kettlebells', name: { target: 'las pesas rusas', native: 'kettlebells' }, location: 'training_floor', tags: ['takeable'] },
+  { id: 'jump_rope', name: { target: 'la cuerda de saltar', native: 'jump rope' }, location: 'training_floor', tags: ['takeable'] },
+  { id: 'exercise_clock', name: { target: 'el reloj de ejercicios', native: 'exercise timer' }, location: 'training_floor', tags: ['off'] },
+
+  // Weight room
+  { id: 'dumbbells', name: { target: 'las mancuernas', native: 'dumbbells' }, location: 'weight_room', tags: ['takeable'] },
+  { id: 'barbell', name: { target: 'la barra con pesas', native: 'barbell' }, location: 'weight_room', tags: [] },
+  { id: 'weight_rack', name: { target: 'el estante de pesas', native: 'weight rack' }, location: 'weight_room', tags: [] },
+  { id: 'bench_press', name: { target: 'el banco de press', native: 'bench press' }, location: 'weight_room', tags: [] },
+  { id: 'squat_rack', name: { target: 'el rack de sentadillas', native: 'squat rack' }, location: 'weight_room', tags: [] },
+  { id: 'leg_press_machine', name: { target: 'la maquina de prensa de piernas', native: 'leg press machine' }, location: 'weight_room', tags: [] },
+  { id: 'cable_machine', name: { target: 'la maquina de poleas', native: 'cable machine' }, location: 'weight_room', tags: [] },
+
+  // Cardio zone
+  { id: 'treadmill', name: { target: 'la cinta de correr', native: 'treadmill' }, location: 'cardio_zone', tags: ['off'] },
+  { id: 'stationary_bike', name: { target: 'la bicicleta estatica', native: 'stationary bike' }, location: 'cardio_zone', tags: [] },
+  { id: 'elliptical', name: { target: 'la eliptica', native: 'elliptical' }, location: 'cardio_zone', tags: [] },
+  { id: 'rowing_machine', name: { target: 'la maquina de remo', native: 'rowing machine' }, location: 'cardio_zone', tags: [] },
+  { id: 'tv_screen', name: { target: 'la pantalla de television', native: 'TV screen' }, location: 'cardio_zone', tags: ['on'] },
+  { id: 'fan', name: { target: 'el ventilador', native: 'fan' }, location: 'cardio_zone', tags: ['off'] },
+
+  // Locker room
+  { id: 'locker', name: { target: 'el casillero', native: 'locker' }, location: 'locker_room', tags: ['closed'] },
+  { id: 'gym_shower', name: { target: 'la ducha', native: 'shower' }, location: 'locker_room', tags: ['off'] },
+  { id: 'changing_bench', name: { target: 'el banco de vestidor', native: 'changing bench' }, location: 'locker_room', tags: [] },
+  { id: 'gym_towel', name: { target: 'la toalla', native: 'towel' }, location: 'locker_room', tags: ['takeable'] },
+  { id: 'water_bottle', name: { target: 'la botella de agua', native: 'water bottle' }, location: 'locker_room', tags: ['takeable', 'consumable'], needsEffect: { energy: 10 } },
+  { id: 'scale', name: { target: 'la bascula', native: 'scale' }, location: 'locker_room', tags: [] },
+  { id: 'gym_mirror', name: { target: 'el espejo', native: 'mirror' }, location: 'locker_room', tags: [] },
+];
+
+// ============================================================================
+// NPCs
+// ============================================================================
+
+const npcs: NPC[] = [
   {
     id: 'receptionist_ana',
     name: { target: 'Ana', native: 'Ana' },
@@ -340,41 +144,18 @@ export const gymNPCs: NPC[] = [
   },
 ];
 
-// Extended NPC state for gym interactions
-export interface GymNPCState {
-  mood: string;
-  lastResponse?: string;
-  // Receptionist-specific
-  hasCheckedIn?: boolean;
-  hasGivenTour?: boolean;
-  // Trainer-specific
-  isTraining?: boolean;
-  currentExercise?: string;
-  repCount?: number;
-  setCount?: number;
-  // Member-specific
-  hasIntroduced?: boolean;
-  sharedTips?: boolean;
-}
-
-export function getGymNPCsInLocation(locationId: string): NPC[] {
-  return gymNPCs.filter(npc => npc.location === locationId);
-}
-
 // ============================================================================
-// GYM GOALS
+// GOALS (checkComplete uses new state model)
 // ============================================================================
 
-export const gymGoals: Goal[] = [
+const goals: Goal[] = [
   {
     id: 'gym_check_in',
     title: 'Check in at the gym',
     description: 'You\'ve arrived at the gym! Check in with Ana at the reception desk.',
     hint: 'Try "Hola, buenos dias" to greet Ana, then show your card: "Aqui esta mi tarjeta"',
     checkComplete: (state: GameState) =>
-      state.location.id === 'gym_entrance' &&
-      (state.completedGoals.includes('checked_in') ||
-       state.completedGoals.includes('gym_check_in')),
+      state.completedGoals.includes('gym_check_in'),
     nextGoalId: 'gym_warm_up',
   },
   {
@@ -383,8 +164,6 @@ export const gymGoals: Goal[] = [
     description: 'Before exercising, you need to warm up. Go to the stretching area and do some stretches.',
     hint: 'Try "Voy a la zona de estiramiento" then "Me estiro" (I stretch) or "Uso la colchoneta"',
     checkComplete: (state: GameState) =>
-      state.completedGoals.includes('warmed_up') ||
-      state.completedGoals.includes('stretched') ||
       state.completedGoals.includes('gym_warm_up'),
     nextGoalId: 'gym_follow_trainer',
   },
@@ -394,8 +173,6 @@ export const gymGoals: Goal[] = [
     description: 'Find trainer Marco on the training floor and follow his exercise commands. Listen for imperatives!',
     hint: 'Go to training floor with "Voy a la zona de entrenamiento". Follow commands like "Levanta los brazos!" (Raise your arms!). Respond with "Levanto los brazos"',
     checkComplete: (state: GameState) =>
-      state.completedGoals.includes('followed_trainer') ||
-      state.completedGoals.includes('completed_exercise') ||
       state.completedGoals.includes('gym_follow_trainer'),
     nextGoalId: 'gym_cardio',
   },
@@ -405,11 +182,10 @@ export const gymGoals: Goal[] = [
     description: 'Get your heart pumping! Use the treadmill or bike in the cardio zone. Chat with Sofia about her routine.',
     hint: 'Try "Uso la cinta de correr" (I use the treadmill) or "Corro en la cinta" (I run on the treadmill). Ask Sofia "Con que frecuencia vienes?" (How often do you come?)',
     checkComplete: (state: GameState) => {
-      const treadmill = state.location.objects.find(o => o.id === 'treadmill');
-      const bike = state.location.objects.find(o => o.id === 'stationary_bike');
-      return treadmill?.state.inUse === true ||
-             bike?.state.inUse === true ||
-             state.completedGoals.includes('did_cardio') ||
+      const treadmill = state.objects.find(o => o.id === 'treadmill');
+      const bike = state.objects.find(o => o.id === 'stationary_bike');
+      return (treadmill?.tags.includes('inUse') === true) ||
+             (bike?.tags.includes('inUse') === true) ||
              state.completedGoals.includes('gym_cardio');
     },
     nextGoalId: 'gym_weights',
@@ -420,8 +196,6 @@ export const gymGoals: Goal[] = [
     description: 'Build strength in the weight room. Use the dumbbells or machines.',
     hint: 'Try "Levanto las mancuernas" (I lift the dumbbells) or "Hago diez repeticiones" (I do ten repetitions)',
     checkComplete: (state: GameState) =>
-      state.completedGoals.includes('lifted_weights') ||
-      state.completedGoals.includes('used_weights') ||
       state.completedGoals.includes('gym_weights'),
     nextGoalId: 'gym_cool_down',
   },
@@ -431,8 +205,6 @@ export const gymGoals: Goal[] = [
     description: 'Great workout! Cool down with stretches, then shower and change in the locker room.',
     hint: 'Try "Me estiro" to stretch, then "Voy al vestuario" and "Me ducho" (I shower)',
     checkComplete: (state: GameState) =>
-      state.completedGoals.includes('cooled_down') ||
-      state.completedGoals.includes('showered') ||
       state.completedGoals.includes('gym_cool_down'),
     nextGoalId: 'gym_complete',
   },
@@ -444,19 +216,11 @@ export const gymGoals: Goal[] = [
   },
 ];
 
-export function getGymGoalById(id: string): Goal | undefined {
-  return gymGoals.find(g => g.id === id);
-}
-
-export function getGymStartGoal(): Goal {
-  return gymGoals[0];
-}
-
 // ============================================================================
-// GYM VOCABULARY
+// VOCABULARY (unchanged)
 // ============================================================================
 
-export const gymVocabulary: VocabWord[] = [
+const vocabulary: VocabWord[] = [
   // ---- GYM LOCATIONS ----
   { target: 'el gimnasio', native: 'gym', category: 'noun', gender: 'masculine' },
   { target: 'la entrada', native: 'entrance', category: 'noun', gender: 'feminine' },
@@ -734,42 +498,104 @@ export const gymVocabulary: VocabWord[] = [
   { target: 'buena sesion!', native: 'good session!', category: 'other' },
 ];
 
+// ============================================================================
+// MODULE EXPORT
+// ============================================================================
+
 export const gymModule: ModuleDefinition = {
   name: 'gym',
   displayName: 'Gym',
-  locations: gymLocations,
-  npcs: gymNPCs,
-  goals: gymGoals,
-  vocabulary: gymVocabulary,
+  locations,
+  objects,
+  npcs,
+  goals,
+  vocabulary,
   startLocationId: 'gym_entrance',
   startGoalId: 'gym_check_in',
-  locationIds: Object.keys(gymLocations),
+  locationIds: Object.keys(locations),
   unlockLevel: 5,
 
-  parseGuidance: `ACTION RULES:
-- Greeting or showing gym card at entrance → talk to receptionist_ana
-- Stretching or using yoga mat in stretching_area → use yoga_mat, needsChanges: { energy: -5 }
-- Following trainer commands (lifting, exercises) on training_floor → use training_bench, needsChanges: { energy: -10 }
-- Running or using treadmill in cardio_zone → use treadmill, needsChanges: { energy: -15 }
-- Lifting dumbbells or doing reps in weight_room → use dumbbells, needsChanges: { energy: -10 }
-- Showering in locker_room → use gym_shower, needsChanges: { hygiene: 30 }
+  guidance: `GYM ENVIRONMENT:
+A modern gym with six areas: entrance, stretching area, training floor, weight room, cardio zone, and locker room.
+The player is learning exercise vocabulary, body parts, imperatives, reflexive verbs, and frequency expressions.
+
+OBJECTS:
+- reception_desk: Fixed desk at entrance. Ana stands behind it.
+- membership_card_scanner: Player scans card to check in. No state changes needed.
+- gym_rules_poster: Can be looked at for flavor text.
+- water_fountain: Consumable at entrance. Drinking gives energy +5 via needsEffect.
+- gym_bag: Takeable, starts "closed". Can be opened (tag remove "closed", add "open") to access contents.
+- yoga_mat: In stretching_area. Takeable. Using it = stretching/warming up.
+- foam_roller, resistance_bands: Takeable stretching equipment. Using = warming up.
+- stability_ball: In stretching_area. Can be used for exercises.
+- stretching_mirror, gym_mirror: Mirrors for looking at form. No state changes.
+- training_bench: On training_floor. Used for bench exercises with Marco.
+- pull_up_bar: On training_floor. Used for pull-ups/dominadas.
+- kettlebells: Takeable on training_floor. Used for strength exercises.
+- jump_rope: Takeable on training_floor. Used for cardio warm-up.
+- exercise_clock: Timer on training_floor. Starts "off". Turn on = tag add "on", remove "off".
+- dumbbells: Takeable in weight_room. Core weight-lifting equipment.
+- barbell: In weight_room. Heavy, not takeable. Used in place.
+- weight_rack: In weight_room. Look at to see available weights.
+- bench_press, squat_rack: In weight_room. Used for specific lifts.
+- leg_press_machine, cable_machine: Machines in weight_room. Used for exercises.
+- treadmill: In cardio_zone. Starts "off". Using = tag add "on" + "inUse", remove "off". Needs: energy -15.
+- stationary_bike: In cardio_zone. Using = tag add "inUse". Needs: energy -10.
+- elliptical: In cardio_zone. Sofia is on this one. Using = tag add "inUse". Needs: energy -10.
+- rowing_machine: In cardio_zone. Using = tag add "inUse". Needs: energy -10.
+- tv_screen: In cardio_zone. Starts "on". Background entertainment.
+- fan: In cardio_zone. Starts "off". Turn on = tag add "on", remove "off".
+- locker: In locker_room. Starts "closed". Open = tag remove "closed", add "open".
+- gym_shower: In locker_room. Starts "off". Using = tag add "on", remove "off". Needs: hygiene +30.
+- changing_bench: In locker_room. Decorative.
+- gym_towel: Takeable in locker_room. Useful after shower.
+- water_bottle: Takeable, consumable in locker_room. Drinking gives energy +10.
+- scale: In locker_room. Can be used to weigh yourself.
+
+EXERCISE FLOW:
+When the player exercises (stretches, lifts, runs, etc.), apply energy cost via needs mutation:
+- Stretching/warming up: needs { energy: -5 }
+- Training floor exercises with Marco: needs { energy: -10 }
+- Cardio (treadmill, bike, elliptical, rowing): needs { energy: -15 }
+- Weight lifting (dumbbells, barbell, machines): needs { energy: -10 }
+- Showering: needs { hygiene: 30 }
+- Drinking water/using fountain: use the object's needsEffect
+
+TRAINER COMMANDS (Marco):
+Marco gives imperative commands the player should follow. When Marco says an imperative like
+"Levanta los brazos!" the player responds with the yo-form "Levanto los brazos".
+Common trainer imperatives: levanta (lift), baja (lower), empuja (push), jala (pull),
+corre (run), salta (jump), para (stop), respira (breathe), descansa (rest),
+estirate (stretch), dobla (bend), gira (turn), aguanta (hold), aprieta (squeeze),
+repite (repeat), continua (continue).
+Marco counts reps in Spanish: uno, dos, tres... diez.
+Marco tracks sets: "Primera serie!" (First set!), "Segunda serie!" (Second set!).
+
+NPCs:
+- Ana (receptionist_ana): At gym_entrance. Friendly, energetic. Uses informal "tu".
+  Greets with "Bienvenido al gimnasio!" and asks for membership card.
+  Answers questions about classes, schedules, equipment.
+  After check-in greeting, complete gym_check_in goal.
+- Marco (trainer_marco): On training_floor. Motivational personal trainer.
+  Issues imperative commands for exercises. Counts reps in Spanish.
+  Encourages proper form: "Buena postura!" (Good posture!), "Mas bajo!" (Lower!).
+  After the player follows at least 2-3 commands or completes an exercise set, complete gym_follow_trainer.
+- Sofia (member_sofia): In cardio_zone. Regular member on the elliptical.
+  Chatty, shares workout tips. Talks about frequency: "Vengo tres veces a la semana".
+  Asks about player's fitness goals. Uses casual speech.
+
+GOAL COMPLETION:
+- gym_check_in: Player greets Ana or shows card at entrance
+- gym_warm_up: Player stretches or uses equipment in stretching_area (uses mat, bands, roller, or says "me estiro"/"me caliento")
+- gym_follow_trainer: Player follows Marco's commands on training_floor (responds to imperatives, does exercises)
+- gym_cardio: Player uses treadmill, bike, elliptical, or rowing_machine (any gets "inUse" tag) OR talks to Sofia about exercise
+- gym_weights: Player lifts dumbbells, uses barbell, bench_press, squat_rack, or any machine in weight_room
+- gym_cool_down: Player stretches to cool down OR showers in locker_room (gym_shower gets "on" tag)
 
 TEACHING FOCUS:
 - Imperatives (trainer commands): "Levanta!" (Lift!), "Baja!" (Lower!), "Respira!" (Breathe!)
 - Reflexive verbs: "Me estiro" (I stretch), "Me caliento" (I warm up), "Me ducho" (I shower)
-- Frequency: "tres veces a la semana" (three times a week)
-- Body parts: "los brazos" (arms), "las piernas" (legs), "el pecho" (chest)`,
-
-  narrateGuidance: `NPC PERSONALITIES:
-- Ana (receptionist_ana): Friendly, energetic receptionist at gym_entrance. Uses informal "tu" with regulars. Says "Bienvenido al gimnasio!" and "Tu tarjeta, por favor".
-- Marco (trainer_marco): Motivational personal trainer on training_floor. Counts reps in Spanish. Enthusiastic. Says "Levanta!", "Respira!", "Descansa!".
-- Sofia (member_sofia): Regular gym member in cardio_zone. Chatty and friendly. Happy to share tips. Says "Vengo tres veces a la semana".
-
-GOAL COMPLETION:
-- Check in with receptionist → gym_check_in, checked_in
-- Stretch or warm up in stretching area → gym_warm_up, warmed_up, stretched
-- Follow trainer commands → gym_follow_trainer, followed_trainer
-- Do cardio on treadmill → gym_cardio, did_cardio
-- Lift weights → gym_weights, lifted_weights
-- Shower in locker room → gym_cool_down, showered`,
+- Frequency expressions: "tres veces a la semana" (three times a week), "cada dia" (every day)
+- Body parts: "los brazos" (arms), "las piernas" (legs), "el pecho" (chest)
+- Numbers for counting reps: "uno, dos, tres..." up to "veinte"`,
 };

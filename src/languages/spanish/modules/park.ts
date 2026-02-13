@@ -1,344 +1,122 @@
-import type { Location, Goal, VocabWord, GameState, NPC, ModuleDefinition } from '../../../engine/types.js';
+import type { Location, Goal, VocabWord, GameState, NPC, WorldObject, ModuleDefinition } from '../../../engine/types.js';
 
 // ============================================================================
-// PARK LOCATIONS
+// LOCATIONS (exits only -- objects are in the flat list below)
 // ============================================================================
 
-export const parkEntrance: Location = {
-  id: 'park_entrance',
-  name: { target: 'la entrada del parque', native: 'park entrance' },
-  objects: [
-    {
-      id: 'park_gate',
-      name: { target: 'la puerta del parque', native: 'park gate' },
-      state: { open: true },
-      actions: ['LOOK'],
-    },
-    {
-      id: 'park_sign',
-      name: { target: 'el letrero del parque', native: 'park sign' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'park_map',
-      name: { target: 'el mapa del parque', native: 'park map' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'entrance_bench',
-      name: { target: 'el banco', native: 'bench' },
-      state: {},
-      actions: [],
-    },
-    {
-      id: 'trash_can',
-      name: { target: 'el bote de basura', native: 'trash can' },
-      state: {},
-      actions: ['USE'],
-    },
-  ],
-  exits: [
-    { to: 'main_path', name: { target: 'el sendero principal', native: 'main path' } },
-    { to: 'street', name: { target: 'la calle', native: 'street' } },
-  ],
-};
-
-export const mainPath: Location = {
-  id: 'main_path',
-  name: { target: 'el sendero principal', native: 'main path' },
-  objects: [
-    {
-      id: 'oak_tree',
-      name: { target: 'el roble', native: 'oak tree' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'pine_tree',
-      name: { target: 'el pino', native: 'pine tree' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'path_bench',
-      name: { target: 'el banco', native: 'bench' },
-      state: {},
-      actions: [],
-    },
-    {
-      id: 'squirrel',
-      name: { target: 'la ardilla', native: 'squirrel' },
-      state: { visible: true },
-      actions: ['LOOK'],
-    },
-    {
-      id: 'fallen_leaves',
-      name: { target: 'las hojas caidas', native: 'fallen leaves' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'lamp_post',
-      name: { target: 'el farol', native: 'lamp post' },
-      state: { on: false },
-      actions: ['LOOK'],
-    },
-  ],
-  exits: [
-    { to: 'park_entrance', name: { target: 'la entrada', native: 'entrance' } },
-    { to: 'fountain_area', name: { target: 'la fuente', native: 'fountain' } },
-    { to: 'garden', name: { target: 'el jardin', native: 'garden' } },
-    { to: 'playground', name: { target: 'el area de juegos', native: 'playground' } },
-  ],
-};
-
-export const fountainArea: Location = {
-  id: 'fountain_area',
-  name: { target: 'el area de la fuente', native: 'fountain area' },
-  objects: [
-    {
-      id: 'fountain',
-      name: { target: 'la fuente', native: 'fountain' },
-      state: { on: true, hasWater: true },
-      actions: ['LOOK'],
-    },
-    {
-      id: 'fountain_bench',
-      name: { target: 'el banco', native: 'bench' },
-      state: { occupied: false },
-      actions: [],
-    },
-    {
-      id: 'pigeons',
-      name: { target: 'las palomas', native: 'pigeons' },
-      state: { count: 12 },
-      actions: ['LOOK'],
-    },
-    {
-      id: 'pigeon_feeder',
-      name: { target: 'el senor con las palomas', native: 'man with pigeons' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'coins_in_fountain',
-      name: { target: 'las monedas en la fuente', native: 'coins in fountain' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'statue',
-      name: { target: 'la estatua', native: 'statue' },
-      state: {},
-      actions: ['LOOK'],
-    },
-  ],
-  exits: [
-    { to: 'main_path', name: { target: 'el sendero', native: 'path' } },
-    { to: 'kiosk', name: { target: 'el quiosco', native: 'kiosk' } },
-  ],
-};
-
-export const garden: Location = {
-  id: 'garden',
-  name: { target: 'el jardin', native: 'garden' },
-  objects: [
-    {
-      id: 'roses',
-      name: { target: 'las rosas', native: 'roses' },
-      state: { blooming: true, color: 'red' },
-      actions: ['LOOK'],
-    },
-    {
-      id: 'tulips',
-      name: { target: 'los tulipanes', native: 'tulips' },
-      state: { blooming: true },
-      actions: ['LOOK'],
-    },
-    {
-      id: 'sunflowers',
-      name: { target: 'los girasoles', native: 'sunflowers' },
-      state: { blooming: true },
-      actions: ['LOOK'],
-    },
-    {
-      id: 'butterfly',
-      name: { target: 'la mariposa', native: 'butterfly' },
-      state: { visible: true },
-      actions: ['LOOK'],
-    },
-    {
-      id: 'bee',
-      name: { target: 'la abeja', native: 'bee' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'garden_bench',
-      name: { target: 'el banco del jardin', native: 'garden bench' },
-      state: {},
-      actions: [],
-    },
-    {
-      id: 'flower_bed',
-      name: { target: 'el macizo de flores', native: 'flower bed' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'watering_can',
-      name: { target: 'la regadera', native: 'watering can' },
-      state: { filled: true },
-      actions: ['USE', 'TAKE'],
-      takeable: true,
-    },
-  ],
-  exits: [
-    { to: 'main_path', name: { target: 'el sendero', native: 'path' } },
-  ],
-};
-
-export const playground: Location = {
-  id: 'playground',
-  name: { target: 'el area de juegos', native: 'playground' },
-  objects: [
-    {
-      id: 'swings',
-      name: { target: 'los columpios', native: 'swings' },
-      state: { inUse: false },
-      actions: ['USE', 'LOOK'],
-    },
-    {
-      id: 'slide',
-      name: { target: 'el tobogan', native: 'slide' },
-      state: {},
-      actions: ['USE', 'LOOK'],
-    },
-    {
-      id: 'sandbox',
-      name: { target: 'el arenero', native: 'sandbox' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'seesaw',
-      name: { target: 'el sube y baja', native: 'seesaw' },
-      state: {},
-      actions: ['USE', 'LOOK'],
-    },
-    {
-      id: 'monkey_bars',
-      name: { target: 'las barras', native: 'monkey bars' },
-      state: {},
-      actions: ['USE', 'LOOK'],
-    },
-    {
-      id: 'children_playing',
-      name: { target: 'los ninos jugando', native: 'children playing' },
-      state: { count: 5 },
-      actions: ['LOOK'],
-    },
-    {
-      id: 'ball',
-      name: { target: 'la pelota', native: 'ball' },
-      state: {},
-      actions: ['TAKE', 'USE'],
-      takeable: true,
-    },
-  ],
-  exits: [
-    { to: 'main_path', name: { target: 'el sendero', native: 'path' } },
-  ],
-};
-
-export const kiosk: Location = {
-  id: 'kiosk',
-  name: { target: 'el quiosco', native: 'kiosk' },
-  objects: [
-    {
-      id: 'ice_cream_cart',
-      name: { target: 'el carrito de helados', native: 'ice cream cart' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'ice_cream_menu',
-      name: { target: 'el menu de helados', native: 'ice cream menu' },
-      state: {},
-      actions: ['LOOK'],
-    },
-    {
-      id: 'chocolate_ice_cream',
-      name: { target: 'el helado de chocolate', native: 'chocolate ice cream' },
-      state: { available: true },
-      actions: ['TAKE', 'EAT'],
-      takeable: true,
-      consumable: true,
-      needsEffect: { hunger: 15 },
-    },
-    {
-      id: 'vanilla_ice_cream',
-      name: { target: 'el helado de vainilla', native: 'vanilla ice cream' },
-      state: { available: true },
-      actions: ['TAKE', 'EAT'],
-      takeable: true,
-      consumable: true,
-      needsEffect: { hunger: 15 },
-    },
-    {
-      id: 'strawberry_ice_cream',
-      name: { target: 'el helado de fresa', native: 'strawberry ice cream' },
-      state: { available: true },
-      actions: ['TAKE', 'EAT'],
-      takeable: true,
-      consumable: true,
-      needsEffect: { hunger: 15 },
-    },
-    {
-      id: 'water_bottle',
-      name: { target: 'la botella de agua', native: 'water bottle' },
-      state: {},
-      actions: ['TAKE', 'DRINK'],
-      takeable: true,
-      consumable: true,
-      needsEffect: { hunger: 5 },
-    },
-    {
-      id: 'umbrella',
-      name: { target: 'el paraguas', native: 'umbrella' },
-      state: { open: false },
-      actions: ['TAKE', 'OPEN', 'CLOSE'],
-      takeable: true,
-    },
-    {
-      id: 'kiosk_bench',
-      name: { target: 'el banco', native: 'bench' },
-      state: {},
-      actions: [],
-    },
-  ],
-  exits: [
-    { to: 'fountain_area', name: { target: 'la fuente', native: 'fountain' } },
-    { to: 'main_path', name: { target: 'el sendero', native: 'path' } },
-  ],
-};
-
-export const parkLocations: Record<string, Location> = {
-  park_entrance: parkEntrance,
-  main_path: mainPath,
-  fountain_area: fountainArea,
-  garden,
-  playground,
-  kiosk,
+const locations: Record<string, Location> = {
+  park_entrance: {
+    id: 'park_entrance',
+    name: { target: 'la entrada del parque', native: 'park entrance' },
+    exits: [
+      { to: 'main_path', name: { target: 'el sendero principal', native: 'main path' } },
+      { to: 'street', name: { target: 'la calle', native: 'street' } },
+    ],
+  },
+  main_path: {
+    id: 'main_path',
+    name: { target: 'el sendero principal', native: 'main path' },
+    exits: [
+      { to: 'park_entrance', name: { target: 'la entrada', native: 'entrance' } },
+      { to: 'fountain_area', name: { target: 'la fuente', native: 'fountain' } },
+      { to: 'garden', name: { target: 'el jardin', native: 'garden' } },
+      { to: 'playground', name: { target: 'el area de juegos', native: 'playground' } },
+    ],
+  },
+  fountain_area: {
+    id: 'fountain_area',
+    name: { target: 'el area de la fuente', native: 'fountain area' },
+    exits: [
+      { to: 'main_path', name: { target: 'el sendero', native: 'path' } },
+      { to: 'kiosk', name: { target: 'el quiosco', native: 'kiosk' } },
+    ],
+  },
+  garden: {
+    id: 'garden',
+    name: { target: 'el jardin', native: 'garden' },
+    exits: [
+      { to: 'main_path', name: { target: 'el sendero', native: 'path' } },
+    ],
+  },
+  playground: {
+    id: 'playground',
+    name: { target: 'el area de juegos', native: 'playground' },
+    exits: [
+      { to: 'main_path', name: { target: 'el sendero', native: 'path' } },
+    ],
+  },
+  kiosk: {
+    id: 'kiosk',
+    name: { target: 'el quiosco', native: 'kiosk' },
+    exits: [
+      { to: 'fountain_area', name: { target: 'la fuente', native: 'fountain' } },
+      { to: 'main_path', name: { target: 'el sendero', native: 'path' } },
+    ],
+  },
 };
 
 // ============================================================================
-// PARK NPCS
+// OBJECTS (flat list -- each knows its own location)
 // ============================================================================
 
-export const parkNpcs: NPC[] = [
+const objects: WorldObject[] = [
+  // Park entrance
+  { id: 'park_gate', name: { target: 'la puerta del parque', native: 'park gate' }, location: 'park_entrance', tags: ['open'] },
+  { id: 'park_sign', name: { target: 'el letrero del parque', native: 'park sign' }, location: 'park_entrance', tags: [] },
+  { id: 'park_map', name: { target: 'el mapa del parque', native: 'park map' }, location: 'park_entrance', tags: [] },
+  { id: 'entrance_bench', name: { target: 'el banco', native: 'bench' }, location: 'park_entrance', tags: [] },
+  { id: 'trash_can', name: { target: 'el bote de basura', native: 'trash can' }, location: 'park_entrance', tags: [] },
+
+  // Main path
+  { id: 'oak_tree', name: { target: 'el roble', native: 'oak tree' }, location: 'main_path', tags: [] },
+  { id: 'pine_tree', name: { target: 'el pino', native: 'pine tree' }, location: 'main_path', tags: [] },
+  { id: 'path_bench', name: { target: 'el banco', native: 'bench' }, location: 'main_path', tags: [] },
+  { id: 'squirrel', name: { target: 'la ardilla', native: 'squirrel' }, location: 'main_path', tags: [] },
+  { id: 'fallen_leaves', name: { target: 'las hojas caidas', native: 'fallen leaves' }, location: 'main_path', tags: [] },
+  { id: 'lamp_post', name: { target: 'el farol', native: 'lamp post' }, location: 'main_path', tags: ['off'] },
+
+  // Fountain area
+  { id: 'fountain', name: { target: 'la fuente', native: 'fountain' }, location: 'fountain_area', tags: ['on'] },
+  { id: 'fountain_bench', name: { target: 'el banco', native: 'bench' }, location: 'fountain_area', tags: [] },
+  { id: 'pigeons', name: { target: 'las palomas', native: 'pigeons' }, location: 'fountain_area', tags: [] },
+  { id: 'coins_in_fountain', name: { target: 'las monedas en la fuente', native: 'coins in fountain' }, location: 'fountain_area', tags: [] },
+  { id: 'statue', name: { target: 'la estatua', native: 'statue' }, location: 'fountain_area', tags: [] },
+
+  // Garden
+  { id: 'roses', name: { target: 'las rosas', native: 'roses' }, location: 'garden', tags: ['blooming', 'red'] },
+  { id: 'tulips', name: { target: 'los tulipanes', native: 'tulips' }, location: 'garden', tags: ['blooming'] },
+  { id: 'sunflowers', name: { target: 'los girasoles', native: 'sunflowers' }, location: 'garden', tags: ['blooming'] },
+  { id: 'butterfly', name: { target: 'la mariposa', native: 'butterfly' }, location: 'garden', tags: [] },
+  { id: 'bee', name: { target: 'la abeja', native: 'bee' }, location: 'garden', tags: [] },
+  { id: 'garden_bench', name: { target: 'el banco del jardin', native: 'garden bench' }, location: 'garden', tags: [] },
+  { id: 'flower_bed', name: { target: 'el macizo de flores', native: 'flower bed' }, location: 'garden', tags: [] },
+  { id: 'watering_can', name: { target: 'la regadera', native: 'watering can' }, location: 'garden', tags: ['takeable'] },
+
+  // Playground
+  { id: 'swings', name: { target: 'los columpios', native: 'swings' }, location: 'playground', tags: [] },
+  { id: 'slide', name: { target: 'el tobogan', native: 'slide' }, location: 'playground', tags: [] },
+  { id: 'sandbox', name: { target: 'el arenero', native: 'sandbox' }, location: 'playground', tags: [] },
+  { id: 'seesaw', name: { target: 'el sube y baja', native: 'seesaw' }, location: 'playground', tags: [] },
+  { id: 'monkey_bars', name: { target: 'las barras', native: 'monkey bars' }, location: 'playground', tags: [] },
+  { id: 'children_playing', name: { target: 'los ninos jugando', native: 'children playing' }, location: 'playground', tags: [] },
+  { id: 'ball', name: { target: 'la pelota', native: 'ball' }, location: 'playground', tags: ['takeable'] },
+
+  // Kiosk
+  { id: 'ice_cream_cart', name: { target: 'el carrito de helados', native: 'ice cream cart' }, location: 'kiosk', tags: [] },
+  { id: 'ice_cream_menu', name: { target: 'el menu de helados', native: 'ice cream menu' }, location: 'kiosk', tags: [] },
+  { id: 'chocolate_ice_cream', name: { target: 'el helado de chocolate', native: 'chocolate ice cream' }, location: 'kiosk', tags: ['takeable', 'consumable'], needsEffect: { hunger: 15 } },
+  { id: 'vanilla_ice_cream', name: { target: 'el helado de vainilla', native: 'vanilla ice cream' }, location: 'kiosk', tags: ['takeable', 'consumable'], needsEffect: { hunger: 15 } },
+  { id: 'strawberry_ice_cream', name: { target: 'el helado de fresa', native: 'strawberry ice cream' }, location: 'kiosk', tags: ['takeable', 'consumable'], needsEffect: { hunger: 15 } },
+  { id: 'water_bottle', name: { target: 'la botella de agua', native: 'water bottle' }, location: 'kiosk', tags: ['takeable', 'consumable'], needsEffect: { hunger: 5 } },
+  { id: 'umbrella', name: { target: 'el paraguas', native: 'umbrella' }, location: 'kiosk', tags: ['takeable', 'closed'] },
+  { id: 'kiosk_bench', name: { target: 'el banco', native: 'bench' }, location: 'kiosk', tags: [] },
+];
+
+// ============================================================================
+// NPCs
+// ============================================================================
+
+const npcs: NPC[] = [
   {
     id: 'ice_cream_vendor',
     name: { target: 'Senor Gomez', native: 'Mr. Gomez' },
@@ -355,78 +133,64 @@ export const parkNpcs: NPC[] = [
   },
 ];
 
-export function getParkNPCsInLocation(locationId: string): NPC[] {
-  return parkNpcs.filter(npc => npc.location === locationId);
-}
-
 // ============================================================================
-// PARK GOALS - Weather and Present Progressive Focus
+// GOALS (checkComplete uses new state model)
 // ============================================================================
 
-export const parkGoals: Goal[] = [
-  // Goal 1: Arrive at the park and observe the weather
+const goals: Goal[] = [
   {
     id: 'arrive_at_park',
     title: 'Arrive at the park',
     description: 'Walk to the park entrance and take in the scenery.',
     hint: 'Try "Voy al parque" (I go to the park)',
-    checkComplete: (state: GameState) => state.location.id === 'park_entrance',
+    checkComplete: (state: GameState) => state.currentLocation === 'park_entrance',
     nextGoalId: 'check_weather',
   },
-  // Goal 2: Comment on the weather using hacer expressions
   {
     id: 'check_weather',
     title: 'Check the weather',
     description: 'Look around and comment on the weather. Is it nice out?',
     hint: 'Try "Hace buen tiempo" (The weather is nice) or "Hace sol" (It is sunny)',
     checkComplete: (state: GameState) =>
-      state.completedGoals.includes('check_weather') ||
-      state.completedGoals.includes('commented_weather'),
+      state.completedGoals.includes('check_weather'),
     nextGoalId: 'walk_the_path',
   },
-  // Goal 3: Walk the path using present progressive
   {
     id: 'walk_the_path',
     title: 'Walk along the main path',
     description: 'Stroll through the park, describing what you are doing.',
     hint: 'Try "Estoy caminando por el sendero" (I am walking along the path)',
     checkComplete: (state: GameState) =>
-      state.location.id === 'main_path' ||
+      state.currentLocation === 'main_path' ||
       state.completedGoals.includes('walk_the_path'),
     nextGoalId: 'observe_nature',
   },
-  // Goal 4: Observe nature using estar + gerund
   {
     id: 'observe_nature',
     title: 'Observe the animals',
     description: 'Watch the squirrels and birds. What are they doing?',
     hint: 'Try "La ardilla esta corriendo" (The squirrel is running) or "Los pajaros estan volando" (The birds are flying)',
     checkComplete: (state: GameState) =>
-      state.completedGoals.includes('observe_nature') ||
-      state.completedGoals.includes('observed_animals'),
+      state.completedGoals.includes('observe_nature'),
     nextGoalId: 'visit_fountain',
   },
-  // Goal 5: Visit the fountain and meet Don Ramon
   {
     id: 'visit_fountain',
     title: 'Go to the fountain',
     description: 'Walk to the fountain area and see who is there.',
     hint: 'Try "Voy a la fuente" (I go to the fountain)',
-    checkComplete: (state: GameState) => state.location.id === 'fountain_area',
+    checkComplete: (state: GameState) => state.currentLocation === 'fountain_area',
     nextGoalId: 'talk_to_don_ramon',
   },
-  // Goal 6: Talk to Don Ramon about what he is doing
   {
     id: 'talk_to_don_ramon',
     title: 'Talk to Don Ramon',
     description: 'The elderly man is feeding pigeons. Ask what he is doing.',
     hint: 'Try "Hola, senor. Que esta haciendo?" (Hello sir. What are you doing?)',
     checkComplete: (state: GameState) =>
-      state.completedGoals.includes('talk_to_don_ramon') ||
-      state.completedGoals.includes('talked_to_ramon'),
+      state.completedGoals.includes('talk_to_don_ramon'),
     nextGoalId: 'buy_ice_cream',
   },
-  // Goal 7: Buy ice cream from Senor Gomez
   {
     id: 'buy_ice_cream',
     title: 'Get some ice cream',
@@ -434,22 +198,18 @@ export const parkGoals: Goal[] = [
     hint: 'Try "Quiero un helado de chocolate" (I want a chocolate ice cream) or "Me da un helado, por favor"',
     checkComplete: (state: GameState) =>
       state.completedGoals.includes('buy_ice_cream') ||
-      state.completedGoals.includes('got_ice_cream') ||
-      state.inventory.some(item => item.id.includes('ice_cream')),
+      state.objects.some(o => o.id.includes('ice_cream') && o.location === 'inventory'),
     nextGoalId: 'weather_changes',
   },
-  // Goal 8: React to weather change
   {
     id: 'weather_changes',
     title: 'React to the weather',
     description: 'The clouds are rolling in! Comment on the changing weather.',
     hint: 'Try "Esta nublado" (It is cloudy) or "Va a llover" (It is going to rain)',
     checkComplete: (state: GameState) =>
-      state.completedGoals.includes('weather_changes') ||
-      state.completedGoals.includes('weather_reaction'),
+      state.completedGoals.includes('weather_changes'),
     nextGoalId: 'park_complete',
   },
-  // Final goal
   {
     id: 'park_complete',
     title: 'Park visit complete!',
@@ -458,20 +218,12 @@ export const parkGoals: Goal[] = [
   },
 ];
 
-export function getParkGoalById(id: string): Goal | undefined {
-  return parkGoals.find((g) => g.id === id);
-}
-
-export function getParkStartGoal(): Goal {
-  return parkGoals[0];
-}
-
 // ============================================================================
-// PARK VOCABULARY - Weather, Nature, Present Progressive
+// VOCABULARY
 // ============================================================================
 
-export const parkVocabulary: VocabWord[] = [
-  // ==================== LOCATIONS ====================
+const vocabulary: VocabWord[] = [
+  // Locations
   { target: 'el parque', native: 'park', category: 'noun', gender: 'masculine' },
   { target: 'la entrada', native: 'entrance', category: 'noun', gender: 'feminine' },
   { target: 'el sendero', native: 'path', category: 'noun', gender: 'masculine' },
@@ -481,7 +233,7 @@ export const parkVocabulary: VocabWord[] = [
   { target: 'el area de juegos', native: 'playground', category: 'noun', gender: 'feminine' },
   { target: 'el quiosco', native: 'kiosk', category: 'noun', gender: 'masculine' },
 
-  // ==================== WEATHER - HACER EXPRESSIONS ====================
+  // Weather - hacer expressions
   { target: 'hace sol', native: 'it is sunny', category: 'other' },
   { target: 'hace calor', native: 'it is hot', category: 'other' },
   { target: 'hace frio', native: 'it is cold', category: 'other' },
@@ -490,7 +242,7 @@ export const parkVocabulary: VocabWord[] = [
   { target: 'hace mal tiempo', native: 'the weather is bad', category: 'other' },
   { target: 'hace fresco', native: 'it is cool', category: 'other' },
 
-  // ==================== WEATHER - ESTAR EXPRESSIONS ====================
+  // Weather - estar expressions
   { target: 'esta nublado', native: 'it is cloudy', category: 'other' },
   { target: 'esta lloviendo', native: 'it is raining', category: 'other' },
   { target: 'esta nevando', native: 'it is snowing', category: 'other' },
@@ -498,7 +250,7 @@ export const parkVocabulary: VocabWord[] = [
   { target: 'esta humedo', native: 'it is humid', category: 'other' },
   { target: 'esta soleado', native: 'it is sunny', category: 'other' },
 
-  // ==================== WEATHER NOUNS ====================
+  // Weather nouns
   { target: 'el sol', native: 'sun', category: 'noun', gender: 'masculine' },
   { target: 'la lluvia', native: 'rain', category: 'noun', gender: 'feminine' },
   { target: 'la nube', native: 'cloud', category: 'noun', gender: 'feminine' },
@@ -512,7 +264,7 @@ export const parkVocabulary: VocabWord[] = [
   { target: 'el tiempo', native: 'weather/time', category: 'noun', gender: 'masculine' },
   { target: 'la temperatura', native: 'temperature', category: 'noun', gender: 'feminine' },
 
-  // ==================== WEATHER ADJECTIVES ====================
+  // Weather adjectives
   { target: 'caliente', native: 'hot', category: 'adjective' },
   { target: 'frio', native: 'cold', category: 'adjective' },
   { target: 'templado', native: 'mild/warm', category: 'adjective' },
@@ -524,7 +276,7 @@ export const parkVocabulary: VocabWord[] = [
   { target: 'lluvioso', native: 'rainy', category: 'adjective' },
   { target: 'soleado', native: 'sunny', category: 'adjective' },
 
-  // ==================== TREES ====================
+  // Trees
   { target: 'el arbol', native: 'tree', category: 'noun', gender: 'masculine' },
   { target: 'los arboles', native: 'trees', category: 'noun', gender: 'masculine' },
   { target: 'el roble', native: 'oak tree', category: 'noun', gender: 'masculine' },
@@ -534,7 +286,7 @@ export const parkVocabulary: VocabWord[] = [
   { target: 'la rama', native: 'branch', category: 'noun', gender: 'feminine' },
   { target: 'el tronco', native: 'trunk', category: 'noun', gender: 'masculine' },
 
-  // ==================== FLOWERS ====================
+  // Flowers
   { target: 'la flor', native: 'flower', category: 'noun', gender: 'feminine' },
   { target: 'las flores', native: 'flowers', category: 'noun', gender: 'feminine' },
   { target: 'la rosa', native: 'rose', category: 'noun', gender: 'feminine' },
@@ -546,7 +298,7 @@ export const parkVocabulary: VocabWord[] = [
   { target: 'el cesped', native: 'grass/lawn', category: 'noun', gender: 'masculine' },
   { target: 'la hierba', native: 'grass', category: 'noun', gender: 'feminine' },
 
-  // ==================== ANIMALS ====================
+  // Animals
   { target: 'el pajaro', native: 'bird', category: 'noun', gender: 'masculine' },
   { target: 'los pajaros', native: 'birds', category: 'noun', gender: 'masculine' },
   { target: 'la paloma', native: 'pigeon', category: 'noun', gender: 'feminine' },
@@ -558,7 +310,7 @@ export const parkVocabulary: VocabWord[] = [
   { target: 'el pato', native: 'duck', category: 'noun', gender: 'masculine' },
   { target: 'el insecto', native: 'insect', category: 'noun', gender: 'masculine' },
 
-  // ==================== PARK OBJECTS ====================
+  // Park objects
   { target: 'el banco', native: 'bench', category: 'noun', gender: 'masculine' },
   { target: 'la estatua', native: 'statue', category: 'noun', gender: 'feminine' },
   { target: 'el farol', native: 'lamp post', category: 'noun', gender: 'masculine' },
@@ -568,7 +320,7 @@ export const parkVocabulary: VocabWord[] = [
   { target: 'la regadera', native: 'watering can', category: 'noun', gender: 'feminine' },
   { target: 'el paraguas', native: 'umbrella', category: 'noun', gender: 'masculine' },
 
-  // ==================== PLAYGROUND ====================
+  // Playground
   { target: 'el columpio', native: 'swing', category: 'noun', gender: 'masculine' },
   { target: 'los columpios', native: 'swings', category: 'noun', gender: 'masculine' },
   { target: 'el tobogan', native: 'slide', category: 'noun', gender: 'masculine' },
@@ -577,7 +329,7 @@ export const parkVocabulary: VocabWord[] = [
   { target: 'las barras', native: 'monkey bars', category: 'noun', gender: 'feminine' },
   { target: 'la pelota', native: 'ball', category: 'noun', gender: 'feminine' },
 
-  // ==================== FOOD AND DRINKS ====================
+  // Food and drinks
   { target: 'el helado', native: 'ice cream', category: 'noun', gender: 'masculine' },
   { target: 'el helado de chocolate', native: 'chocolate ice cream', category: 'noun', gender: 'masculine' },
   { target: 'el helado de vainilla', native: 'vanilla ice cream', category: 'noun', gender: 'masculine' },
@@ -585,7 +337,7 @@ export const parkVocabulary: VocabWord[] = [
   { target: 'la botella de agua', native: 'water bottle', category: 'noun', gender: 'feminine' },
   { target: 'el carrito', native: 'cart', category: 'noun', gender: 'masculine' },
 
-  // ==================== PEOPLE ====================
+  // People
   { target: 'el nino', native: 'boy/child', category: 'noun', gender: 'masculine' },
   { target: 'la nina', native: 'girl', category: 'noun', gender: 'feminine' },
   { target: 'los ninos', native: 'children', category: 'noun', gender: 'masculine' },
@@ -594,7 +346,7 @@ export const parkVocabulary: VocabWord[] = [
   { target: 'el vendedor', native: 'vendor', category: 'noun', gender: 'masculine' },
   { target: 'la familia', native: 'family', category: 'noun', gender: 'feminine' },
 
-  // ==================== PRESENT PROGRESSIVE - ESTAR + GERUND ====================
+  // Present progressive - estar + gerund
   { target: 'estoy caminando', native: 'I am walking', category: 'verb' },
   { target: 'estoy corriendo', native: 'I am running', category: 'verb' },
   { target: 'estoy sentado', native: 'I am sitting', category: 'verb' },
@@ -623,7 +375,7 @@ export const parkVocabulary: VocabWord[] = [
   { target: 'estan jugando', native: 'they are playing', category: 'verb' },
   { target: 'estan comiendo', native: 'they are eating', category: 'verb' },
 
-  // ==================== ACTION VERBS (INFINITIVE) ====================
+  // Action verbs (infinitive)
   { target: 'caminar', native: 'to walk', category: 'verb' },
   { target: 'correr', native: 'to run', category: 'verb' },
   { target: 'saltar', native: 'to jump', category: 'verb' },
@@ -637,7 +389,7 @@ export const parkVocabulary: VocabWord[] = [
   { target: 'observar', native: 'to observe', category: 'verb' },
   { target: 'disfrutar', native: 'to enjoy', category: 'verb' },
 
-  // ==================== SIMPLE PRESENT VERBS (YO FORM) ====================
+  // Simple present verbs (yo form)
   { target: 'camino', native: 'I walk', category: 'verb' },
   { target: 'corro', native: 'I run', category: 'verb' },
   { target: 'miro', native: 'I look/watch', category: 'verb' },
@@ -649,7 +401,7 @@ export const parkVocabulary: VocabWord[] = [
   { target: 'descanso', native: 'I rest', category: 'verb' },
   { target: 'paseo', native: 'I stroll', category: 'verb' },
 
-  // ==================== QUESTION WORDS AND PHRASES ====================
+  // Question words and phrases
   { target: 'que tiempo hace', native: 'what is the weather like', category: 'other' },
   { target: 'que esta haciendo', native: 'what is he/she doing', category: 'other' },
   { target: 'que estan haciendo', native: 'what are they doing', category: 'other' },
@@ -657,7 +409,7 @@ export const parkVocabulary: VocabWord[] = [
   { target: 'cuanto cuesta', native: 'how much does it cost', category: 'other' },
   { target: 'que quieres', native: 'what do you want', category: 'other' },
 
-  // ==================== PREPOSITIONS AND CONNECTORS ====================
+  // Prepositions and connectors
   { target: 'por', native: 'through/along', category: 'other' },
   { target: 'hacia', native: 'toward', category: 'other' },
   { target: 'cerca de', native: 'near', category: 'other' },
@@ -668,7 +420,7 @@ export const parkVocabulary: VocabWord[] = [
   { target: 'entre', native: 'between', category: 'other' },
   { target: 'alrededor de', native: 'around', category: 'other' },
 
-  // ==================== USEFUL EXPRESSIONS ====================
+  // Useful expressions
   { target: 'que bonito', native: 'how beautiful', category: 'other' },
   { target: 'que lindo dia', native: 'what a nice day', category: 'other' },
   { target: 'me gusta', native: 'I like', category: 'verb' },
@@ -683,7 +435,7 @@ export const parkVocabulary: VocabWord[] = [
   { target: 'buenos dias', native: 'good morning', category: 'other' },
   { target: 'buenas tardes', native: 'good afternoon', category: 'other' },
 
-  // ==================== ADJECTIVES ====================
+  // Adjectives
   { target: 'bonito', native: 'beautiful/pretty', category: 'adjective' },
   { target: 'hermoso', native: 'beautiful', category: 'adjective' },
   { target: 'grande', native: 'big', category: 'adjective' },
@@ -703,37 +455,66 @@ export const parkVocabulary: VocabWord[] = [
   { target: 'vacio', native: 'empty', category: 'adjective' },
 ];
 
+// ============================================================================
+// MODULE EXPORT
+// ============================================================================
+
 export const parkModule: ModuleDefinition = {
   name: 'park',
   displayName: 'Park',
-  locations: parkLocations,
-  npcs: parkNpcs,
-  goals: parkGoals,
-  vocabulary: parkVocabulary,
+  locations,
+  objects,
+  npcs,
+  goals,
+  vocabulary,
   startLocationId: 'park_entrance',
   startGoalId: 'arrive_at_park',
-  locationIds: Object.keys(parkLocations),
+  locationIds: Object.keys(locations),
   unlockLevel: 3,
 
-  parseGuidance: `ACTION RULES:
-- Weather comments ("hace sol", "esta nublado") and nature observations ("la ardilla esta corriendo") are valid even without object/NPC actions. Set valid=true with empty actions array — these are speech-only interactions.
-- Talking to Don Ramon (pigeon_feeder) or the ice cream vendor → talk to their npcId.
-- Buying ice cream → talk to ice_cream_vendor.
+  guidance: `PARK ENVIRONMENT:
+A sunny public park with tree-lined paths, a fountain plaza, flower garden, playground, and ice cream kiosk.
+The player is learning weather expressions (hacer/estar) and present progressive tense (estar + gerund).
 
 TEACHING FOCUS:
-- "Hace + noun" — Hace sol (sunny), Hace frio (cold), Hace calor (hot)
-- "Esta + adjective" — Esta nublado (cloudy), Esta lloviendo (raining)
-- Present progressive: "estar + gerund" — Estoy caminando (I am walking), Esta comiendo (he/she is eating)`,
+- "Hace + noun" for weather: Hace sol (sunny), Hace frio (cold), Hace calor (hot), Hace viento (windy), Hace buen tiempo (nice weather)
+- "Esta + adjective" for weather: Esta nublado (cloudy), Esta lloviendo (raining), Esta despejado (clear)
+- Present progressive "estar + gerund": Estoy caminando (I am walking), Esta comiendo (he/she is eating), Estan jugando (they are playing)
+- Weather comments and nature observations are valid even without object/NPC actions. Set valid=true with empty mutations array -- these are speech-only interactions.
 
-  narrateGuidance: `NPC PERSONALITIES:
-- Ice cream vendor (ice_cream_vendor): Friendly elderly vendor at the kiosk. Talks about weather constantly. Recommends flavors based on temperature. Speaks slowly and clearly.
-- Don Ramon (pigeon_feeder): Quiet elderly man at the fountain. Feeds pigeons. Uses present progressive to describe what he sees. Very patient and kind.
+OBJECTS:
+- park_gate: Entrance gate, starts open. Can be opened/closed via tag changes.
+- park_sign, park_map: Informational objects at entrance. Look only.
+- fountain: In fountain_area, starts "on". Water feature the player can observe and describe.
+- roses: In garden, tags "blooming" and "red". Describe with colors and adjectives.
+- tulips, sunflowers: In garden, tag "blooming". Nature description targets.
+- squirrel, butterfly, bee, pigeons: Animals to observe. Practice present progressive ("la ardilla esta corriendo").
+- watering_can: In garden, takeable. Can be picked up and used on flowers.
+- ball: In playground, takeable. Can be picked up and played with.
+- swings, slide, sandbox, seesaw, monkey_bars: Playground equipment the player can use and describe.
+- ice_cream_cart, ice_cream_menu: At kiosk. Look to see available flavors.
+- chocolate_ice_cream, vanilla_ice_cream, strawberry_ice_cream: Takeable and consumable. Buying = talk to ice_cream_vendor, then move ice cream to inventory. Eating = remove mutation + needs mutation (hunger: 15).
+- water_bottle: Takeable and consumable at kiosk (hunger: 5).
+- umbrella: Takeable at kiosk, starts "closed". Can add "open" tag / remove "closed" tag if it rains.
+- lamp_post: On main path, starts "off". Scenery item.
+
+NPCs:
+- Senor Gomez (ice_cream_vendor): At kiosk. Friendly elderly vendor, male.
+  Talks about the weather constantly. Recommends flavors based on temperature ("Hace calor, le recomiendo el helado de fresa").
+  Speaks slowly and clearly for learners. When player orders ice cream, respond warmly and move the chosen ice cream to inventory.
+  Buying ice cream = talking to this NPC, not a direct take action.
+- Don Ramon (pigeon_feeder): At fountain_area. Quiet elderly man, male.
+  Feeds pigeons every day. Observes nature and describes what he sees using present progressive ("Las palomas estan comiendo", "El agua esta cayendo").
+  Very patient and kind. Encourages the player to describe what they see too.
 
 GOAL COMPLETION:
-- Any weather comment (present tense) → check_weather, commented_weather
-- Walking along the path (present progressive practice) → walk_the_path
-- Describing animal actions (present progressive) → observe_nature, observed_animals
-- Talking to Don Ramon → talk_to_don_ramon, talked_to_ramon
-- Buying ice cream → buy_ice_cream, got_ice_cream
-- Reacting to weather changes → weather_changes, weather_reaction`,
+- arrive_at_park: Player is in park_entrance
+- check_weather: Player makes any weather comment (hacer or estar expression)
+- walk_the_path: Player is in main_path or describes walking
+- observe_nature: Player describes animal actions using present progressive
+- visit_fountain: Player is in fountain_area
+- talk_to_don_ramon: Player talks to Don Ramon (pigeon_feeder)
+- buy_ice_cream: Player orders/gets ice cream from Senor Gomez, or has ice cream in inventory
+- weather_changes: Player reacts to weather change (cloudy, rain, etc.)
+- park_complete: Automatically completes when weather_changes is done`,
 };

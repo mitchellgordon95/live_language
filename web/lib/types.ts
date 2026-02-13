@@ -78,7 +78,7 @@ export interface SceneInfo {
 export interface PortraitHint {
   player?: string;         // portrait filename, e.g. "player-player-cooking.png"
   activeNpc?: string;      // NPC portrait filename when NPC speaks this turn
-  objectChanges?: Array<{ objectId: string; image: string }>;
+  objectChanges?: Array<{ objectId: string; image: string; generating?: boolean }>;
 }
 
 export interface GameView {

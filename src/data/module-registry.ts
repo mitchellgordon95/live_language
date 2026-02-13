@@ -1,12 +1,15 @@
 import type { Location, Goal, VocabWord, NPC, WorldObject, ModuleDefinition } from '../engine/types.js';
 
-// Import home module (only module converted for this experiment)
 import { homeModule } from '../languages/spanish/modules/home.js';
+import { restaurantModule } from '../languages/spanish/modules/restaurant.js';
+import { bankModule } from '../languages/spanish/modules/bank.js';
+import { clinicModule } from '../languages/spanish/modules/clinic.js';
+import { gymModule } from '../languages/spanish/modules/gym.js';
+import { parkModule } from '../languages/spanish/modules/park.js';
+import { marketModule } from '../languages/spanish/modules/market.js';
 
 export type { ModuleDefinition };
 
-// The registry: one entry per module
-// NOTE: For this experiment, only home module is implemented. Others are stubbed.
 const modules: ModuleDefinition[] = [
   homeModule,
   {
@@ -23,6 +26,12 @@ const modules: ModuleDefinition[] = [
     unlockLevel: 1,
     guidance: '',
   },
+  restaurantModule,
+  bankModule,
+  clinicModule,
+  gymModule,
+  parkModule,
+  marketModule,
 ];
 
 // --- Derived lookups (computed once at import time) ---
