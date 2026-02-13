@@ -38,13 +38,11 @@ export default function Home() {
       const gameView: GameView = await res.json();
       setGame(gameView);
 
-      // Tutorial hints for home module
+      // Tutorial hint for home module
       if (gameView.module === 'home') {
         chatIdRef.current += 1;
         const hint1: ChatEntry = { id: chatIdRef.current, playerInput: '', systemHint: 'Try typing "Me levanto" to get out of bed' };
-        chatIdRef.current += 1;
-        const hint2: ChatEntry = { id: chatIdRef.current, playerInput: '', systemHint: 'You can type /learn [topic] to get a quick Spanish lesson on any topic' };
-        setChatHistory([hint1, hint2]);
+        setChatHistory([hint1]);
       }
 
       setAppState('playing');
@@ -157,6 +155,16 @@ export default function Home() {
       setIsProcessing(false);
     }
   }, [game, isProcessing, speak]);
+
+  const handleHelp = useCallback(() => {
+    if (!game) return;
+    chatIdRef.current += 1;
+    setChatHistory(prev => [...prev, {
+      id: chatIdRef.current,
+      playerInput: '',
+      systemHint: game.helpText,
+    }]);
+  }, [game]);
 
   // --- Menu Screen ---
   if (appState === 'menu') {
@@ -300,6 +308,7 @@ export default function Home() {
             )}
             <InputBar
               onSubmit={handleInput}
+              onHelp={handleHelp}
               disabled={isProcessing}
               placeholder="Type in Spanish... (e.g., 'abro la nevera')"
             />

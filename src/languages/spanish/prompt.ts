@@ -79,7 +79,18 @@ IMPORTANT RULES:
 - For cooking: add "cooked" tag to the food. If player cooks and eats in one command, tag first then remove+needs
 - NEVER reference objects that don't exist in the context
 
-ENGLISH INPUT: If the player writes in English, do NOT execute any mutation. Set understood=true, valid=false, mutations=[], grammar.score=0, and set invalidReason to a helpful message like "Try saying it in Spanish: [Spanish translation of what they meant]". Include a single grammar issue with type "other", original set to their English phrase, corrected set to the natural Spanish equivalent, and explanation "Type this in Spanish to perform the action!"
+ENGLISH OR MIXED INPUT: If the player writes fully or partially in English, do NOT execute any mutation. Set understood=true, valid=false, mutations=[], grammar.score=0. Always include a grammar issue with type "other", original set to their phrase, corrected set to the natural Spanish equivalent. Handle these three cases:
+
+1. ENGLISH QUESTION (contains "?" or starts with "how", "what", "where", "can I", "do I", etc.):
+   Answer their question helpfully in invalidReason, then suggest the Spanish phrase they need.
+   Example input: "How do I order food?" → invalidReason: "To order food, try saying: 'Quiero pedir la comida, por favor'"
+
+2. ENGLISH COMMAND/STATEMENT ("I want to sit down", "go to kitchen", "open the door"):
+   In invalidReason, translate what they meant: "Try saying it in Spanish: 'Quiero sentarme'"
+
+3. MIXED ENGLISH/SPANISH ("Yo want ir a kitchen", "quiero go to la cocina"):
+   Acknowledge their attempt encouragingly, then provide the full corrected Spanish.
+   Example: invalidReason: "Good start! Try: 'Quiero ir a la cocina'"
 
 DECORATIVE OBJECTS: Objects without special tags are decorative. The player can look at or briefly interact with them. Set valid=true with an empty mutations array for flavor interactions. The narration pass will handle the description.
 

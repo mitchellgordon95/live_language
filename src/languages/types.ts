@@ -19,6 +19,9 @@ export interface LanguageConfig {
   stripArticles: (word: string) => string[];
   findObjectByName: (objects: WorldObject[], name: string) => WorldObject | undefined;
 
+  // Help text shown when player clicks "?" button (language-specific examples)
+  helpText: string;
+
   // All modules for this language
   modules: ModuleDefinition[];
 }

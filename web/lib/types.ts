@@ -98,6 +98,7 @@ export interface GameView {
   completedGoals: string[];
   scene: SceneInfo | null;
   portraitHint: PortraitHint | null;
+  helpText: string;
 
   // Last turn results (null on init)
   turnResult: TurnResultView | null;

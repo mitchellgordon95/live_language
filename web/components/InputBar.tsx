@@ -4,11 +4,12 @@ import { useState, useRef, useEffect } from 'react';
 
 interface InputBarProps {
   onSubmit: (input: string) => void;
+  onHelp: () => void;
   disabled: boolean;
   placeholder?: string;
 }
 
-export default function InputBar({ onSubmit, disabled, placeholder }: InputBarProps) {
+export default function InputBar({ onSubmit, onHelp, disabled, placeholder }: InputBarProps) {
   const [input, setInput] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -39,6 +40,14 @@ export default function InputBar({ onSubmit, disabled, placeholder }: InputBarPr
         autoComplete="off"
         spellCheck={false}
       />
+      <button
+        type="button"
+        onClick={onHelp}
+        className="px-4 py-3 bg-amber-500 text-gray-900 rounded-lg font-bold text-lg hover:bg-amber-400 transition-colors"
+        title="Help — what can I do?"
+      >
+        ?
+      </button>
       <button
         type="submit"
         disabled={disabled || !input.trim()}

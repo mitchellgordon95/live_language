@@ -17,6 +17,7 @@ export const mandarinConfig: LanguageConfig = {
   },
   stripArticles,
   findObjectByName,
+  helpText: 'Help text not yet written for Mandarin.',
   modules: [
     homeModule,
   ],

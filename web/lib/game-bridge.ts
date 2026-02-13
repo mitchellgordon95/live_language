@@ -148,7 +148,7 @@ export async function initGame(options: {
   const sessionId = generateSessionId();
   sessions.set(sessionId, { state, languageId });
 
-  return buildGameView(sessionId, state, null);
+  return buildGameView(sessionId, state, null, undefined, (languageConfig as any).helpText);
 }
 
 export async function playTurn(sessionId: string, input: string): Promise<GameView> {
@@ -173,7 +173,7 @@ export async function playTurn(sessionId: string, input: string): Promise<GameVi
   eng.saveVocabulary(session.state.vocabulary, session.state.profile);
 
   const turnResult = buildTurnResultView(result, session.state);
-  return buildGameView(sessionId, session.state, turnResult, result);
+  return buildGameView(sessionId, session.state, turnResult, result, (languageConfig as any).helpText);
 }
 
 // --- Scene Manifest Loading ---
@@ -435,7 +435,7 @@ const LOCATION_TO_MODULE: Record<string, string> = {
 // --- View Model Builders ---
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function buildGameView(sessionId: string, state: any, turnResult: TurnResultView | null, result?: any): GameView {
+function buildGameView(sessionId: string, state: any, turnResult: TurnResultView | null, result?: any, helpText?: string): GameView {
   const locationId = state.currentLocation;
   const module = LOCATION_TO_MODULE[locationId] || 'home';
   const manifest = loadManifest(module, locationId);
@@ -533,6 +533,7 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
     completedGoals: state.completedGoals,
     scene,
     portraitHint,
+    helpText: helpText || '',
     turnResult,
   };
 }
