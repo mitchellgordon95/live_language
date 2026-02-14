@@ -195,15 +195,24 @@ const tutorial: TutorialStep[] = [
     description: 'Time to get ready for the day.',
     hint: 'Try "Voy al baño" (I go to the bathroom)',
     checkComplete: (state: GameState) => state.currentLocation === 'bathroom',
-    nextStepId: 'take_care_of_needs',
+    nextStepId: 'use_toilet',
   },
   {
-    id: 'take_care_of_needs',
-    title: 'Take care of your needs',
-    description: 'Brush your teeth, take a shower, or use the toilet — anything to freshen up.',
-    hint: 'Try "Me cepillo los dientes" (I brush my teeth) or "Me ducho" (I shower)',
+    id: 'use_toilet',
+    title: 'Use the toilet',
+    description: 'You need to use the bathroom.',
+    hint: 'Try "Uso el inodoro" (I use the toilet)',
     checkComplete: (state: GameState) =>
-      state.completedSteps.includes('take_care_of_needs'),
+      state.completedSteps.includes('use_toilet'),
+    nextStepId: 'take_shower',
+  },
+  {
+    id: 'take_shower',
+    title: 'Take a shower',
+    description: 'Freshen up with a nice shower.',
+    hint: 'Try "Me ducho" (I shower)',
+    checkComplete: (state: GameState) =>
+      state.completedSteps.includes('take_shower'),
     nextStepId: 'go_to_living_room',
   },
   {
@@ -417,7 +426,9 @@ OBJECTS:
 - bread, coffee, water: On counter in kitchen. Consumable.
 - stove: Must have "on" tag to cook. Turn on = tag add "on", remove "off".
 - coffee_maker: Turn on to make coffee available.
-- shower, toilet, toothbrush, sink: Bathroom fixtures. Using them improves hygiene/bladder needs.
+- toilet: Using it ALWAYS sets bladder to full. Emit needs mutation { bladder: 100 } (additive, clamped to 100).
+- shower: Using it improves hygiene significantly. Emit needs mutation { hygiene: 40 }.
+- toothbrush, sink: Bathroom fixtures. Using them improves hygiene slightly.
 - tv: Living room. Can be turned on/off.
 - pet_food: In kitchen. Takeable, used to feed pets.
 
@@ -441,7 +452,8 @@ STEP COMPLETION (lax — complete as soon as the intent is clear):
 - wake_up: Player has "standing" in playerTags
 - turn_off_alarm: alarm_clock no longer has "ringing" tag
 - go_to_bathroom: Player is in bathroom
-- take_care_of_needs: Player does ANY bathroom action (brush teeth, shower, use toilet, wash hands — anything)
+- use_toilet: Player uses the toilet
+- take_shower: Player takes a shower
 - go_to_living_room: Player is in living_room
 - talk_to_carlos: Player talks to Carlos. Carlos should ask for coffee (he's very sleepy).
 - go_to_kitchen: Player is in kitchen
