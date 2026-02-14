@@ -11,6 +11,12 @@ cd web && npm run dev   # Start the Next.js web UI
 
 Requires `ANTHROPIC_API_KEY` in `.env.local`.
 
+**IMPORTANT**: Running `npm run build` while the dev server is running will break it — the dev server imports from `dist/` and the build overwrites those files mid-run. Always kill the dev server before building, then restart it after:
+```bash
+# Kill dev server → build → restart
+lsof -ti:3000 | xargs kill -9; sleep 2; npm run build && cd web && npm run dev
+```
+
 ## Architecture
 
 ```

@@ -81,75 +81,78 @@ export default function ScenePanel({ game }: ScenePanelProps) {
                 </div>
               )}
 
-              {/* Tutorial overlay — top left of image, collapsible */}
-              {visibleSteps.length > 0 && !allComplete && (
-                <div
-                  className="absolute top-2 left-2 z-10 bg-gray-900/70 backdrop-blur-sm rounded-lg p-2 max-w-[60%] cursor-pointer select-none"
-                  onClick={() => setTutorialExpanded(!tutorialExpanded)}
-                >
-                  <div className="flex items-center gap-1.5 text-xs text-gray-300">
-                    <span className="text-gray-400">{tutorialExpanded ? '\u25bc' : '\u25b6'}</span>
-                    <span>Tutorial {completedCount}/{visibleSteps.length}</span>
-                  </div>
-                  {!tutorialExpanded && (() => {
-                    const next = visibleSteps.find(g => g.suggested) || visibleSteps.find(g => !g.completed);
-                    return next ? (
-                      <div className="mt-1 flex items-start gap-1.5 text-xs leading-tight text-gray-100">
-                        <span className="flex-shrink-0 w-3 text-center">{'\u25b8'}</span>
-                        <span>{next.title}</span>
-                      </div>
-                    ) : null;
-                  })()}
-                  {tutorialExpanded && (
-                    <div className="mt-1.5 space-y-0.5">
-                      {visibleSteps.map(step => (
-                        <div key={step.id} className={`flex items-start gap-1.5 text-xs leading-tight ${
-                          step.completed ? 'text-gray-500' : step.suggested ? 'text-gray-100' : 'text-gray-400'
-                        }`}>
-                          <span className="flex-shrink-0 w-3 text-center">
-                            {step.completed ? '\u2713' : step.suggested ? '\u25b8' : '\u25cb'}
-                          </span>
-                          <span className={step.completed ? 'line-through' : ''}>
-                            {step.title}
-                          </span>
+              {/* Tutorial + Quest overlays — stacked vertically, top left of image */}
+              <div className="absolute top-2 left-2 z-10 flex flex-col gap-1.5 max-w-[60%]">
+                {/* Tutorial */}
+                {visibleSteps.length > 0 && !allComplete && (
+                  <div
+                    className="bg-gray-900/70 backdrop-blur-sm rounded-lg p-2 cursor-pointer select-none"
+                    onClick={() => setTutorialExpanded(!tutorialExpanded)}
+                  >
+                    <div className="flex items-center gap-1.5 text-xs text-gray-300">
+                      <span className="text-gray-400">{tutorialExpanded ? '\u25bc' : '\u25b6'}</span>
+                      <span>Tutorial {completedCount}/{visibleSteps.length}</span>
+                    </div>
+                    {!tutorialExpanded && (() => {
+                      const next = visibleSteps.find(g => g.suggested) || visibleSteps.find(g => !g.completed);
+                      return next ? (
+                        <div className="mt-1 flex items-start gap-1.5 text-xs leading-tight text-gray-100">
+                          <span className="flex-shrink-0 w-3 text-center">{'\u25b8'}</span>
+                          <span>{next.title}</span>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Quest overlay — top left of image, shown after tutorial or when quests are active */}
-              {hasQuests && allComplete && (
-                <div
-                  className="absolute top-2 left-2 z-10 bg-gray-900/70 backdrop-blur-sm rounded-lg p-2 max-w-[60%] cursor-pointer select-none"
-                  onClick={() => setQuestsExpanded(!questsExpanded)}
-                >
-                  <div className="flex items-center gap-1.5 text-xs text-amber-300">
-                    <span className="text-amber-400">{questsExpanded ? '\u25bc' : '\u25b6'}</span>
-                    <span>Quests ({activeQuests.length})</span>
-                  </div>
-                  {!questsExpanded && activeQuests.length > 0 && (
-                    <div className="mt-1 flex items-start gap-1.5 text-xs leading-tight text-gray-100">
-                      <span className="flex-shrink-0 w-3 text-center text-amber-400">{'\u25b8'}</span>
-                      <span>{activeQuests[0].title.native}</span>
-                    </div>
-                  )}
-                  {questsExpanded && (
-                    <div className="mt-1.5 space-y-1">
-                      {activeQuests.map(quest => (
-                        <div key={quest.id} className="text-xs leading-tight">
-                          <div className="flex items-start gap-1.5 text-amber-200">
-                            <span className="flex-shrink-0 w-3 text-center text-amber-400">{'\u25b8'}</span>
-                            <span>{quest.title.native}</span>
+                      ) : null;
+                    })()}
+                    {tutorialExpanded && (
+                      <div className="mt-1.5 space-y-0.5">
+                        {visibleSteps.map(step => (
+                          <div key={step.id} className={`flex items-start gap-1.5 text-xs leading-tight ${
+                            step.completed ? 'text-gray-500' : step.suggested ? 'text-gray-100' : 'text-gray-400'
+                          }`}>
+                            <span className="flex-shrink-0 w-3 text-center">
+                              {step.completed ? '\u2713' : step.suggested ? '\u25b8' : '\u25cb'}
+                            </span>
+                            <span className={step.completed ? 'line-through' : ''}>
+                              {step.title}
+                            </span>
                           </div>
-                          <div className="ml-[1.125rem] text-gray-400">{quest.description}</div>
-                        </div>
-                      ))}
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Quests */}
+                {hasQuests && (
+                  <div
+                    className="bg-gray-900/70 backdrop-blur-sm rounded-lg p-2 cursor-pointer select-none"
+                    onClick={() => setQuestsExpanded(!questsExpanded)}
+                  >
+                    <div className="flex items-center gap-1.5 text-xs text-amber-300">
+                      <span className="text-amber-400">{questsExpanded ? '\u25bc' : '\u25b6'}</span>
+                      <span>Quests ({activeQuests.length})</span>
                     </div>
-                  )}
-                </div>
-              )}
+                    {!questsExpanded && activeQuests.length > 0 && (
+                      <div className="mt-1 flex items-start gap-1.5 text-xs leading-tight text-gray-100">
+                        <span className="flex-shrink-0 w-3 text-center text-amber-400">{'\u25b8'}</span>
+                        <span>{activeQuests[0].title.native}</span>
+                      </div>
+                    )}
+                    {questsExpanded && (
+                      <div className="mt-1.5 space-y-1">
+                        {activeQuests.map(quest => (
+                          <div key={quest.id} className="text-xs leading-tight">
+                            <div className="flex items-start gap-1.5 text-amber-200">
+                              <span className="flex-shrink-0 w-3 text-center text-amber-400">{'\u25b8'}</span>
+                              <span>{quest.title.native}</span>
+                            </div>
+                            <div className="ml-[1.125rem] text-gray-400">{quest.description}</div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Object label overlays */}
