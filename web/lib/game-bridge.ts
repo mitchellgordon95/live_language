@@ -468,9 +468,11 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
 
   // Exits from allLocations lookup
   const currentLoc = (engine as NonNullable<typeof engine>).allLocations[locationId] as { exits: Array<{ to: string; name: { target: string; native: string } }>; name: { target: string; native: string }; verbs?: Array<{ target: string; native: string }> } | undefined;
+  const visitedLocations: string[] = state.visitedLocations || [];
   const exits: ExitView[] = (currentLoc?.exits || []).map(exit => ({
     to: exit.to,
     name: exit.name,
+    visited: visitedLocations.includes(exit.to),
   }));
 
   // NPCs in this location (check runtime npcStates for current location)
@@ -513,6 +515,10 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
   // Location name from allLocations
   const locationName = currentLoc?.name || { target: locationId, native: locationId };
 
+  // Tutorial is complete when all steps for this building are done
+  const tutorialSteps = buildTutorialChecklist(state);
+  const tutorialComplete = tutorialSteps.length > 0 && tutorialSteps.every(s => s.completed);
+
   return {
     sessionId,
     locationId,
@@ -522,7 +528,7 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
     npcs,
     exits,
     needs: state.needs,
-    tutorial: buildTutorialChecklist(state),
+    tutorial: tutorialSteps,
     quests: buildQuestList(state, module),
     inventory,
     level: state.level,
@@ -532,6 +538,7 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
     badges: state.badges || [],
     scene,
     vignetteHint,
+    tutorialComplete,
     helpText: helpText || '',
     verbs: currentLoc?.verbs || [],
     turnResult,

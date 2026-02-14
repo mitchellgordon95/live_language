@@ -2,6 +2,7 @@
 
 export interface GameState {
   currentLocation: string;        // location ID
+  visitedLocations: string[];     // location IDs the player has been to
   playerTags: string[];           // ['standing'] or ['in_bed']
   needs: Needs;
   objects: WorldObject[];         // ALL objects in the world (flat list)

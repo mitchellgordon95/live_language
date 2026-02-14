@@ -31,6 +31,7 @@ export interface NPCView {
 export interface ExitView {
   to: string;
   name: BilingualText;
+  visited?: boolean;
 }
 
 export interface NeedsView {
@@ -109,6 +110,7 @@ export interface GameView {
   badges: string[];
   scene: SceneInfo | null;
   vignetteHint: VignetteHint | null;
+  tutorialComplete: boolean;
   helpText: string;
   verbs: BilingualText[];
 

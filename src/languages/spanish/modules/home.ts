@@ -258,23 +258,6 @@ const tutorial: TutorialStep[] = [
     hint: 'Go to the living room and try "Le doy el café a Carlos"',
     checkComplete: (state: GameState) =>
       state.completedQuests.includes('carlos_coffee'),
-    nextStepId: 'ask_carlos_breakfast',
-  },
-  {
-    id: 'ask_carlos_breakfast',
-    title: 'Ask Carlos what he wants for breakfast',
-    description: 'Carlos is awake now. Ask him what he wants to eat.',
-    hint: 'Try "¿Qué quieres para desayunar?" (What do you want for breakfast?)',
-    checkComplete: (state: GameState) =>
-      state.completedSteps.includes('ask_carlos_breakfast'),
-    nextStepId: 'tutorial_complete',
-  },
-  {
-    id: 'tutorial_complete',
-    title: 'Tutorial complete!',
-    description: 'You finished the tutorial! Now explore freely and complete quests.',
-    checkComplete: (state: GameState) =>
-      state.completedSteps.includes('ask_carlos_breakfast'),
   },
 ];
 
@@ -306,7 +289,7 @@ const quests: Quest[] = [
     sourceId: 'roommate',
     module: 'home',
     triggerCondition: (state: GameState) =>
-      state.completedSteps.includes('ask_carlos_breakfast'),
+      state.completedQuests.includes('carlos_coffee'),
     reward: {
       points: 150,
       badge: { id: 'chef_novato', name: 'Chef Novato' },
@@ -468,7 +451,5 @@ STEP COMPLETION (lax — complete as soon as the intent is clear):
 - talk_to_carlos: Player talks to Carlos. Carlos should ask for coffee (he's very sleepy).
 - go_to_kitchen: Player is in kitchen
 - grab_coffee: Player takes coffee to inventory
-- give_carlos_coffee: Completed when carlos_coffee quest completes (player must explicitly give coffee)
-- ask_carlos_breakfast: Player asks Carlos what he wants for breakfast (e.g., "¿Qué quieres para desayunar?"). Carlos should respond that he's hungry and would love some eggs or anything really.
-- tutorial_complete: Auto-completes when ask_carlos_breakfast is done`,
+- give_carlos_coffee: Completed when carlos_coffee quest completes (player must explicitly give coffee)`,
 };

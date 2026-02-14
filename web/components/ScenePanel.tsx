@@ -36,9 +36,10 @@ export default function ScenePanel({ game }: ScenePanelProps) {
   const { west: westExits, east: eastExits, north: northExits } = distributeExits(game.exits);
   const [questsExpanded, setQuestsExpanded] = useState(false);
 
-  const visibleSteps = game.tutorial.filter(g => !g.id.endsWith('_complete'));
+  const visibleSteps = game.tutorial;
   const completedCount = visibleSteps.filter(g => g.completed).length;
-  const allComplete = game.tutorial.some(g => g.id.endsWith('_complete') && g.completed);
+  const tutorialComplete = game.tutorialComplete;
+  const [bannerDismissed, setBannerDismissed] = useState(false);
   const activeQuests = game.quests.filter(q => q.active);
   const hasQuests = activeQuests.length > 0;
 
@@ -83,8 +84,22 @@ export default function ScenePanel({ game }: ScenePanelProps) {
 
               {/* Tutorial + Quest overlays — stacked vertically, top left of image */}
               <div className="absolute top-2 left-2 z-10 flex flex-col gap-1.5 max-w-[60%]">
+                {/* Tutorial Complete Banner */}
+                {tutorialComplete && !bannerDismissed && (
+                  <div
+                    className="bg-gradient-to-br from-amber-900/80 to-yellow-900/70 backdrop-blur-sm rounded-lg p-3 cursor-pointer select-none border border-amber-500/40"
+                    onClick={() => setBannerDismissed(true)}
+                  >
+                    <div className="text-sm font-semibold text-amber-200">Tutorial Complete!</div>
+                    <div className="mt-1 text-xs text-amber-100/80 leading-relaxed">
+                      You&apos;ve got the basics down. Explore new rooms, go outside, meet people, and complete quests!
+                    </div>
+                    <div className="mt-1.5 text-[10px] text-amber-300/50">click to dismiss</div>
+                  </div>
+                )}
+
                 {/* Tutorial */}
-                {visibleSteps.length > 0 && !allComplete && (
+                {visibleSteps.length > 0 && !tutorialComplete && (
                   <div
                     className="bg-gray-900/70 backdrop-blur-sm rounded-lg p-2 cursor-pointer select-none"
                     onClick={() => setTutorialExpanded(!tutorialExpanded)}
@@ -250,7 +265,7 @@ export default function ScenePanel({ game }: ScenePanelProps) {
               </div>
             </div>
             {/* Tutorial as card when no scene */}
-            {visibleSteps.length > 0 && !allComplete && (
+            {visibleSteps.length > 0 && !tutorialComplete && (
               <div className="bg-gray-800/50 rounded-lg p-3 border border-purple-900/50">
                 <div
                   className="flex items-center gap-1.5 text-purple-400 text-xs font-medium uppercase tracking-wide cursor-pointer select-none"
@@ -278,7 +293,7 @@ export default function ScenePanel({ game }: ScenePanelProps) {
               </div>
             )}
             {/* Quest card when no scene */}
-            {hasQuests && allComplete && (
+            {hasQuests && (
               <div className="bg-gray-800/50 rounded-lg p-3 border border-amber-900/50">
                 <div
                   className="flex items-center gap-1.5 text-amber-400 text-xs font-medium uppercase tracking-wide cursor-pointer select-none"
@@ -370,11 +385,19 @@ export default function ScenePanel({ game }: ScenePanelProps) {
 
 function ExitPill({ exit, direction }: { exit: ExitView; direction: 'north' | 'west' | 'east' }) {
   const arrow = direction === 'west' ? '\u2190' : direction === 'east' ? '\u2192' : '\u2191';
+  const unvisited = exit.visited === false;
   return (
-    <div className="text-xs px-2 py-0.5 rounded-full bg-gray-900/60 text-gray-200 border border-gray-500/30 backdrop-blur-sm whitespace-nowrap cursor-default">
-      {direction === 'west' && <span className="text-gray-400 mr-1">{arrow}</span>}
+    <div
+      className={`text-xs px-2 py-0.5 rounded-full backdrop-blur-sm whitespace-nowrap cursor-default ${
+        unvisited
+          ? 'bg-indigo-900/60 text-indigo-100 border border-indigo-400/50'
+          : 'bg-gray-900/60 text-gray-200 border border-gray-500/30'
+      }`}
+      style={unvisited ? { animation: 'exit-glow 2s ease-in-out infinite' } : undefined}
+    >
+      {direction === 'west' && <span className={`${unvisited ? 'text-indigo-300' : 'text-gray-400'} mr-1`}>{arrow}</span>}
       {exit.name.target}
-      {direction !== 'west' && <span className="text-gray-400 ml-1">{arrow}</span>}
+      {direction !== 'west' && <span className={`${unvisited ? 'text-indigo-300' : 'text-gray-400'} ml-1`}>{arrow}</span>}
     </div>
   );
 }

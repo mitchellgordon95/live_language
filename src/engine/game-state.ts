@@ -27,8 +27,12 @@ export function getPointsForLevel(level: number): number {
 
 export function applyMutation(state: GameState, mutation: Mutation): GameState {
   switch (mutation.type) {
-    case 'go':
-      return { ...state, currentLocation: mutation.locationId };
+    case 'go': {
+      const visited = state.visitedLocations.includes(mutation.locationId)
+        ? state.visitedLocations
+        : [...state.visitedLocations, mutation.locationId];
+      return { ...state, currentLocation: mutation.locationId, visitedLocations: visited };
+    }
 
     case 'move':
       return {
@@ -110,6 +114,7 @@ export function createInitialState(
 
   return {
     currentLocation: startLocationId,
+    visitedLocations: [startLocationId],
     playerTags: ['in_bed'],
     needs: {
       energy: 80,
