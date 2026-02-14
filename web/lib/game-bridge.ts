@@ -8,8 +8,8 @@
 import 'server-only';
 import { join } from 'path';
 import { readFileSync, existsSync } from 'fs';
-import type { GameView, TurnResultView, QuestView, ObjectCoords, SceneInfo, ExitView, NPCView, TutorialStepView, PortraitHint } from './types';
-import { getCachedPortrait, getPlaceholderPath, isGenerationEnabled, isGenerating, triggerGeneration } from './portrait-generator';
+import type { GameView, TurnResultView, QuestView, ObjectCoords, SceneInfo, ExitView, NPCView, TutorialStepView, VignetteHint } from './types';
+import { getCachedVignette, getPlaceholderPath, isGenerationEnabled, isGenerating, triggerGeneration } from './vignette-generator';
 
 // Path to compiled game engine
 const ENGINE_ROOT = join(process.cwd(), '..', 'dist');
@@ -209,9 +209,9 @@ function loadManifest(module: string, locationId: string): SceneManifest | null 
   }
 }
 
-// --- Portrait Manifest Loading ---
+// --- Vignette Manifest Loading ---
 
-interface PortraitManifest {
+interface VignetteManifest {
   player: {
     default: string;
     variants: Array<{ image: string; match: Record<string, unknown> }>;
@@ -221,43 +221,43 @@ interface PortraitManifest {
   objects: Record<string, Array<{ image: string; match: Record<string, unknown> }>>;
 }
 
-const portraitManifestCache = new Map<string, PortraitManifest | null>();
+const vignetteManifestCache = new Map<string, VignetteManifest | null>();
 
-function loadPortraitManifest(module: string): PortraitManifest | null {
-  if (portraitManifestCache.has(module)) return portraitManifestCache.get(module)!;
+function loadVignetteManifest(module: string): VignetteManifest | null {
+  if (vignetteManifestCache.has(module)) return vignetteManifestCache.get(module)!;
 
-  const manifestPath = join(process.cwd(), 'public', 'scenes', module, 'portraits', 'manifest.json');
+  const manifestPath = join(process.cwd(), 'public', 'scenes', module, 'vignettes', 'manifest.json');
 
   if (!existsSync(manifestPath)) {
-    portraitManifestCache.set(module, null);
+    vignetteManifestCache.set(module, null);
     return null;
   }
 
   try {
-    const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8')) as PortraitManifest;
-    portraitManifestCache.set(module, manifest);
+    const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8')) as VignetteManifest;
+    vignetteManifestCache.set(module, manifest);
     return manifest;
   } catch {
-    portraitManifestCache.set(module, null);
+    vignetteManifestCache.set(module, null);
     return null;
   }
 }
 
-// Step IDs that map to specific player portrait actions
-const STEP_TO_PORTRAIT_ACTION: Record<string, string> = {
+// Step IDs that map to specific player vignette actions
+const STEP_TO_VIGNETTE_ACTION: Record<string, string> = {
   brush_teeth: 'brush_teeth',
   take_shower: 'shower',
 };
 
-// Convert tags array to a key-value state object for portrait matching
+// Convert tags array to a key-value state object for vignette matching
 function tagsToStateObject(tags: string[]): Record<string, boolean> {
   const obj: Record<string, boolean> = {};
   for (const tag of tags) obj[tag] = true;
   return obj;
 }
 
-// Check if a portrait variant's match conditions are met by a state object
-function matchesPortraitCondition(match: Record<string, unknown>, state: Record<string, unknown>): boolean {
+// Check if a vignette variant's match conditions are met by a state object
+function matchesVignetteCondition(match: Record<string, unknown>, state: Record<string, unknown>): boolean {
   return Object.entries(match).every(([key, val]) => {
     if (val === true) return state[key] === true;
     if (val === false) return !state[key];
@@ -265,16 +265,16 @@ function matchesPortraitCondition(match: Record<string, unknown>, state: Record<
   });
 }
 
-// Derive the "last action" from mutations for portrait selection
+// Derive the "last action" from mutations for vignette selection
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function deriveLastAction(result: any): string | null {
   const mutations = result?.mutations || [];
   const stepsCompleted: string[] = (result?.stepsCompleted || []).map((g: { id?: string; title?: string }) => g.id || '');
 
-  // Check step-based portrait first (more specific)
+  // Check step-based vignette first (more specific)
   for (const stepId of stepsCompleted) {
-    if (STEP_TO_PORTRAIT_ACTION[stepId]) {
-      return STEP_TO_PORTRAIT_ACTION[stepId];
+    if (STEP_TO_VIGNETTE_ACTION[stepId]) {
+      return STEP_TO_VIGNETTE_ACTION[stepId];
     }
   }
 
@@ -289,14 +289,14 @@ function deriveLastAction(result: any): string | null {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function resolvePortraits(state: any, result: any | null, module: string): PortraitHint | null {
-  const manifest = loadPortraitManifest(module);
+function resolveVignettes(state: any, result: any | null, module: string): VignetteHint | null {
+  const manifest = loadVignetteManifest(module);
 
-  // Even without a manifest, we may have cached/generated portraits
-  const hint: PortraitHint = {};
+  // Even without a manifest, we may have cached/generated vignettes
+  const hint: VignetteHint = {};
 
   if (!manifest) {
-    // No pre-generated portraits — still check cache for object portraits
+    // No pre-generated vignettes — still check cache for object vignettes
     const objectChanges: Array<{ objectId: string; image: string; generating?: boolean }> = [];
     const allObjects: Array<{ id: string; name: { native: string }; tags: string[]; location: string }> = state.objects || [];
     const objectsInLocation = allObjects.filter(
@@ -308,7 +308,7 @@ function resolvePortraits(state: any, result: any | null, module: string): Portr
       const visualTags = tags.filter(t => !['takeable', 'consumable', 'container'].includes(t));
       if (visualTags.length === 0) continue;
 
-      const cached = getCachedPortrait(module, obj.id, visualTags);
+      const cached = getCachedVignette(module, obj.id, visualTags);
       if (cached) {
         objectChanges.push({ objectId: obj.id, image: cached });
         continue;
@@ -329,7 +329,7 @@ function resolvePortraits(state: any, result: any | null, module: string): Portr
     return null;
   }
 
-  // 1. Player portrait — check transient actions first, fall back to persistent state
+  // 1. Player vignette — check transient actions first, fall back to persistent state
   if (result?.mutations?.length) {
     const lastAction = deriveLastAction(result);
     if (lastAction) {
@@ -353,16 +353,16 @@ function resolvePortraits(state: any, result: any | null, module: string): Portr
     hint.player = persistentMatch?.image || manifest.player.default;
   }
 
-  // 2. Active NPC portrait (when NPC speaks this turn)
+  // 2. Active NPC vignette (when NPC speaks this turn)
   if (result?.npcResponse?.npcId) {
     const npcId = result.npcResponse.npcId;
-    const npcPortrait = manifest.npcs[npcId]?.default || manifest.pets[npcId]?.default;
-    if (npcPortrait) {
-      hint.activeNpc = npcPortrait;
+    const npcVignette = manifest.npcs[npcId]?.default || manifest.pets[npcId]?.default;
+    if (npcVignette) {
+      hint.activeNpc = npcVignette;
     }
   }
 
-  // 3. Object state portraits — match tags against portrait manifest conditions
+  // 3. Object state vignettes — match tags against vignette manifest conditions
   const objectChanges: Array<{ objectId: string; image: string; generating?: boolean }> = [];
   const allObjects: Array<{ id: string; name: { native: string }; tags: string[]; location: string }> = state.objects || [];
 
@@ -379,7 +379,7 @@ function resolvePortraits(state: any, result: any | null, module: string): Portr
       const effectiveState = tagsToStateObject(tags);
       let found = false;
       for (const variant of manifest.objects[obj.id]) {
-        if (matchesPortraitCondition(variant.match, effectiveState)) {
+        if (matchesVignetteCondition(variant.match, effectiveState)) {
           objectChanges.push({ objectId: obj.id, image: variant.image });
           found = true;
           break;
@@ -392,10 +392,10 @@ function resolvePortraits(state: any, result: any | null, module: string): Portr
     const visualTags = tags.filter(t => !['takeable', 'consumable', 'container'].includes(t));
     if (visualTags.length === 0) continue;
 
-    // Check portrait cache
-    const cached = getCachedPortrait(module, obj.id, visualTags);
+    // Check vignette cache
+    const cached = getCachedVignette(module, obj.id, visualTags);
     if (cached) {
-      // Cached portrait found — image is a full URL path, extract just the filename portion
+      // Cached vignette found — image is a full URL path, extract just the filename portion
       objectChanges.push({ objectId: obj.id, image: cached });
       continue;
     }
@@ -409,7 +409,7 @@ function resolvePortraits(state: any, result: any | null, module: string): Portr
         objectChanges.push({ objectId: obj.id, image: getPlaceholderPath(), generating: true });
       }
     }
-    // When generation is disabled and no cached portrait, don't show anything
+    // When generation is disabled and no cached vignette, don't show anything
   }
 
   if (objectChanges.length > 0) {
@@ -419,19 +419,22 @@ function resolvePortraits(state: any, result: any | null, module: string): Portr
   return hint;
 }
 
-// Map location IDs to their module name for scene lookup
-const LOCATION_TO_MODULE: Record<string, string> = {
-  bedroom: 'home', bathroom: 'home', kitchen: 'home', living_room: 'home', street: 'home',
-  restaurant_entrance: 'restaurant', restaurant_table: 'restaurant', restaurant_kitchen: 'restaurant',
-  restaurant_cashier: 'restaurant', restaurant_bathroom: 'restaurant',
-};
+// Dynamic module lookup for any location (no more hardcoded map)
+function getModuleForLocation(locationId: string): string {
+  if (!engine) return 'home';
+  try {
+    return engine.getBuildingForLocation(locationId) || 'home';
+  } catch {
+    return 'home';
+  }
+}
 
 // --- View Model Builders ---
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildGameView(sessionId: string, state: any, turnResult: TurnResultView | null, result?: any, helpText?: string): GameView {
   const locationId = state.currentLocation;
-  const module = LOCATION_TO_MODULE[locationId] || 'home';
+  const module = getModuleForLocation(locationId) || 'home';
   const manifest = loadManifest(module, locationId);
 
   // Objects in current location from flat list
@@ -471,7 +474,7 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
   }));
 
   // NPCs in this location (check runtime npcStates for current location)
-  const portraitManifest = loadPortraitManifest(module);
+  const vignetteManifest = loadVignetteManifest(module);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const allNPCsDef = (engine as any).allNPCs as Array<{ id: string; name: { target: string; native: string }; location: string; isPet?: boolean; gender?: string }>;
   const npcsHere = allNPCsDef.filter(npc => {
@@ -484,7 +487,7 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
     id: npc.id,
     name: npc.name,
     mood: state.npcStates?.[npc.id]?.mood || '',
-    portrait: portraitManifest?.npcs[npc.id]?.default || portraitManifest?.pets?.[npc.id]?.default || undefined,
+    portrait: vignetteManifest?.npcs[npc.id]?.default || vignetteManifest?.pets?.[npc.id]?.default || undefined,
   }));
 
   // Inventory from flat object list
@@ -499,12 +502,12 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
   // Points to next level: 150 * level
   const pointsToNextLevel = 150 * state.level;
 
-  // Resolve portraits for this turn
-  const portraitHint = resolvePortraits(state, result || null, module);
+  // Resolve vignettes for this turn
+  const vignetteHint = resolveVignettes(state, result || null, module);
 
   // Attach NPC portrait to turn result if applicable
-  if (turnResult?.npcResponse && portraitHint?.activeNpc) {
-    turnResult.npcResponse.portrait = `/scenes/${module}/portraits/${portraitHint.activeNpc}`;
+  if (turnResult?.npcResponse && vignetteHint?.activeNpc) {
+    turnResult.npcResponse.portrait = `/scenes/${module}/vignettes/${vignetteHint.activeNpc}`;
   }
 
   // Location name from allLocations
@@ -528,7 +531,7 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
     completedSteps: state.completedSteps,
     badges: state.badges || [],
     scene,
-    portraitHint,
+    vignetteHint,
     helpText: helpText || '',
     verbs: currentLoc?.verbs || [],
     turnResult,

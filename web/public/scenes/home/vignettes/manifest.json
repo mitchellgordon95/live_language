@@ -3,15 +3,15 @@
     "default": "player-player-standing.png",
     "variants": [
       {
-        "image": "player-player-in-bed.png",
-        "match": {
-          "playerPosition": "in_bed"
-        }
-      },
-      {
         "image": "player-player-standing.png",
         "match": {
           "playerPosition": "standing"
+        }
+      },
+      {
+        "image": "player-player-in-bed.png",
+        "match": {
+          "playerPosition": "in_bed"
         }
       },
       {
@@ -56,15 +56,47 @@
   "objects": {
     "alarm_clock": [
       {
-        "image": "object-alarm_clock-ringing.png",
+        "image": "object-alarm_clock-on.png",
         "match": {
-          "ringing": true
+          "on": true
         }
       },
       {
         "image": "object-alarm_clock-off.png",
         "match": {
-          "ringing": false
+          "off": true
+        }
+      }
+    ],
+    "window": [
+      {
+        "image": "object-window-open.png",
+        "match": {
+          "open": true
+        }
+      }
+    ],
+    "lamp": [
+      {
+        "image": "object-lamp-on.png",
+        "match": {
+          "on": true
+        }
+      }
+    ],
+    "closet": [
+      {
+        "image": "object-closet-open.png",
+        "match": {
+          "open": true
+        }
+      }
+    ],
+    "shower": [
+      {
+        "image": "object-shower-on.png",
+        "match": {
+          "on": true
         }
       }
     ],
@@ -89,6 +121,22 @@
         "image": "object-coffee_maker-on.png",
         "match": {
           "on": true
+        }
+      }
+    ],
+    "tv": [
+      {
+        "image": "object-tv-on.png",
+        "match": {
+          "on": true
+        }
+      }
+    ],
+    "streetlamp": [
+      {
+        "image": "object-streetlamp-off.png",
+        "match": {
+          "off": true
         }
       }
     ]

@@ -24,14 +24,14 @@ export default function ScenePanel({ game }: ScenePanelProps) {
   const labeledObjects = game.objects.filter(
     (obj) => obj.coords && (obj.coords.w > 0 || obj.coords.h > 0)
   );
-  const objectPortraits = game.portraitHint?.objectChanges || [];
-  const activePortraitIds = new Set(objectPortraits.map(p => p.objectId));
+  const objectVignettes = game.vignetteHint?.objectChanges || [];
+  const activeVignetteIds = new Set(objectVignettes.map(p => p.objectId));
 
   const unlabeledObjects = game.objects.filter(
     (obj) => (!obj.coords || (obj.coords.w === 0 && obj.coords.h === 0))
-      && !obj.containerId  // exclude container items (shown on portrait instead)
+      && !obj.containerId  // exclude container items (shown on vignette instead)
   );
-  const hasPortraits = game.portraitHint?.player || game.npcs.length > 0 || objectPortraits.length > 0;
+  const hasVignettes = game.vignetteHint?.player || game.npcs.length > 0 || objectVignettes.length > 0;
 
   const { west: westExits, east: eastExits, north: northExits } = distributeExits(game.exits);
   const [questsExpanded, setQuestsExpanded] = useState(false);
@@ -168,20 +168,20 @@ export default function ScenePanel({ game }: ScenePanelProps) {
         </div>
       )}
 
-      {/* Portrait tray — overlaps bottom of scene image */}
-      {hasPortraits && hasScene && (
+      {/* Vignette tray — overlaps bottom of scene image */}
+      {hasVignettes && hasScene && (
         <div className="-mt-14 flex justify-center items-end gap-4 z-10 pointer-events-none px-3 mb-1">
-          {game.portraitHint?.player && (
-            <PortraitAvatar
-              src={`/scenes/${game.scene!.module}/portraits/${game.portraitHint.player}`}
+          {game.vignetteHint?.player && (
+            <VignetteAvatar
+              src={`/scenes/${game.scene!.module}/vignettes/${game.vignetteHint.player}`}
               alt="You"
               size="lg"
             />
           )}
           {game.npcs.map((npc) => (
-            <PortraitAvatar
+            <VignetteAvatar
               key={npc.id}
-              src={npc.portrait ? `/scenes/${game.scene!.module}/portraits/${npc.portrait}` : undefined}
+              src={npc.portrait ? `/scenes/${game.scene!.module}/vignettes/${npc.portrait}` : undefined}
               alt={npc.name.native}
               label={npc.name.target}
               mood={npc.mood}
@@ -189,15 +189,15 @@ export default function ScenePanel({ game }: ScenePanelProps) {
               size="md"
             />
           ))}
-          {objectPortraits.map((change) => {
+          {objectVignettes.map((change) => {
             const obj = game.objects.find(o => o.id === change.objectId);
             const containedItems = game.objects.filter(o => o.containerId === change.objectId);
-            // Cached portraits use full paths (starting with /), pre-generated use relative filenames
+            // Cached vignettes use full paths (starting with /), pre-generated use relative filenames
             const imgSrc = change.image.startsWith('/')
               ? change.image
-              : `/scenes/${game.scene!.module}/portraits/${change.image}`;
+              : `/scenes/${game.scene!.module}/vignettes/${change.image}`;
             return (
-              <PortraitWithItems
+              <VignetteWithItems
                 key={`obj-${change.objectId}`}
                 src={imgSrc}
                 alt={obj?.name.native || change.objectId}
@@ -463,9 +463,9 @@ function ObjectLabel({ obj, isHighlighted, onMouseEnter, onMouseLeave }: ObjectL
   );
 }
 
-// --- Portrait Avatar (used in tray below scene) ---
+// --- Vignette Avatar (used in tray below scene) ---
 
-interface PortraitAvatarProps {
+interface VignetteAvatarProps {
   src?: string;
   alt: string;
   label?: string;
@@ -474,7 +474,7 @@ interface PortraitAvatarProps {
   size: 'lg' | 'md';
 }
 
-function PortraitAvatar({ src, alt, label, mood, fallbackLetter, size }: PortraitAvatarProps) {
+function VignetteAvatar({ src, alt, label, mood, fallbackLetter, size }: VignetteAvatarProps) {
   const sizeClasses = size === 'lg'
     ? 'w-40 h-40 border-2 border-gray-600'
     : 'w-32 h-32 border-2 border-cyan-500/60';
@@ -503,9 +503,9 @@ function PortraitAvatar({ src, alt, label, mood, fallbackLetter, size }: Portrai
   );
 }
 
-// --- Portrait with contained item dots (e.g. open fridge with food items) ---
+// --- Vignette with contained item dots (e.g. open fridge with food items) ---
 
-function PortraitWithItems({ src, alt, label, items, generating }: {
+function VignetteWithItems({ src, alt, label, items, generating }: {
   src: string;
   alt: string;
   label?: string;
@@ -523,7 +523,7 @@ function PortraitWithItems({ src, alt, label, items, generating }: {
           alt={alt}
           className={`w-32 h-32 border-2 border-cyan-500/60 rounded-lg object-cover shadow-lg ${generating ? 'animate-pulse' : ''}`}
         />
-        {/* Item dots overlaid on portrait */}
+        {/* Item dots overlaid on vignette */}
         {items.length > 0 && (
           <div className="absolute bottom-1 left-1 right-1 flex justify-center gap-1.5 pointer-events-auto">
             {items.map((item) => {

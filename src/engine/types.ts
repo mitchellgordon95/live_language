@@ -78,6 +78,7 @@ export interface NPC {
   personality: string;
   gender?: 'male' | 'female';
   isPet?: boolean;
+  appearance?: string;
 }
 
 export interface Needs {
@@ -97,6 +98,7 @@ export interface Location {
   name: BilingualText;
   exits: Exit[];
   verbs?: BilingualText[];
+  sceneDescription?: string;
 }
 
 export interface Exit {

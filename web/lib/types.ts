@@ -25,7 +25,7 @@ export interface NPCView {
   id: string;
   name: BilingualText;
   mood: string;
-  portrait?: string;  // relative path, e.g. "portraits/npc-roommate-default.png"
+  portrait?: string;  // relative path, e.g. "vignettes/npc-roommate-default.png"
 }
 
 export interface ExitView {
@@ -69,7 +69,7 @@ export interface NPCResponseView {
   target: string;
   native: string;
   actionText?: string;
-  portrait?: string;  // full src path, e.g. "/scenes/home/portraits/npc-roommate-default.png"
+  portrait?: string;  // full src path, e.g. "/scenes/home/vignettes/npc-roommate-default.png"
   voice?: string;     // Gemini TTS voice name, e.g. "Charon"
 }
 
@@ -84,9 +84,9 @@ export interface SceneInfo {
   module: string;      // e.g. "home"
 }
 
-export interface PortraitHint {
-  player?: string;         // portrait filename, e.g. "player-player-cooking.png"
-  activeNpc?: string;      // NPC portrait filename when NPC speaks this turn
+export interface VignetteHint {
+  player?: string;         // vignette filename, e.g. "player-player-cooking.png"
+  activeNpc?: string;      // NPC vignette filename when NPC speaks this turn
   objectChanges?: Array<{ objectId: string; image: string; generating?: boolean }>;
 }
 
@@ -108,7 +108,7 @@ export interface GameView {
   completedSteps: string[];
   badges: string[];
   scene: SceneInfo | null;
-  portraitHint: PortraitHint | null;
+  vignetteHint: VignetteHint | null;
   helpText: string;
   verbs: BilingualText[];
 

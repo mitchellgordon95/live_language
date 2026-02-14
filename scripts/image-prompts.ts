@@ -3,6 +3,8 @@
  * Each location gets a tailored prompt that produces a consistent illustration style.
  */
 
+import { PALETTES, EDITORIAL_STYLE } from './style-guide.ts';
+
 export interface ScenePromptContext {
   locationId: string;
   locationName: string;       // e.g., "kitchen"
@@ -10,19 +12,8 @@ export interface ScenePromptContext {
   objectNames: string[];      // e.g., ["refrigerator", "stove", "table"]
 }
 
-// Color palettes by building type
-const PALETTES: Record<string, string> = {
-  home: 'Warm yellows, soft oranges, cozy earth tones. Morning light streaming in.',
-  restaurant: 'Rich warm reds, dark wood browns, candlelight amber. Elegant but casual.',
-  market: 'Vibrant greens, fresh produce colors, rustic wood tones. Busy market atmosphere.',
-  gym: 'Cool grays, energetic orange accents, rubber black floors. Modern fitness facility.',
-  park: 'Natural greens, sky blues, dappled sunlight. Peaceful outdoor setting.',
-  clinic: 'Clean whites, soft blues, sterile but reassuring. Modern medical facility.',
-  bank: 'Navy blue, gold accents, marble gray. Professional financial setting.',
-};
-
-// Per-location scene descriptions for richer context
-const SCENE_DESCRIPTIONS: Record<string, string> = {
+// Per-location scene descriptions for richer context (exported for fallback use by generate-assets.ts)
+export const SCENE_DESCRIPTIONS: Record<string, string> = {
   // Home
   bedroom: 'A cozy bedroom with morning light filtering through curtains. Bed with rumpled sheets, nightstand with alarm clock, a wardrobe, and a desk lamp.',
   bathroom: 'A small but clean bathroom with white tiles. Shower stall with glass door, toilet, sink with mirror above it, toothbrush in a cup, towel rack.',
@@ -88,13 +79,11 @@ OBJECTS THAT MUST BE CLEARLY VISIBLE AND IDENTIFIABLE:
 ${ctx.objectNames.map(name => `- ${name}`).join('\n')}
 
 STYLE:
-- Editorial illustration style, like a New Yorker or Monocle magazine illustration
+- ${EDITORIAL_STYLE}
 - ${palette}
-- Clean lines, slightly stylized but recognizable objects
 - Each object should be distinct and clearly identifiable at a glance
 - Consistent 3/4 overhead viewing angle
 - No people in the scene (characters are handled separately)
-- DO NOT include any text, labels, or writing in the image
 - 1024x1024 square format`;
 }
 

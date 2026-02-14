@@ -145,6 +145,7 @@ const npcs: NPC[] = [
     location: 'living_room',
     personality: 'Very sleepy roommate. Just woke up, sitting on the couch, barely awake. Will ask the player for coffee when they talk to him. After getting coffee, mentions being hungry. Grateful and casual.',
     gender: 'male',
+    appearance: 'A friendly young man in his mid-20s with light skin and messy brown hair. Wearing a gray hoodie, sitting on a couch with a sleepy half-smile, holding a coffee mug.',
   },
   {
     id: 'cat',
@@ -152,6 +153,7 @@ const npcs: NPC[] = [
     location: 'kitchen',
     personality: 'Independent and aloof cat. Occasionally affectionate. Purrs when petted, ignores most commands.',
     isPet: true,
+    appearance: 'A calico cat with patches of orange, black, and white. Slightly aloof with half-closed eyes. Elegant and independent.',
   },
   {
     id: 'dog',
@@ -159,6 +161,7 @@ const npcs: NPC[] = [
     location: 'kitchen',
     personality: 'Excited and hungry dog. Always wants attention and food. Wags tail enthusiastically.',
     isPet: true,
+    appearance: 'A golden retriever with bright eyes and an eager expression. Tongue slightly out, tail always mid-wag. Joyful energy.',
   },
 ];
 
