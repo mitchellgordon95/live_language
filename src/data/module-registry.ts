@@ -1,4 +1,4 @@
-import type { Location, TutorialStep, VocabWord, NPC, WorldObject, ModuleDefinition } from '../engine/types.js';
+import type { Location, TutorialStep, Quest, VocabWord, NPC, WorldObject, ModuleDefinition } from '../engine/types.js';
 
 import { homeModule } from '../languages/spanish/modules/home.js';
 import { restaurantModule } from '../languages/spanish/modules/restaurant.js';
@@ -14,6 +14,7 @@ const modules: ModuleDefinition[] = [
     objects: [],
     npcs: [],
     tutorial: [],
+    quests: [],
     vocabulary: [],
     startLocationId: 'street',
     firstStepId: '',
@@ -94,6 +95,19 @@ export function getStartStepForBuilding(building: string): TutorialStep | null {
   const mod = modulesByName[building];
   if (!mod || !mod.firstStepId) return null;
   return mod.tutorial.find(g => g.id === mod.firstStepId) || null;
+}
+
+// Quest lookup functions
+export function getAllQuestsForModule(moduleName: string): Quest[] {
+  return modulesByName[moduleName]?.quests || [];
+}
+
+export function getQuestById(id: string): Quest | undefined {
+  for (const mod of modules) {
+    const quest = mod.quests.find(q => q.id === id);
+    if (quest) return quest;
+  }
+  return undefined;
 }
 
 // NPCs in a specific location (from definitions — runtime locations are in npcStates)

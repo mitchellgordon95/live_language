@@ -14,6 +14,7 @@ import * as fs from 'fs';
 import type {
   GameState,
   TutorialStep,
+  Quest,
   VocabularyProgress,
   Mutation,
   GrammarIssue,
@@ -25,6 +26,7 @@ import {
   applyMutations,
   getBuildingForLocation,
   awardPoints,
+  applyQuestReward,
   saveLocationProgress,
   loadLocationProgress,
   type BuildingName,
@@ -37,6 +39,8 @@ import {
   getAllStepsForBuilding,
   getGuidanceForBuilding,
   getAllKnownStepIds,
+  getAllQuestsForModule,
+  getQuestById,
 } from '../data/module-registry.js';
 import type { LanguageConfig } from '../languages/types.js';
 import { createInitialVocabulary, recordWordUse, extractWordsFromText } from '../engine/vocabulary.js';
@@ -134,28 +138,12 @@ function buildPrompt(state: GameState): string {
       }).join('\n')
     : '(none)';
 
-  // Tutorial step
-  const stepDesc = state.currentStep
-    ? `Current step: ${state.currentStep.title}\nStep ID: ${state.currentStep.id}`
-    : 'No current step';
-
-  const completedStepsDesc = state.completedSteps.length > 0
-    ? state.completedSteps.join(', ')
-    : '(none)';
-
-  // Step IDs for current building
-  const currentBuilding = getBuildingForLocation(state.currentLocation);
-  const buildingSteps = getAllStepsForBuilding(currentBuilding);
-  const stepIdsDesc = buildingSteps.length > 0
-    ? buildingSteps.map(g => `  - "${g.id}" - ${g.title}`).join('\n')
-    : '  (none)';
-
   // Player tags
   const playerTagsStr = state.playerTags.length > 0
     ? state.playerTags.join(', ')
     : '(none)';
 
-  return `CURRENT GAME STATE:
+  let prompt = `CURRENT GAME STATE:
 
 Location: ${state.currentLocation} (${currentLoc?.name.native || state.currentLocation})
 Player tags: [${playerTagsStr}]
@@ -176,13 +164,49 @@ Needs (0-100, higher is better):
 - energy: ${state.needs.energy}
 - hunger: ${state.needs.hunger}
 - hygiene: ${state.needs.hygiene}
-- bladder: ${state.needs.bladder}
+- bladder: ${state.needs.bladder}`;
 
-${stepDesc}
+  // Tutorial section — only if tutorial is active
+  const tutorialActive = state.currentStep && state.currentStep.id !== 'tutorial_complete';
+  if (tutorialActive) {
+    const currentBuilding = getBuildingForLocation(state.currentLocation);
+    const buildingSteps = getAllStepsForBuilding(currentBuilding);
+    const stepIdsDesc = buildingSteps.length > 0
+      ? buildingSteps.map(g => `  - "${g.id}" - ${g.title}`).join('\n')
+      : '  (none)';
+    const completedStepsDesc = state.completedSteps.length > 0
+      ? state.completedSteps.join(', ')
+      : '(none)';
+
+    prompt += `
+
+Current step: ${state.currentStep!.title}
+Step ID: ${state.currentStep!.id}
 Completed steps: ${completedStepsDesc}
 
 Available step IDs for this location:
 ${stepIdsDesc}`;
+  }
+
+  // Quest section — only if quests are active or completed
+  const currentBuilding = getBuildingForLocation(state.currentLocation);
+  const moduleQuests = getAllQuestsForModule(currentBuilding);
+  const activeQuestDescs = moduleQuests
+    .filter(q => state.activeQuests.includes(q.id))
+    .map(q => `- "${q.id}": ${q.description}\n  COMPLETE WHEN: ${q.completionHint}`);
+
+  if (activeQuestDescs.length > 0) {
+    prompt += `
+
+ACTIVE QUESTS:
+${activeQuestDescs.join('\n')}`;
+  }
+
+  if (state.completedQuests.length > 0) {
+    prompt += `\nCOMPLETED QUESTS: ${state.completedQuests.join(', ')}`;
+  }
+
+  return prompt;
 }
 
 // ============================================================================
@@ -407,6 +431,9 @@ export interface TurnResult {
   pointsAwarded: number;
   leveledUp: boolean;
   stepsCompleted: TutorialStep[];
+  questsStarted: Quest[];
+  questsCompleted: Quest[];
+  badgesEarned: string[];
   buildingChanged: boolean;
   newBuilding?: string;
 }
@@ -446,6 +473,9 @@ export async function processTurn(
       pointsAwarded: 0,
       leveledUp: false,
       stepsCompleted: [],
+      questsStarted: [],
+      questsCompleted: [],
+      badgesEarned: [],
       buildingChanged: false,
     };
   }
@@ -484,6 +514,23 @@ export async function processTurn(
     const wordsUsed = extractWordsFromText(input, newState.vocabulary);
     for (const wordId of wordsUsed) {
       newState = { ...newState, vocabulary: recordWordUse(newState.vocabulary, wordId, true) };
+    }
+  }
+
+  // --- Check quest triggers (before AI call so quests appear in prompt) ---
+  const questsStarted: Quest[] = [];
+  const finalBuilding = getBuildingForLocation(newState.currentLocation);
+  const moduleQuests = getAllQuestsForModule(finalBuilding);
+  for (const quest of moduleQuests) {
+    if (
+      !newState.activeQuests.includes(quest.id) &&
+      !newState.completedQuests.includes(quest.id) &&
+      !newState.abandonedQuests.includes(quest.id) &&
+      (!quest.prereqs || quest.prereqs.every(p => newState.completedQuests.includes(p))) &&
+      quest.triggerCondition(newState)
+    ) {
+      newState = { ...newState, activeQuests: [...newState.activeQuests, quest.id] };
+      questsStarted.push(quest);
     }
   }
 
@@ -547,8 +594,61 @@ export async function processTurn(
   }
 
   // Also check all building steps via checkComplete functions
-  const finalBuilding = getBuildingForLocation(newState.currentLocation);
   const allBuildingSteps = getAllStepsForBuilding(finalBuilding);
+  for (const step of allBuildingSteps) {
+    if (!newState.completedSteps.includes(step.id) && step.checkComplete(newState)) {
+      if (!stepsCompleted.some(g => g.id === step.id)) {
+        stepsCompleted.push(step);
+      }
+      newState = { ...newState, completedSteps: [...newState.completedSteps, step.id] };
+    }
+  }
+
+  // --- Process quest completions from AI ---
+  const questsCompleted: Quest[] = [];
+  const badgesEarned: string[] = [];
+  if (narrateResult.questsCompleted?.length) {
+    for (const questId of narrateResult.questsCompleted) {
+      if (!newState.activeQuests.includes(questId)) {
+        console.warn(`[validate] Narrate returned non-active quest ID: ${questId}`);
+        continue;
+      }
+      const quest = getQuestById(questId);
+      if (!quest) {
+        console.warn(`[validate] Narrate returned unknown quest ID: ${questId}`);
+        continue;
+      }
+      // Move from active to completed
+      newState = {
+        ...newState,
+        activeQuests: newState.activeQuests.filter(id => id !== questId),
+        completedQuests: [...newState.completedQuests, questId],
+      };
+      // Apply reward
+      const rewardResult = applyQuestReward(newState, quest);
+      newState = rewardResult.state;
+      pointsAwarded += rewardResult.pointsAwarded;
+      if (rewardResult.leveledUp) leveledUp = true;
+      if (quest.reward.badge) badgesEarned.push(quest.reward.badge.name);
+      questsCompleted.push(quest);
+    }
+  }
+
+  // Re-check quest triggers after completions (new quests may now be eligible)
+  for (const quest of moduleQuests) {
+    if (
+      !newState.activeQuests.includes(quest.id) &&
+      !newState.completedQuests.includes(quest.id) &&
+      !newState.abandonedQuests.includes(quest.id) &&
+      (!quest.prereqs || quest.prereqs.every(p => newState.completedQuests.includes(p))) &&
+      quest.triggerCondition(newState)
+    ) {
+      newState = { ...newState, activeQuests: [...newState.activeQuests, quest.id] };
+      questsStarted.push(quest);
+    }
+  }
+
+  // Re-check tutorial steps (quest completion may satisfy step checkComplete)
   for (const step of allBuildingSteps) {
     if (!newState.completedSteps.includes(step.id) && step.checkComplete(newState)) {
       if (!stepsCompleted.some(g => g.id === step.id)) {
@@ -579,6 +679,9 @@ export async function processTurn(
     pointsAwarded,
     leveledUp,
     stepsCompleted,
+    questsStarted,
+    questsCompleted,
+    badgesEarned,
     buildingChanged,
     newBuilding: buildingChanged ? currentBuilding : undefined,
   };

@@ -8,7 +8,7 @@
 import 'server-only';
 import { join } from 'path';
 import { readFileSync, existsSync } from 'fs';
-import type { GameView, TurnResultView, ObjectCoords, SceneInfo, ExitView, NPCView, TutorialStepView, PortraitHint } from './types';
+import type { GameView, TurnResultView, QuestView, ObjectCoords, SceneInfo, ExitView, NPCView, TutorialStepView, PortraitHint } from './types';
 import { getCachedPortrait, getPlaceholderPath, isGenerationEnabled, isGenerating, triggerGeneration } from './portrait-generator';
 
 // Path to compiled game engine
@@ -31,6 +31,7 @@ let engine: {
   getNPCsInLocation: (locationId: string) => unknown[];
   getVocabStage: (vocab: unknown, objectId: string) => string;
   getAllStepsForBuilding: (building: string) => unknown[];
+  getAllQuestsForModule: (moduleName: string) => unknown[];
   getBuildingForLocation: (locationId: string) => string;
 } | null = null;
 
@@ -69,6 +70,7 @@ async function getEngine() {
       return v.words[objectId]?.stage || 'new';
     },
     getAllStepsForBuilding: registryMod.getAllStepsForBuilding,
+    getAllQuestsForModule: registryMod.getAllQuestsForModule,
     getBuildingForLocation: registryMod.getBuildingForLocation,
   };
 
@@ -518,11 +520,13 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
     exits,
     needs: state.needs,
     tutorial: buildTutorialChecklist(state),
+    quests: buildQuestList(state, module),
     inventory,
     level: state.level,
     points: state.points,
     pointsToNextLevel,
     completedSteps: state.completedSteps,
+    badges: state.badges || [],
     scene,
     portraitHint,
     helpText: helpText || '',
@@ -545,6 +549,27 @@ function buildTutorialChecklist(state: any): TutorialStepView[] {
     completed: state.completedSteps.includes(g.id),
     suggested: g.id === suggestedId,
   }));
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function buildQuestList(state: any, module: string): QuestView[] {
+  const building = (engine as NonNullable<typeof engine>).getBuildingForLocation(state.currentLocation);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const allQuests = (engine as NonNullable<typeof engine>).getAllQuestsForModule(building) as any[];
+  const activeIds: string[] = state.activeQuests || [];
+  const completedIds: string[] = state.completedQuests || [];
+
+  // Show active quests + recently completed quests
+  return allQuests
+    .filter(q => activeIds.includes(q.id) || completedIds.includes(q.id))
+    .map(q => ({
+      id: q.id,
+      title: q.title,
+      description: q.description,
+      hint: q.hint,
+      active: activeIds.includes(q.id),
+      completed: completedIds.includes(q.id),
+    }));
 }
 
 function getVocabStageForObject(vocabulary: { words: Record<string, { stage: string }> }, objectId: string): 'new' | 'learning' | 'known' {
@@ -590,6 +615,17 @@ function buildTurnResultView(result: any, state: any): TurnResultView {
     leveledUp: result.leveledUp || false,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     stepsCompleted: (result.stepsCompleted || []).map((g: any) => g.title || g.id),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    questsStarted: (result.questsStarted || []).map((q: any) => ({
+      title: q.title,
+      description: q.description,
+    })),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    questsCompleted: (result.questsCompleted || []).map((q: any) => ({
+      title: q.title,
+      points: q.reward?.points || 0,
+      badge: q.reward?.badge?.name,
+    })),
   };
 
   // Include hint when action failed and there's a current goal with a hint

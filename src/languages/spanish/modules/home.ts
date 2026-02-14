@@ -1,4 +1,4 @@
-import type { Location, TutorialStep, VocabWord, GameState, NPC, WorldObject, ModuleDefinition } from '../../../engine/types.js';
+import type { Location, TutorialStep, Quest, VocabWord, GameState, NPC, WorldObject, ModuleDefinition } from '../../../engine/types.js';
 
 // ============================================================================
 // LOCATIONS (exits only — objects are in the flat list below)
@@ -118,7 +118,7 @@ const objects: WorldObject[] = [
 
   // Food (on counter)
   { id: 'bread', name: { target: 'el pan', native: 'bread' }, location: 'kitchen', tags: ['takeable', 'consumable'], needsEffect: { hunger: 15 } },
-  { id: 'coffee', name: { target: 'el café', native: 'coffee' }, location: 'kitchen', tags: ['consumable'], needsEffect: { energy: 20 } },
+  { id: 'coffee', name: { target: 'el café', native: 'coffee' }, location: 'kitchen', tags: ['takeable', 'consumable'], needsEffect: { energy: 20 } },
   { id: 'water', name: { target: 'el agua', native: 'water' }, location: 'kitchen', tags: ['consumable'], needsEffect: { hunger: 5 } },
 
   // Living room
@@ -143,7 +143,7 @@ const npcs: NPC[] = [
     id: 'roommate',
     name: { target: 'Carlos', native: 'Carlos' },
     location: 'living_room',
-    personality: 'Sleepy but friendly roommate. Just woke up, sitting on the couch. Hungry — will ask the player to make breakfast if they talk to him. Grateful when given food. Speaks casually.',
+    personality: 'Very sleepy roommate. Just woke up, sitting on the couch, barely awake. Will ask the player for coffee when they talk to him. After getting coffee, mentions being hungry. Grateful and casual.',
     gender: 'male',
   },
   {
@@ -223,34 +223,73 @@ const tutorial: TutorialStep[] = [
   {
     id: 'go_to_kitchen',
     title: 'Go to the kitchen',
-    description: 'Carlos asked you to make breakfast. Head to the kitchen.',
+    description: 'Carlos asked for coffee. Head to the kitchen to grab one.',
     hint: 'Try "Voy a la cocina" (I go to the kitchen)',
     checkComplete: (state: GameState) => state.currentLocation === 'kitchen',
-    nextStepId: 'make_food',
+    nextStepId: 'grab_coffee',
   },
   {
-    id: 'make_food',
-    title: 'Make some food',
-    description: 'Cook something for breakfast. Anything will do!',
-    hint: 'Try "Abro la nevera" to open the fridge, then "Cocino los huevos" (I cook the eggs)',
-    checkComplete: (state: GameState) =>
-      state.completedSteps.includes('make_food'),
-    nextStepId: 'bring_carlos_food',
+    id: 'grab_coffee',
+    title: 'Grab a coffee',
+    description: 'Pick up the coffee from the counter.',
+    hint: 'Try "Tomo el café" (I take the coffee)',
+    checkComplete: (state: GameState) => {
+      const coffee = state.objects.find(o => o.id === 'coffee');
+      return coffee?.location === 'inventory';
+    },
+    nextStepId: 'give_carlos_coffee',
   },
   {
-    id: 'bring_carlos_food',
-    title: 'Bring Carlos some food',
-    description: 'Take the food to Carlos in the living room.',
-    hint: 'Take food to the living room and give it to Carlos: "Le doy la comida a Carlos"',
+    id: 'give_carlos_coffee',
+    title: 'Bring Carlos his coffee',
+    description: 'Bring the coffee to Carlos in the living room.',
+    hint: 'Go to the living room and try "Le doy el café a Carlos"',
     checkComplete: (state: GameState) =>
-      state.completedSteps.includes('bring_carlos_food'),
+      state.completedQuests.includes('carlos_coffee'),
     nextStepId: 'tutorial_complete',
   },
   {
     id: 'tutorial_complete',
     title: 'Tutorial complete!',
-    description: 'You finished the tutorial! Now explore the world freely.',
-    checkComplete: (state: GameState) => state.completedSteps.includes('bring_carlos_food'),
+    description: 'You finished the tutorial! Now explore freely and complete quests.',
+    checkComplete: (state: GameState) => state.completedQuests.includes('carlos_coffee'),
+  },
+];
+
+// ============================================================================
+// QUESTS
+// ============================================================================
+
+const quests: Quest[] = [
+  {
+    id: 'carlos_coffee',
+    title: { target: 'El café de Carlos', native: "Carlos's Coffee" },
+    description: 'Bring Carlos a coffee so he can wake up.',
+    completionHint: 'Player gives or brings coffee to Carlos in the living room.',
+    hint: 'Grab the coffee from the kitchen and give it to Carlos.',
+    source: 'npc',
+    sourceId: 'roommate',
+    module: 'home',
+    triggerCondition: (state: GameState) =>
+      state.completedSteps.includes('talk_to_carlos'),
+    reward: { points: 100 },
+  },
+  {
+    id: 'carlos_breakfast',
+    title: { target: 'El desayuno de Carlos', native: "Carlos's Breakfast" },
+    description: 'Carlos is hungry. Make him some breakfast — anything will do.',
+    completionHint: 'Player gives any food to Carlos (eggs, bread, etc). He eats it.',
+    hint: 'Open the fridge, cook something, and bring it to Carlos.',
+    source: 'npc',
+    sourceId: 'roommate',
+    module: 'home',
+    triggerCondition: (state: GameState) =>
+      state.completedQuests.includes('carlos_coffee'),
+    reward: {
+      points: 150,
+      badge: { id: 'chef_novato', name: 'Chef Novato' },
+    },
+    prereqs: ['carlos_coffee'],
   },
 ];
 
@@ -353,6 +392,7 @@ export const homeModule: ModuleDefinition = {
   objects,
   npcs,
   tutorial,
+  quests,
   vocabulary,
   startLocationId: 'bedroom',
   firstStepId: 'wake_up',
@@ -384,24 +424,25 @@ If the player wants to take cooked food elsewhere, they move it to "inventory" a
 Consuming food = "remove" mutation + "needs" mutation with the food's needsEffect.
 
 NPCs:
-- Carlos (roommate): In living_room. Sleepy but friendly. Casual Spanish.
-  When the player talks to him, he mentions being hungry and asks them to make breakfast.
-  This triggers the talk_to_carlos goal. Loves receiving food — be warm and grateful.
-  Giving food to Carlos = move food to "removed" (he eats it). This triggers bring_carlos_food goal.
+- Carlos (roommate): In living_room. Very sleepy, barely awake. Casual Spanish.
+  When the player first talks to him, he asks for coffee ("Necesito café..." / "¿Me traes un café?").
+  Giving coffee to Carlos = move coffee to "removed" (he drinks it). He wakes up and thanks them.
+  After coffee, if the player talks to him again, he mentions being hungry.
+  Giving food to Carlos = move food to "removed" (he eats it). He thanks them warmly.
 - Luna (cat, isPet): In kitchen. Independent, aloof. Purrs when petted, ignores commands.
   Responds in English (no Spanish dialogue). Use npcResponse with just english field.
 - Max (dog, isPet): In kitchen. Excited, eager. Wags tail, barks happily.
   Responds in English. Loves pet_food. Use npcResponse with just english field.
 
-GOAL COMPLETION (lax — complete as soon as the intent is clear):
+STEP COMPLETION (lax — complete as soon as the intent is clear):
 - wake_up: Player has "standing" in playerTags
 - turn_off_alarm: alarm_clock no longer has "ringing" tag
 - go_to_bathroom: Player is in bathroom
 - take_care_of_needs: Player does ANY bathroom action (brush teeth, shower, use toilet, wash hands — anything)
 - go_to_living_room: Player is in living_room
-- talk_to_carlos: Player talks to Carlos. Carlos should mention he is hungry and ask the player to make breakfast.
+- talk_to_carlos: Player talks to Carlos. Carlos should ask for coffee (he's very sleepy).
 - go_to_kitchen: Player is in kitchen
-- make_food: Player cooks anything (eggs, bread, etc. — any food preparation counts)
-- bring_carlos_food: Player gives Carlos food in the living room. Carlos thanks them warmly.
-- tutorial_complete: Auto-completes when bring_carlos_food is done`,
+- grab_coffee: Player takes coffee to inventory
+- give_carlos_coffee: Completed automatically when carlos_coffee quest completes
+- tutorial_complete: Auto-completes when carlos_coffee quest is done`,
 };

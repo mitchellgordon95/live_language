@@ -2,6 +2,8 @@ import type {
   GameState,
   Location,
   TutorialStep,
+  Quest,
+  QuestReward,
   Needs,
   WorldObject,
   Mutation,
@@ -120,6 +122,10 @@ export function createInitialState(
     time: { hour: 7, minute: 0 },
     currentStep: startStep,
     completedSteps: [],
+    activeQuests: [],
+    completedQuests: [],
+    abandonedQuests: [],
+    badges: [],
     learnedWords: [],
     vocabulary: existingVocabulary || createInitialVocabulary(),
     points: 0,
@@ -209,6 +215,36 @@ export function awardStepBonus(state: GameState, isChainComplete: boolean, isFir
   let basePoints = isChainComplete ? 500 : 100;
   if (isFirstTime) basePoints = Math.round(basePoints * 1.5);
   return awardPoints(state, basePoints, 100);
+}
+
+export function applyQuestReward(state: GameState, quest: Quest): { state: GameState; pointsAwarded: number; leveledUp: boolean } {
+  let newState = state;
+  let pointsAwarded = 0;
+  let leveledUp = false;
+
+  if (quest.reward.points) {
+    const result = awardPoints(newState, quest.reward.points);
+    newState = result.state;
+    pointsAwarded = result.pointsAwarded;
+    leveledUp = result.leveledUp;
+  }
+
+  if (quest.reward.badge) {
+    newState = { ...newState, badges: [...newState.badges, quest.reward.badge.id] };
+  }
+
+  if (quest.reward.npcMood) {
+    const { npcId, mood } = quest.reward.npcMood;
+    newState = {
+      ...newState,
+      npcStates: {
+        ...newState.npcStates,
+        [npcId]: { ...newState.npcStates[npcId], mood },
+      },
+    };
+  }
+
+  return { state: newState, pointsAwarded, leveledUp };
 }
 
 export function isBuildingUnlocked(state: GameState, building: BuildingName): boolean {

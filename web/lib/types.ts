@@ -48,6 +48,15 @@ export interface TutorialStepView {
   suggested: boolean;
 }
 
+export interface QuestView {
+  id: string;
+  title: BilingualText;
+  description: string;
+  hint?: string;
+  active: boolean;
+  completed: boolean;
+}
+
 export interface GrammarIssueView {
   type: string;
   original: string;
@@ -91,11 +100,13 @@ export interface GameView {
   exits: ExitView[];
   needs: NeedsView;
   tutorial: TutorialStepView[];
+  quests: QuestView[];
   inventory: ItemView[];
   level: number;
   points: number;
   pointsToNextLevel: number;
   completedSteps: string[];
+  badges: string[];
   scene: SceneInfo | null;
   portraitHint: PortraitHint | null;
   helpText: string;
@@ -117,5 +128,7 @@ export interface TurnResultView {
   pointsAwarded: number;
   leveledUp: boolean;
   stepsCompleted: string[];
+  questsStarted: { title: BilingualText; description: string }[];
+  questsCompleted: { title: BilingualText; points: number; badge?: string }[];
   hint?: string;
 }

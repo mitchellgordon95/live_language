@@ -128,6 +128,7 @@ export const homeModule: ModuleDefinition = {
   objects,
   npcs,
   tutorial,
+  quests: [],
   vocabulary,
   startLocationId: 'bedroom',
   firstStepId: 'wake_up',

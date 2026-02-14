@@ -147,7 +147,29 @@ function TurnFeedback({ result, onSpeak }: { result: TurnResultView; onSpeak?: (
       {result.stepsCompleted.length > 0 && (
         <div className="text-green-400 text-sm">
           {result.stepsCompleted.map((g, i) => (
-            <div key={i}>Step complete: {g}</div>
+            <div key={i}>Tutorial step complete: {g}</div>
+          ))}
+        </div>
+      )}
+
+      {/* Quests started */}
+      {result.questsStarted.length > 0 && (
+        <div className="text-amber-300 text-sm">
+          {result.questsStarted.map((q, i) => (
+            <div key={i}>New quest: {q.title.native} &mdash; {q.description}</div>
+          ))}
+        </div>
+      )}
+
+      {/* Quests completed */}
+      {result.questsCompleted.length > 0 && (
+        <div className="text-amber-300 text-sm font-medium">
+          {result.questsCompleted.map((q, i) => (
+            <div key={i}>
+              Quest complete: {q.title.native}!
+              {q.points > 0 && ` +${q.points} pts`}
+              {q.badge && ` — Badge: ${q.badge}`}
+            </div>
           ))}
         </div>
       )}

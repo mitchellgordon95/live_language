@@ -317,6 +317,7 @@ export const restaurantModule: ModuleDefinition = {
   objects,
   npcs,
   tutorial,
+  quests: [],
   vocabulary,
   startLocationId: 'restaurant_entrance',
   firstStepId: '',

@@ -34,6 +34,7 @@ export const spanishConfig: LanguageConfig = {
       objects: [],
       npcs: [],
       tutorial: [],
+      quests: [],
       vocabulary: [],
       startLocationId: 'street',
       firstStepId: '',

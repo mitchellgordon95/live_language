@@ -107,6 +107,7 @@ RESPOND WITH ONLY VALID JSON:
 {
   "message": "What happened, in English (e.g., 'You get up, go to the kitchen, and open the refrigerator.')",
   "stepsCompleted": ["step_id"],
+  "questsCompleted": ["quest_id"],
   "npcResponse": {
     "npcId": "roommate",
     "spanish": "¡Gracias por los huevos!",
@@ -121,7 +122,8 @@ RESPOND WITH ONLY VALID JSON:
 
 FIELD RULES:
 - "message": Always in English. Describe what happened vividly but concisely (1-2 sentences).
-- "stepsCompleted": Array of step IDs completed by this turn. ONLY use IDs from the "Available step IDs" list in the context.
+- "stepsCompleted": Array of step IDs completed by this turn. ONLY use IDs from the "Available step IDs" list in the context. Omit if no steps completed.
+- "questsCompleted": Array of quest IDs completed this turn. ONLY use IDs from "ACTIVE QUESTS" in the context. Mark a quest complete when its COMPLETE WHEN condition is clearly met (be lax, same as steps). Omit if no quests completed or no active quests.
 - "npcResponse": Include if the player interacted with an NPC or pet
   - For NPCs: include "spanish" (NPC's response in simple Spanish) and "english" (translation)
   - For pets (isPet NPCs): omit "spanish", include only "english" (pet reaction in English)

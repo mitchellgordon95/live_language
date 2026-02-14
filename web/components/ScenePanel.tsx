@@ -34,9 +34,13 @@ export default function ScenePanel({ game }: ScenePanelProps) {
   const hasPortraits = game.portraitHint?.player || game.npcs.length > 0 || objectPortraits.length > 0;
 
   const { west: westExits, east: eastExits, north: northExits } = distributeExits(game.exits);
+  const [questsExpanded, setQuestsExpanded] = useState(false);
+
   const visibleSteps = game.tutorial.filter(g => !g.id.endsWith('_complete'));
   const completedCount = visibleSteps.filter(g => g.completed).length;
   const allComplete = game.tutorial.some(g => g.id.endsWith('_complete') && g.completed);
+  const activeQuests = game.quests.filter(q => q.active);
+  const hasQuests = activeQuests.length > 0;
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
@@ -78,21 +82,16 @@ export default function ScenePanel({ game }: ScenePanelProps) {
               )}
 
               {/* Tutorial overlay — top left of image, collapsible */}
-              {visibleSteps.length > 0 && (
+              {visibleSteps.length > 0 && !allComplete && (
                 <div
                   className="absolute top-2 left-2 z-10 bg-gray-900/70 backdrop-blur-sm rounded-lg p-2 max-w-[60%] cursor-pointer select-none"
                   onClick={() => setTutorialExpanded(!tutorialExpanded)}
                 >
-                  {/* Header + current step (always visible) */}
                   <div className="flex items-center gap-1.5 text-xs text-gray-300">
                     <span className="text-gray-400">{tutorialExpanded ? '\u25bc' : '\u25b6'}</span>
-                    {allComplete ? (
-                      <span className="text-green-400 font-medium">{'\u2713'} Tutorial complete!<span className="block text-gray-400 font-normal mt-0.5">Head outside to explore!</span></span>
-                    ) : (
-                      <span>Tutorial {completedCount}/{visibleSteps.length}</span>
-                    )}
+                    <span>Tutorial {completedCount}/{visibleSteps.length}</span>
                   </div>
-                  {!tutorialExpanded && !allComplete && (() => {
+                  {!tutorialExpanded && (() => {
                     const next = visibleSteps.find(g => g.suggested) || visibleSteps.find(g => !g.completed);
                     return next ? (
                       <div className="mt-1 flex items-start gap-1.5 text-xs leading-tight text-gray-100">
@@ -101,9 +100,7 @@ export default function ScenePanel({ game }: ScenePanelProps) {
                       </div>
                     ) : null;
                   })()}
-
-                  {/* Expanded: full checklist */}
-                  {tutorialExpanded && !allComplete && (
+                  {tutorialExpanded && (
                     <div className="mt-1.5 space-y-0.5">
                       {visibleSteps.map(step => (
                         <div key={step.id} className={`flex items-start gap-1.5 text-xs leading-tight ${
@@ -115,6 +112,38 @@ export default function ScenePanel({ game }: ScenePanelProps) {
                           <span className={step.completed ? 'line-through' : ''}>
                             {step.title}
                           </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Quest overlay — top left of image, shown after tutorial or when quests are active */}
+              {hasQuests && allComplete && (
+                <div
+                  className="absolute top-2 left-2 z-10 bg-gray-900/70 backdrop-blur-sm rounded-lg p-2 max-w-[60%] cursor-pointer select-none"
+                  onClick={() => setQuestsExpanded(!questsExpanded)}
+                >
+                  <div className="flex items-center gap-1.5 text-xs text-amber-300">
+                    <span className="text-amber-400">{questsExpanded ? '\u25bc' : '\u25b6'}</span>
+                    <span>Quests ({activeQuests.length})</span>
+                  </div>
+                  {!questsExpanded && activeQuests.length > 0 && (
+                    <div className="mt-1 flex items-start gap-1.5 text-xs leading-tight text-gray-100">
+                      <span className="flex-shrink-0 w-3 text-center text-amber-400">{'\u25b8'}</span>
+                      <span>{activeQuests[0].title.native}</span>
+                    </div>
+                  )}
+                  {questsExpanded && (
+                    <div className="mt-1.5 space-y-1">
+                      {activeQuests.map(quest => (
+                        <div key={quest.id} className="text-xs leading-tight">
+                          <div className="flex items-start gap-1.5 text-amber-200">
+                            <span className="flex-shrink-0 w-3 text-center text-amber-400">{'\u25b8'}</span>
+                            <span>{quest.title.native}</span>
+                          </div>
+                          <div className="ml-[1.125rem] text-gray-400">{quest.description}</div>
                         </div>
                       ))}
                     </div>
@@ -218,20 +247,16 @@ export default function ScenePanel({ game }: ScenePanelProps) {
               </div>
             </div>
             {/* Tutorial as card when no scene */}
-            {visibleSteps.length > 0 && (
+            {visibleSteps.length > 0 && !allComplete && (
               <div className="bg-gray-800/50 rounded-lg p-3 border border-purple-900/50">
                 <div
                   className="flex items-center gap-1.5 text-purple-400 text-xs font-medium uppercase tracking-wide cursor-pointer select-none"
                   onClick={() => setTutorialExpanded(!tutorialExpanded)}
                 >
                   <span>{tutorialExpanded ? '\u25bc' : '\u25b6'}</span>
-                  {allComplete ? (
-                    <span className="text-green-400">Tutorial complete!<span className="block text-gray-400 text-xs font-normal mt-0.5">Head outside to explore!</span></span>
-                  ) : (
-                    <span>Tutorial {completedCount}/{visibleSteps.length}</span>
-                  )}
+                  <span>Tutorial {completedCount}/{visibleSteps.length}</span>
                 </div>
-                {tutorialExpanded && !allComplete && (
+                {tutorialExpanded && (
                   <div className="space-y-1 mt-2">
                     {visibleSteps.map((step) => (
                       <div key={step.id} className={`flex items-start gap-2 text-sm ${
@@ -243,6 +268,28 @@ export default function ScenePanel({ game }: ScenePanelProps) {
                         <div className="min-w-0">
                           <div className={step.completed ? 'line-through' : ''}>{step.title}</div>
                         </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            {/* Quest card when no scene */}
+            {hasQuests && allComplete && (
+              <div className="bg-gray-800/50 rounded-lg p-3 border border-amber-900/50">
+                <div
+                  className="flex items-center gap-1.5 text-amber-400 text-xs font-medium uppercase tracking-wide cursor-pointer select-none"
+                  onClick={() => setQuestsExpanded(!questsExpanded)}
+                >
+                  <span>{questsExpanded ? '\u25bc' : '\u25b6'}</span>
+                  <span>Quests ({activeQuests.length})</span>
+                </div>
+                {questsExpanded && (
+                  <div className="space-y-2 mt-2">
+                    {activeQuests.map((quest) => (
+                      <div key={quest.id} className="text-sm">
+                        <div className="text-amber-200">{quest.title.native}</div>
+                        <div className="text-gray-400 text-xs">{quest.description}</div>
                       </div>
                     ))}
                   </div>

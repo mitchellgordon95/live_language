@@ -12,6 +12,12 @@ export interface GameState {
   currentStep: TutorialStep | null;
   completedSteps: string[];
 
+  // Quests
+  activeQuests: string[];
+  completedQuests: string[];
+  abandonedQuests: string[];
+  badges: string[];
+
   // Progression
   points: number;
   level: number;
@@ -97,6 +103,27 @@ export interface TutorialStep {
   nextStepId?: string;
 }
 
+export interface Quest {
+  id: string;
+  title: BilingualText;
+  description: string;
+  completionHint: string;
+  hint?: string;
+  source: 'npc' | 'object' | 'event';
+  sourceId?: string;
+  module: string;
+  triggerCondition: (state: GameState) => boolean;
+  reward: QuestReward;
+  prereqs?: string[];
+}
+
+export interface QuestReward {
+  points?: number;
+  badge?: { id: string; name: string };
+  vocabBoost?: string[];
+  npcMood?: { npcId: string; mood: string };
+}
+
 export interface VocabWord {
   target: string;
   native: string;
@@ -134,6 +161,7 @@ export interface ParseResponse {
 export interface NarrateResponse {
   message: string;
   stepsCompleted?: string[];
+  questsCompleted?: string[];
   npcResponse?: {
     npcId: string;
     spanish?: string;
@@ -159,6 +187,7 @@ export interface ModuleDefinition {
   objects: WorldObject[];
   npcs: NPC[];
   tutorial: TutorialStep[];
+  quests: Quest[];
   vocabulary: VocabWord[];
   guidance: string;
   startLocationId: string;
