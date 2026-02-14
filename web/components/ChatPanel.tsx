@@ -143,11 +143,11 @@ function TurnFeedback({ result, onSpeak }: { result: TurnResultView; onSpeak?: (
         </div>
       )}
 
-      {/* Goals completed */}
-      {result.goalsCompleted.length > 0 && (
+      {/* Steps completed */}
+      {result.stepsCompleted.length > 0 && (
         <div className="text-green-400 text-sm">
-          {result.goalsCompleted.map((g, i) => (
-            <div key={i}>Goal complete: {g}</div>
+          {result.stepsCompleted.map((g, i) => (
+            <div key={i}>Step complete: {g}</div>
           ))}
         </div>
       )}

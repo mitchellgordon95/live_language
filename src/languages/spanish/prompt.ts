@@ -2,7 +2,7 @@
  * Two-pass AI prompts for Spanish language learning (mutation engine).
  *
  * Pass 1 (PARSE): Spanish input → grammar feedback + ordered mutations
- * Pass 2 (NARRATE): Applied mutations + post-mutation state → narration + NPC dialogue + goal completion
+ * Pass 2 (NARRATE): Applied mutations + post-mutation state → narration + NPC dialogue + step completion
  */
 
 // Pass 1: Parse Spanish input into mutations
@@ -101,12 +101,12 @@ LANGUAGE: All grammar explanations and invalidReason messages MUST be in English
 Be encouraging! Focus grammar corrections on one main issue, not every small error.`;
 
 // Pass 2: Narrate the turn given applied mutations
-export const SPANISH_NARRATE_PROMPT = `You are the narrator for a Spanish language learning life simulation. You receive the mutations that were already applied and the resulting game state. Generate narrative response, NPC dialogue, and detect goal completion.
+export const SPANISH_NARRATE_PROMPT = `You are the narrator for a Spanish language learning life simulation. You receive the mutations that were already applied and the resulting game state. Generate narrative response, NPC dialogue, and detect tutorial step completion.
 
 RESPOND WITH ONLY VALID JSON:
 {
   "message": "What happened, in English (e.g., 'You get up, go to the kitchen, and open the refrigerator.')",
-  "goalComplete": ["goal_id"],
+  "stepsCompleted": ["step_id"],
   "npcResponse": {
     "npcId": "roommate",
     "spanish": "¡Gracias por los huevos!",
@@ -121,7 +121,7 @@ RESPOND WITH ONLY VALID JSON:
 
 FIELD RULES:
 - "message": Always in English. Describe what happened vividly but concisely (1-2 sentences).
-- "goalComplete": Array of goal IDs completed by this turn. ONLY use IDs from the "Available goal IDs" list in the context.
+- "stepsCompleted": Array of step IDs completed by this turn. ONLY use IDs from the "Available step IDs" list in the context.
 - "npcResponse": Include if the player interacted with an NPC or pet
   - For NPCs: include "spanish" (NPC's response in simple Spanish) and "english" (translation)
   - For pets (isPet NPCs): omit "spanish", include only "english" (pet reaction in English)
@@ -141,7 +141,7 @@ NPC ACTION TEXT examples:
 NARRATION STYLE:
 - ALL narration, descriptions, and pet reactions MUST be in English. Only NPC "spanish" and "actionText" fields should be in Spanish.
 - Messages should be vivid and encouraging
-- NEVER mention goals, objectives, or progress in the message. Just describe what happened.
+- NEVER mention tutorial steps, objectives, or progress in the message. Just describe what happened.
 - COOKING: Describe the transformation vividly (e.g., "You crack the eggs into the hot pan and cook them up. Smells great!")
 - DECORATIVE OBJECTS: Give vivid 1-sentence descriptions when the player interacts with them.
 - Keep NPC Spanish responses simple and appropriate for language learners (1-2 sentences).

@@ -8,7 +8,7 @@
 import 'server-only';
 import { join } from 'path';
 import { readFileSync, existsSync } from 'fs';
-import type { GameView, TurnResultView, ObjectCoords, SceneInfo, ExitView, NPCView, GoalView, PortraitHint } from './types';
+import type { GameView, TurnResultView, ObjectCoords, SceneInfo, ExitView, NPCView, TutorialStepView, PortraitHint } from './types';
 import { getCachedPortrait, getPlaceholderPath, isGenerationEnabled, isGenerating, triggerGeneration } from './portrait-generator';
 
 // Path to compiled game engine
@@ -20,8 +20,8 @@ let engine: {
   loadVocabulary: (profile?: string) => unknown;
   saveVocabulary: (vocab: unknown, profile?: string) => void;
   createInitialState: (...args: unknown[]) => unknown;
-  getGoalByIdCombined: (id: string) => unknown;
-  getStartGoalForBuilding: (building: string) => unknown;
+  getStepById: (id: string) => unknown;
+  getStartStepForBuilding: (building: string) => unknown;
   getModuleByName: (name: string) => unknown;
   allLocations: Record<string, unknown>;
   allNPCs: unknown[];
@@ -30,7 +30,7 @@ let engine: {
   getAvailableLanguages: () => string[];
   getNPCsInLocation: (locationId: string) => unknown[];
   getVocabStage: (vocab: unknown, objectId: string) => string;
-  getAllGoalsForBuilding: (building: string) => unknown[];
+  getAllStepsForBuilding: (building: string) => unknown[];
   getBuildingForLocation: (locationId: string) => string;
 } | null = null;
 
@@ -55,8 +55,8 @@ async function getEngine() {
     loadVocabulary: unified.loadVocabulary,
     saveVocabulary: unified.saveVocabulary,
     createInitialState: gameStateMod.createInitialState,
-    getGoalByIdCombined: registryMod.getGoalById,
-    getStartGoalForBuilding: registryMod.getStartGoalForBuilding,
+    getStepById: registryMod.getStepById,
+    getStartStepForBuilding: registryMod.getStartStepForBuilding,
     getModuleByName: registryMod.getModuleByName,
     allLocations: registryMod.allLocations,
     allNPCs: registryMod.allNPCs,
@@ -68,7 +68,7 @@ async function getEngine() {
       const v = vocab as { words: Record<string, { stage: string }> };
       return v.words[objectId]?.stage || 'new';
     },
-    getAllGoalsForBuilding: registryMod.getAllGoalsForBuilding,
+    getAllStepsForBuilding: registryMod.getAllStepsForBuilding,
     getBuildingForLocation: registryMod.getBuildingForLocation,
   };
 
@@ -119,19 +119,19 @@ export async function initGame(options: {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mod = eng.getModuleByName(moduleName) as any;
   const startLocationId = mod?.startLocationId || 'bedroom';
-  const startGoalId = mod?.startGoalId;
+  const firstStepId = mod?.firstStepId;
   const forceStanding = moduleName !== 'home';
 
-  let startGoal = eng.getStartGoalForBuilding('home');
-  if (startGoalId) {
-    startGoal = eng.getGoalByIdCombined(startGoalId) || startGoal;
+  let startStep = eng.getStartStepForBuilding('home');
+  if (firstStepId) {
+    startStep = eng.getStepById(firstStepId) || startStep;
   }
 
-  // New createInitialState takes (startLocationId, startGoal, objects, npcs, existingVocabulary)
+  // New createInitialState takes (startLocationId, startStep, objects, npcs, existingVocabulary)
   const objects = mod?.objects || [];
   const npcs = mod?.npcs || [];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let state = eng.createInitialState(startLocationId, startGoal, objects, npcs, vocab) as any;
+  let state = eng.createInitialState(startLocationId, startStep, objects, npcs, vocab) as any;
 
   if (forceStanding) {
     state = {
@@ -241,8 +241,8 @@ function loadPortraitManifest(module: string): PortraitManifest | null {
   }
 }
 
-// Goal IDs that map to specific player portrait actions
-const GOAL_TO_PORTRAIT_ACTION: Record<string, string> = {
+// Step IDs that map to specific player portrait actions
+const STEP_TO_PORTRAIT_ACTION: Record<string, string> = {
   brush_teeth: 'brush_teeth',
   take_shower: 'shower',
 };
@@ -267,12 +267,12 @@ function matchesPortraitCondition(match: Record<string, unknown>, state: Record<
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function deriveLastAction(result: any): string | null {
   const mutations = result?.mutations || [];
-  const goalsCompleted: string[] = (result?.goalsCompleted || []).map((g: { id?: string; title?: string }) => g.id || '');
+  const stepsCompleted: string[] = (result?.stepsCompleted || []).map((g: { id?: string; title?: string }) => g.id || '');
 
-  // Check goal-based portrait first (more specific)
-  for (const goalId of goalsCompleted) {
-    if (GOAL_TO_PORTRAIT_ACTION[goalId]) {
-      return GOAL_TO_PORTRAIT_ACTION[goalId];
+  // Check step-based portrait first (more specific)
+  for (const stepId of stepsCompleted) {
+    if (STEP_TO_PORTRAIT_ACTION[stepId]) {
+      return STEP_TO_PORTRAIT_ACTION[stepId];
     }
   }
 
@@ -422,14 +422,6 @@ const LOCATION_TO_MODULE: Record<string, string> = {
   bedroom: 'home', bathroom: 'home', kitchen: 'home', living_room: 'home', street: 'home',
   restaurant_entrance: 'restaurant', restaurant_table: 'restaurant', restaurant_kitchen: 'restaurant',
   restaurant_cashier: 'restaurant', restaurant_bathroom: 'restaurant',
-  market_entrance: 'market', fruit_stand: 'market', vegetable_stand: 'market',
-  meat_counter: 'market', market_checkout: 'market',
-  gym_entrance: 'gym', stretching_area: 'gym', training_floor: 'gym',
-  weight_room: 'gym', cardio_zone: 'gym', locker_room: 'gym',
-  park_entrance: 'park', main_path: 'park', fountain_area: 'park',
-  garden: 'park', playground: 'park', kiosk: 'park',
-  clinic_reception: 'clinic', waiting_room: 'clinic', exam_room: 'clinic', pharmacy: 'clinic',
-  bank_entrance: 'bank', bank_waiting_area: 'bank', bank_teller_window: 'bank', bank_manager_office: 'bank',
 };
 
 // --- View Model Builders ---
@@ -525,12 +517,12 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
     npcs,
     exits,
     needs: state.needs,
-    goals: buildGoalChecklist(state),
+    tutorial: buildTutorialChecklist(state),
     inventory,
     level: state.level,
     points: state.points,
     pointsToNextLevel,
-    completedGoals: state.completedGoals,
+    completedSteps: state.completedSteps,
     scene,
     portraitHint,
     helpText: helpText || '',
@@ -540,17 +532,17 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function buildGoalChecklist(state: any): GoalView[] {
+function buildTutorialChecklist(state: any): TutorialStepView[] {
   const building = (engine as NonNullable<typeof engine>).getBuildingForLocation(state.currentLocation);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const allGoals = (engine as NonNullable<typeof engine>).getAllGoalsForBuilding(building) as any[];
-  const suggestedId = state.currentGoal?.id || null;
+  const allSteps = (engine as NonNullable<typeof engine>).getAllStepsForBuilding(building) as any[];
+  const suggestedId = state.currentStep?.id || null;
 
-  return allGoals.map((g: { id: string; title: string; hint?: string }) => ({
+  return allSteps.map((g: { id: string; title: string; hint?: string }) => ({
     id: g.id,
     title: g.title,
     hint: g.hint || '',
-    completed: state.completedGoals.includes(g.id),
+    completed: state.completedSteps.includes(g.id),
     suggested: g.id === suggestedId,
   }));
 }
@@ -597,19 +589,19 @@ function buildTurnResultView(result: any, state: any): TurnResultView {
     pointsAwarded: result.pointsAwarded || 0,
     leveledUp: result.leveledUp || false,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    goalsCompleted: (result.goalsCompleted || []).map((g: any) => g.title || g.id),
+    stepsCompleted: (result.stepsCompleted || []).map((g: any) => g.title || g.id),
   };
 
   // Include hint when action failed and there's a current goal with a hint
-  if (!result.valid && state.currentGoal?.hint) {
-    view.hint = state.currentGoal.hint;
+  if (!result.valid && state.currentStep?.hint) {
+    view.hint = state.currentStep.hint;
   }
 
   return view;
 }
 
 export function getAvailableModules(): string[] {
-  return ['home', 'restaurant', 'bank', 'clinic', 'gym', 'park', 'market'];
+  return ['home', 'restaurant'];
 }
 
 // --- /learn Command ---

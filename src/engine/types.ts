@@ -8,9 +8,9 @@ export interface GameState {
   npcStates: Record<string, NPCRuntimeState>;
   time: GameTime;
 
-  // Goals
-  currentGoal: Goal | null;
-  completedGoals: string[];
+  // Tutorial
+  currentStep: TutorialStep | null;
+  completedSteps: string[];
 
   // Progression
   points: number;
@@ -27,8 +27,8 @@ export interface GameState {
 }
 
 export interface LocationProgress {
-  currentGoalId: string | null;
-  completedGoals: string[];
+  currentStepId: string | null;
+  completedSteps: string[];
   difficulty: number;
   chainComplete: boolean;
 }
@@ -88,13 +88,13 @@ export interface Exit {
   name: BilingualText;
 }
 
-export interface Goal {
+export interface TutorialStep {
   id: string;
   title: string;
   description: string;
   hint?: string;
   checkComplete: (state: GameState) => boolean;
-  nextGoalId?: string;
+  nextStepId?: string;
 }
 
 export interface VocabWord {
@@ -133,7 +133,7 @@ export interface ParseResponse {
 // Pass 2: Narrate what happened given applied mutations
 export interface NarrateResponse {
   message: string;
-  goalComplete?: string[];
+  stepsCompleted?: string[];
   npcResponse?: {
     npcId: string;
     spanish?: string;
@@ -158,11 +158,11 @@ export interface ModuleDefinition {
   locations: Record<string, Location>;
   objects: WorldObject[];
   npcs: NPC[];
-  goals: Goal[];
+  tutorial: TutorialStep[];
   vocabulary: VocabWord[];
   guidance: string;
   startLocationId: string;
-  startGoalId: string;
+  firstStepId: string;
   locationIds: string[];
   unlockLevel: number;
 }

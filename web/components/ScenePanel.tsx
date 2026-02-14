@@ -16,7 +16,7 @@ function distributeExits(exits: ExitView[]): { west: ExitView[]; east: ExitView[
 
 export default function ScenePanel({ game }: ScenePanelProps) {
   const [hoveredObjId, setHoveredObjId] = useState<string | null>(null);
-  const [goalsExpanded, setGoalsExpanded] = useState(false);
+  const [tutorialExpanded, setTutorialExpanded] = useState(false);
 
   const hasScene = !!game.scene;
   const imageSrc = hasScene ? `/scenes/${game.scene!.module}/${game.scene!.image}` : null;
@@ -34,9 +34,9 @@ export default function ScenePanel({ game }: ScenePanelProps) {
   const hasPortraits = game.portraitHint?.player || game.npcs.length > 0 || objectPortraits.length > 0;
 
   const { west: westExits, east: eastExits, north: northExits } = distributeExits(game.exits);
-  const visibleGoals = game.goals.filter(g => !g.id.endsWith('_complete'));
-  const completedCount = visibleGoals.filter(g => g.completed).length;
-  const allComplete = game.goals.some(g => g.id.endsWith('_complete') && g.completed);
+  const visibleSteps = game.tutorial.filter(g => !g.id.endsWith('_complete'));
+  const completedCount = visibleSteps.filter(g => g.completed).length;
+  const allComplete = game.tutorial.some(g => g.id.endsWith('_complete') && g.completed);
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
@@ -77,23 +77,23 @@ export default function ScenePanel({ game }: ScenePanelProps) {
                 </div>
               )}
 
-              {/* Goals overlay — top left of image, collapsible */}
-              {visibleGoals.length > 0 && (
+              {/* Tutorial overlay — top left of image, collapsible */}
+              {visibleSteps.length > 0 && (
                 <div
                   className="absolute top-2 left-2 z-10 bg-gray-900/70 backdrop-blur-sm rounded-lg p-2 max-w-[60%] cursor-pointer select-none"
-                  onClick={() => setGoalsExpanded(!goalsExpanded)}
+                  onClick={() => setTutorialExpanded(!tutorialExpanded)}
                 >
-                  {/* Header + current goal (always visible) */}
+                  {/* Header + current step (always visible) */}
                   <div className="flex items-center gap-1.5 text-xs text-gray-300">
-                    <span className="text-gray-400">{goalsExpanded ? '\u25bc' : '\u25b6'}</span>
+                    <span className="text-gray-400">{tutorialExpanded ? '\u25bc' : '\u25b6'}</span>
                     {allComplete ? (
-                      <span className="text-green-400 font-medium">{'\u2713'} All goals complete!<span className="block text-gray-400 font-normal mt-0.5">Head outside to explore!</span></span>
+                      <span className="text-green-400 font-medium">{'\u2713'} Tutorial complete!<span className="block text-gray-400 font-normal mt-0.5">Head outside to explore!</span></span>
                     ) : (
-                      <span>Goals {completedCount}/{visibleGoals.length}</span>
+                      <span>Tutorial {completedCount}/{visibleSteps.length}</span>
                     )}
                   </div>
-                  {!goalsExpanded && !allComplete && (() => {
-                    const next = visibleGoals.find(g => g.suggested) || visibleGoals.find(g => !g.completed);
+                  {!tutorialExpanded && !allComplete && (() => {
+                    const next = visibleSteps.find(g => g.suggested) || visibleSteps.find(g => !g.completed);
                     return next ? (
                       <div className="mt-1 flex items-start gap-1.5 text-xs leading-tight text-gray-100">
                         <span className="flex-shrink-0 w-3 text-center">{'\u25b8'}</span>
@@ -103,17 +103,17 @@ export default function ScenePanel({ game }: ScenePanelProps) {
                   })()}
 
                   {/* Expanded: full checklist */}
-                  {goalsExpanded && !allComplete && (
+                  {tutorialExpanded && !allComplete && (
                     <div className="mt-1.5 space-y-0.5">
-                      {visibleGoals.map(goal => (
-                        <div key={goal.id} className={`flex items-start gap-1.5 text-xs leading-tight ${
-                          goal.completed ? 'text-gray-500' : goal.suggested ? 'text-gray-100' : 'text-gray-400'
+                      {visibleSteps.map(step => (
+                        <div key={step.id} className={`flex items-start gap-1.5 text-xs leading-tight ${
+                          step.completed ? 'text-gray-500' : step.suggested ? 'text-gray-100' : 'text-gray-400'
                         }`}>
                           <span className="flex-shrink-0 w-3 text-center">
-                            {goal.completed ? '\u2713' : goal.suggested ? '\u25b8' : '\u25cb'}
+                            {step.completed ? '\u2713' : step.suggested ? '\u25b8' : '\u25cb'}
                           </span>
-                          <span className={goal.completed ? 'line-through' : ''}>
-                            {goal.title}
+                          <span className={step.completed ? 'line-through' : ''}>
+                            {step.title}
                           </span>
                         </div>
                       ))}
@@ -217,31 +217,31 @@ export default function ScenePanel({ game }: ScenePanelProps) {
                 ))}
               </div>
             </div>
-            {/* Goals as card when no scene */}
-            {visibleGoals.length > 0 && (
+            {/* Tutorial as card when no scene */}
+            {visibleSteps.length > 0 && (
               <div className="bg-gray-800/50 rounded-lg p-3 border border-purple-900/50">
                 <div
                   className="flex items-center gap-1.5 text-purple-400 text-xs font-medium uppercase tracking-wide cursor-pointer select-none"
-                  onClick={() => setGoalsExpanded(!goalsExpanded)}
+                  onClick={() => setTutorialExpanded(!tutorialExpanded)}
                 >
-                  <span>{goalsExpanded ? '\u25bc' : '\u25b6'}</span>
+                  <span>{tutorialExpanded ? '\u25bc' : '\u25b6'}</span>
                   {allComplete ? (
-                    <span className="text-green-400">All goals complete!<span className="block text-gray-400 text-xs font-normal mt-0.5">Head outside to explore!</span></span>
+                    <span className="text-green-400">Tutorial complete!<span className="block text-gray-400 text-xs font-normal mt-0.5">Head outside to explore!</span></span>
                   ) : (
-                    <span>Goals {completedCount}/{visibleGoals.length}</span>
+                    <span>Tutorial {completedCount}/{visibleSteps.length}</span>
                   )}
                 </div>
-                {goalsExpanded && !allComplete && (
+                {tutorialExpanded && !allComplete && (
                   <div className="space-y-1 mt-2">
-                    {visibleGoals.map((goal) => (
-                      <div key={goal.id} className={`flex items-start gap-2 text-sm ${
-                        goal.completed ? 'text-gray-600' : goal.suggested ? 'text-gray-200' : 'text-gray-500'
+                    {visibleSteps.map((step) => (
+                      <div key={step.id} className={`flex items-start gap-2 text-sm ${
+                        step.completed ? 'text-gray-600' : step.suggested ? 'text-gray-200' : 'text-gray-500'
                       }`}>
                         <span className="mt-0.5 flex-shrink-0 text-xs w-3">
-                          {goal.completed ? '\u2713' : goal.suggested ? '\u25b8' : '\u25cb'}
+                          {step.completed ? '\u2713' : step.suggested ? '\u25b8' : '\u25cb'}
                         </span>
                         <div className="min-w-0">
-                          <div className={goal.completed ? 'line-through' : ''}>{goal.title}</div>
+                          <div className={step.completed ? 'line-through' : ''}>{step.title}</div>
                         </div>
                       </div>
                     ))}

@@ -71,12 +71,12 @@ export default function Home() {
     const lower = input.trim().toLowerCase();
     if (lower === 'help' || lower === 'ayuda' || lower === '/help') {
       if (!game) return;
-      const suggestedGoal = game.goals.find(g => g.suggested) || game.goals.find(g => !g.completed);
+      const suggestedStep = game.tutorial.find(g => g.suggested) || game.tutorial.find(g => !g.completed);
       const lines: string[] = [];
       lines.push(`You are in: ${game.locationName.target} (${game.locationName.native})`);
-      if (suggestedGoal) {
-        lines.push(`Current goal: ${suggestedGoal.title}`);
-        if (suggestedGoal.hint) lines.push(`Hint: ${suggestedGoal.hint}`);
+      if (suggestedStep) {
+        lines.push(`Current step: ${suggestedStep.title}`);
+        if (suggestedStep.hint) lines.push(`Hint: ${suggestedStep.hint}`);
       }
       const exitNames = game.exits.map(e => `${e.name.target} (${e.name.native})`).join(', ');
       if (exitNames) lines.push(`Exits: ${exitNames}`);
@@ -199,41 +199,6 @@ export default function Home() {
             >
               <div>Restaurant</div>
               <div className="text-gray-400 text-sm">Order food, talk to the waiter</div>
-            </button>
-            <button
-              onClick={() => startGame('market')}
-              className="w-full py-3 px-4 bg-gray-800 hover:bg-gray-700 rounded-lg font-medium transition-colors text-left"
-            >
-              <div>Market</div>
-              <div className="text-gray-400 text-sm">Buy groceries, bargain with vendors</div>
-            </button>
-            <button
-              onClick={() => startGame('gym')}
-              className="w-full py-3 px-4 bg-gray-800 hover:bg-gray-700 rounded-lg font-medium transition-colors text-left"
-            >
-              <div>Gym</div>
-              <div className="text-gray-400 text-sm">Work out, learn body vocabulary</div>
-            </button>
-            <button
-              onClick={() => startGame('park')}
-              className="w-full py-3 px-4 bg-gray-800 hover:bg-gray-700 rounded-lg font-medium transition-colors text-left"
-            >
-              <div>Park</div>
-              <div className="text-gray-400 text-sm">Explore the park, feed the pigeons</div>
-            </button>
-            <button
-              onClick={() => startGame('clinic')}
-              className="w-full py-3 px-4 bg-gray-800 hover:bg-gray-700 rounded-lg font-medium transition-colors text-left"
-            >
-              <div>Clinic</div>
-              <div className="text-gray-400 text-sm">Visit the doctor, pick up medicine</div>
-            </button>
-            <button
-              onClick={() => startGame('bank')}
-              className="w-full py-3 px-4 bg-gray-800 hover:bg-gray-700 rounded-lg font-medium transition-colors text-left"
-            >
-              <div>Bank</div>
-              <div className="text-gray-400 text-sm">Open an account, exchange currency</div>
             </button>
           </div>
         </div>

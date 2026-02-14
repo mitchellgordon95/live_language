@@ -1,4 +1,4 @@
-import type { Location, Goal, VocabWord, GameState, NPC, WorldObject, ModuleDefinition } from '../../../engine/types.js';
+import type { Location, TutorialStep, VocabWord, GameState, NPC, WorldObject, ModuleDefinition } from '../../../engine/types.js';
 
 // ============================================================================
 // MANDARIN HOME MODULE - Stub (not converted for mutation engine experiment)
@@ -58,45 +58,45 @@ const npcs: NPC[] = [
   },
 ];
 
-const goals: Goal[] = [
+const tutorial: TutorialStep[] = [
   {
     id: 'wake_up',
     title: 'Wake up and get out of bed (起床 qichuang)',
     description: 'Get out of bed to begin your morning.',
     hint: 'Say "我起床" (wo qichuang - I get up)',
     checkComplete: (state: GameState) => state.playerTags.includes('standing'),
-    nextGoalId: 'brush_teeth',
+    nextStepId: 'brush_teeth',
   },
   {
     id: 'brush_teeth',
     title: 'Brush your teeth (刷牙 shuaya)',
     description: 'Practice good hygiene by brushing your teeth.',
     hint: 'Go to the bathroom and say "我刷牙" (wo shuaya)',
-    checkComplete: (state: GameState) => state.completedGoals.includes('brush_teeth'),
-    nextGoalId: 'take_shower',
+    checkComplete: (state: GameState) => state.completedSteps.includes('brush_teeth'),
+    nextStepId: 'take_shower',
   },
   {
     id: 'take_shower',
     title: 'Take a shower (洗澡 xizao)',
     description: 'A shower will help you feel fresh and ready.',
     hint: 'Say "我洗澡" (wo xizao)',
-    checkComplete: (state: GameState) => state.completedGoals.includes('take_shower'),
-    nextGoalId: 'make_breakfast',
+    checkComplete: (state: GameState) => state.completedSteps.includes('take_shower'),
+    nextStepId: 'make_breakfast',
   },
   {
     id: 'make_breakfast',
     title: 'Eat breakfast (吃早饭 chi zaofan)',
     description: 'Time to eat. Find something in the kitchen.',
     hint: 'Open the fridge (打开冰箱), and eat something',
-    checkComplete: (state: GameState) => state.completedGoals.includes('make_breakfast'),
-    nextGoalId: 'greet_roommate',
+    checkComplete: (state: GameState) => state.completedSteps.includes('make_breakfast'),
+    nextStepId: 'greet_roommate',
   },
   {
     id: 'greet_roommate',
     title: 'Greet your roommate (打招呼 da zhaohu)',
     description: 'Say good morning to your roommate Xiao Ming.',
     hint: 'Say "你好小明" or "早上好"',
-    checkComplete: (state: GameState) => state.completedGoals.includes('greet_roommate'),
+    checkComplete: (state: GameState) => state.completedSteps.includes('greet_roommate'),
   },
 ];
 
@@ -127,10 +127,10 @@ export const homeModule: ModuleDefinition = {
   locations,
   objects,
   npcs,
-  goals,
+  tutorial,
   vocabulary,
   startLocationId: 'bedroom',
-  startGoalId: 'wake_up',
+  firstStepId: 'wake_up',
   locationIds: ['bedroom', 'bathroom', 'kitchen'],
   unlockLevel: 1,
   guidance: `MANDARIN HOME (STUB):

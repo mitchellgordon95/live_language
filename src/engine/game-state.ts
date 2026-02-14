@@ -1,7 +1,7 @@
 import type {
   GameState,
   Location,
-  Goal,
+  TutorialStep,
   Needs,
   WorldObject,
   Mutation,
@@ -90,7 +90,7 @@ export function applyMutations(state: GameState, mutations: Mutation[]): GameSta
 
 export function createInitialState(
   startLocationId: string,
-  startGoal: Goal | null,
+  startStep: TutorialStep | null,
   objects: WorldObject[],
   npcs: NPC[],
   existingVocabulary?: VocabularyProgress
@@ -118,8 +118,8 @@ export function createInitialState(
     objects: objects.map(o => ({ ...o })),  // deep copy
     npcStates,
     time: { hour: 7, minute: 0 },
-    currentGoal: startGoal,
-    completedGoals: [],
+    currentStep: startStep,
+    completedSteps: [],
     learnedWords: [],
     vocabulary: existingVocabulary || createInitialVocabulary(),
     points: 0,
@@ -127,8 +127,8 @@ export function createInitialState(
     totalPointsEarned: 0,
     locationProgress: {
       [building]: {
-        currentGoalId: startGoal?.id || null,
-        completedGoals: [],
+        currentStepId: startStep?.id || null,
+        completedSteps: [],
         difficulty: 1,
         chainComplete: false,
       },
@@ -159,12 +159,12 @@ export function advanceTime(state: GameState, minutes: number): GameState {
   return { ...state, time: { hour: newHour, minute: newMinute } };
 }
 
-export function completeGoal(state: GameState, nextGoal: Goal | null): GameState {
-  if (!state.currentGoal) return state;
+export function completeStep(state: GameState, nextStep: TutorialStep | null): GameState {
+  if (!state.currentStep) return state;
   return {
     ...state,
-    completedGoals: [...state.completedGoals, state.currentGoal.id],
-    currentGoal: nextGoal,
+    completedSteps: [...state.completedSteps, state.currentStep.id],
+    currentStep: nextStep,
   };
 }
 
@@ -205,7 +205,7 @@ export function awardPoints(state: GameState, basePoints: number, grammarScore: 
   };
 }
 
-export function awardGoalBonus(state: GameState, isChainComplete: boolean, isFirstTime: boolean): { state: GameState; pointsAwarded: number; leveledUp: boolean } {
+export function awardStepBonus(state: GameState, isChainComplete: boolean, isFirstTime: boolean): { state: GameState; pointsAwarded: number; leveledUp: boolean } {
   let basePoints = isChainComplete ? 500 : 100;
   if (isFirstTime) basePoints = Math.round(basePoints * 1.5);
   return awardPoints(state, basePoints, 100);
@@ -217,8 +217,8 @@ export function isBuildingUnlocked(state: GameState, building: BuildingName): bo
 
 export function saveLocationProgress(state: GameState, building: BuildingName): GameState {
   const progress: LocationProgress = {
-    currentGoalId: state.currentGoal?.id || null,
-    completedGoals: [...state.completedGoals],
+    currentStepId: state.currentStep?.id || null,
+    completedSteps: [...state.completedSteps],
     difficulty: state.locationProgress[building]?.difficulty || 1,
     chainComplete: state.locationProgress[building]?.chainComplete || false,
   };
@@ -228,18 +228,18 @@ export function saveLocationProgress(state: GameState, building: BuildingName): 
   };
 }
 
-export function loadLocationProgress(state: GameState, building: BuildingName): { goalId: string | null; completedGoals: string[]; difficulty: number } {
+export function loadLocationProgress(state: GameState, building: BuildingName): { stepId: string | null; completedSteps: string[]; difficulty: number } {
   const progress = state.locationProgress[building];
   if (progress) {
-    return { goalId: progress.currentGoalId, completedGoals: progress.completedGoals, difficulty: progress.difficulty };
+    return { stepId: progress.currentStepId, completedSteps: progress.completedSteps, difficulty: progress.difficulty };
   }
-  return { goalId: null, completedGoals: [], difficulty: 1 };
+  return { stepId: null, completedSteps: [], difficulty: 1 };
 }
 
 export function markChainComplete(state: GameState, building: BuildingName): GameState {
   const currentProgress = state.locationProgress[building] || {
-    currentGoalId: null,
-    completedGoals: [],
+    currentStepId: null,
+    completedSteps: [],
     difficulty: 1,
     chainComplete: false,
   };

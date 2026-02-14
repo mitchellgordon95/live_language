@@ -1,4 +1,4 @@
-import type { Location, Goal, VocabWord, GameState, NPC, WorldObject, ModuleDefinition } from '../../../engine/types.js';
+import type { Location, TutorialStep, VocabWord, NPC, WorldObject, ModuleDefinition } from '../../../engine/types.js';
 
 // ============================================================================
 // LOCATIONS (exits only -- objects are in the flat list below)
@@ -144,97 +144,7 @@ const npcs: NPC[] = [
 // GOALS (checkComplete uses new state model)
 // ============================================================================
 
-const goals: Goal[] = [
-  {
-    id: 'restaurant_enter',
-    title: 'Enter the restaurant',
-    description: 'You\'ve arrived at a restaurant. Go inside and get a table.',
-    hint: 'Try "Entro en el restaurante" (I enter the restaurant)',
-    checkComplete: (state: GameState) =>
-      state.currentLocation === 'restaurant_table' ||
-      state.completedGoals.includes('restaurant_enter'),
-    nextGoalId: 'restaurant_get_seated',
-  },
-  {
-    id: 'restaurant_get_seated',
-    title: 'Get seated at a table',
-    description: 'Talk to the host and ask for a table. Use polite language!',
-    hint: 'Try "Buenas noches" to greet, then "Una mesa para uno, por favor" (A table for one, please)',
-    checkComplete: (state: GameState) =>
-      state.currentLocation === 'restaurant_table' ||
-      state.completedGoals.includes('restaurant_get_seated'),
-    nextGoalId: 'restaurant_order_drink',
-  },
-  {
-    id: 'restaurant_order_drink',
-    title: 'Order a drink',
-    description: 'The waiter is ready to take your drink order. Use "quiero" or "quisiera" to order.',
-    hint: 'Try "Quiero una limonada, por favor" or "Quisiera un vaso de agua" (I would like a glass of water)',
-    checkComplete: (state: GameState) =>
-      state.completedGoals.includes('restaurant_order_drink'),
-    nextGoalId: 'restaurant_read_menu',
-  },
-  {
-    id: 'restaurant_read_menu',
-    title: 'Read the menu and ask questions',
-    description: 'Look at the menu and ask the waiter about the food. Try asking "Que recomienda?"',
-    hint: 'Try "Abro el menu" (I open the menu) and "Que tiene la ensalada?" (What does the salad have?)',
-    checkComplete: (state: GameState) => {
-      const menu = state.objects.find(o => o.id === 'menu');
-      return (menu ? menu.tags.includes('open') : false) ||
-             state.completedGoals.includes('restaurant_read_menu');
-    },
-    nextGoalId: 'restaurant_order_food',
-  },
-  {
-    id: 'restaurant_order_food',
-    title: 'Order your meal',
-    description: 'Decide what you want and order from the waiter. You can modify your order with "sin" (without) or "con" (with).',
-    hint: 'Try "Quiero el pollo asado, por favor" or "Quisiera los tacos sin cebolla" (I would like tacos without onion)',
-    checkComplete: (state: GameState) =>
-      state.completedGoals.includes('restaurant_order_food'),
-    nextGoalId: 'restaurant_eat_meal',
-  },
-  {
-    id: 'restaurant_eat_meal',
-    title: 'Enjoy your meal',
-    description: 'Your food has arrived! Eat and maybe compliment the chef.',
-    hint: 'Try "Como el pollo" (I eat the chicken) or "Esta delicioso!" (It\'s delicious!)',
-    checkComplete: (state: GameState) =>
-      state.completedGoals.includes('restaurant_eat_meal'),
-    nextGoalId: 'restaurant_ask_bill',
-  },
-  {
-    id: 'restaurant_ask_bill',
-    title: 'Ask for the bill',
-    description: 'You\'re finished eating. Ask the waiter for the check.',
-    hint: 'Try "La cuenta, por favor" (The bill, please) or "Me trae la cuenta?" (Can you bring me the bill?)',
-    checkComplete: (state: GameState) => {
-      const bill = state.objects.find(o => o.id === 'bill');
-      return (bill ? bill.tags.includes('delivered') : false) ||
-             state.completedGoals.includes('restaurant_ask_bill');
-    },
-    nextGoalId: 'restaurant_pay',
-  },
-  {
-    id: 'restaurant_pay',
-    title: 'Pay the bill and leave a tip',
-    description: 'Look at the total and pay. Don\'t forget to thank the waiter!',
-    hint: 'Try "Pago la cuenta" (I pay the bill) and "Gracias por todo" (Thank you for everything). For tip: "Dejo una propina"',
-    checkComplete: (state: GameState) => {
-      const bill = state.objects.find(o => o.id === 'bill');
-      return (bill ? bill.tags.includes('paid') : false) ||
-             state.completedGoals.includes('restaurant_pay');
-    },
-    nextGoalId: 'restaurant_complete',
-  },
-  {
-    id: 'restaurant_complete',
-    title: 'Restaurant visit complete!',
-    description: 'Felicidades! You successfully ordered and paid for a meal in Spanish. You learned how to use "quiero" and "quisiera" for polite requests.',
-    checkComplete: (state: GameState) => state.completedGoals.includes('restaurant_pay'),
-  },
-];
+const tutorial: TutorialStep[] = [];
 
 // ============================================================================
 // VOCABULARY
@@ -406,10 +316,10 @@ export const restaurantModule: ModuleDefinition = {
   locations,
   objects,
   npcs,
-  goals,
+  tutorial,
   vocabulary,
   startLocationId: 'restaurant_entrance',
-  startGoalId: 'restaurant_enter',
+  firstStepId: '',
   locationIds: ['restaurant_entrance', 'restaurant_table', 'restaurant_kitchen', 'restaurant_cashier', 'restaurant_bathroom'],
   unlockLevel: 2,
 
@@ -448,16 +358,6 @@ NPCs:
 - Host (anfitrion, male): At restaurant_entrance. Professional, formal "usted". Greets with "Buenas noches/tardes", asks "Mesa para cuantos?", offers to lead player to table. When player asks for a table or follows the host, the parser should emit a "go" mutation to restaurant_table.
 - Waiter (mesero, Diego, male): At restaurant_table. Friendly, attentive. Service flow: greets when player sits down, asks "Que desea tomar?" for drinks, "Ya decidio?" for food, brings items, asks "Algo mas?", delivers bill. Says "Enseguida" (right away) when taking orders.
 - Chef (Rosa, female): At restaurant_kitchen. Busy, passionate about food. Speaks quickly using cooking terms. Proud of the food. Occasionally comes out to check on diners.
-
-GOAL COMPLETION:
-- restaurant_enter: Player arrives at restaurant or goes inside
-- restaurant_get_seated: Player reaches restaurant_table (by any method -- asking host, walking directly)
-- restaurant_order_drink: Player orders any drink from the waiter
-- restaurant_read_menu: Player opens/reads the menu (menu gets "open" tag)
-- restaurant_order_food: Player orders any food item from the waiter
-- restaurant_eat_meal: Player eats their delivered food
-- restaurant_ask_bill: Player asks for the bill (bill gets "delivered" tag)
-- restaurant_pay: Player pays the bill (bill gets "paid" tag)
 
 TEACHING FOCUS: "Quiero..." (direct request) vs "Quisiera..." (polite conditional), "Me trae...?" (can you bring me?), "sin"/"con" modifiers for food customization, polite phrases (por favor, gracias, disculpe).`,
 };

@@ -40,7 +40,7 @@ export interface NeedsView {
   bladder: number;
 }
 
-export interface GoalView {
+export interface TutorialStepView {
   id: string;
   title: string;
   hint: string;
@@ -90,12 +90,12 @@ export interface GameView {
   npcs: NPCView[];
   exits: ExitView[];
   needs: NeedsView;
-  goals: GoalView[];
+  tutorial: TutorialStepView[];
   inventory: ItemView[];
   level: number;
   points: number;
   pointsToNextLevel: number;
-  completedGoals: string[];
+  completedSteps: string[];
   scene: SceneInfo | null;
   portraitHint: PortraitHint | null;
   helpText: string;
@@ -116,6 +116,6 @@ export interface TurnResultView {
   npcResponse: NPCResponseView | null;
   pointsAwarded: number;
   leveledUp: boolean;
-  goalsCompleted: string[];
+  stepsCompleted: string[];
   hint?: string;
 }

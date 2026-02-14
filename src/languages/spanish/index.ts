@@ -3,11 +3,6 @@ import { SPANISH_SYSTEM_PROMPT, SPANISH_NARRATE_PROMPT } from './prompt.js';
 import { stripArticles, findObjectByName } from './helpers.js';
 import { homeModule } from './modules/home.js';
 import { restaurantModule } from './modules/restaurant.js';
-import { bankModule } from './modules/bank.js';
-import { clinicModule } from './modules/clinic.js';
-import { gymModule } from './modules/gym.js';
-import { parkModule } from './modules/park.js';
-import { marketModule } from './modules/market.js';
 
 export const spanishConfig: LanguageConfig = {
   id: 'spanish',
@@ -38,19 +33,14 @@ export const spanishConfig: LanguageConfig = {
       locations: { street: homeModule.locations.street },
       objects: [],
       npcs: [],
-      goals: [],
+      tutorial: [],
       vocabulary: [],
       startLocationId: 'street',
-      startGoalId: '',
+      firstStepId: '',
       locationIds: ['street'],
       unlockLevel: 1,
       guidance: '',
     },
     restaurantModule,
-    bankModule,
-    clinicModule,
-    gymModule,
-    parkModule,
-    marketModule,
   ],
 };

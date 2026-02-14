@@ -1,4 +1,4 @@
-import type { Location, Goal, VocabWord, GameState, NPC, WorldObject, ModuleDefinition } from '../../../engine/types.js';
+import type { Location, TutorialStep, VocabWord, GameState, NPC, WorldObject, ModuleDefinition } from '../../../engine/types.js';
 
 // ============================================================================
 // LOCATIONS (exits only — objects are in the flat list below)
@@ -70,11 +70,6 @@ const locations: Record<string, Location> = {
     exits: [
       { to: 'living_room', name: { target: 'la casa', native: 'home' } },
       { to: 'restaurant_entrance', name: { target: 'el restaurante', native: 'restaurant' } },
-      { to: 'clinic_reception', name: { target: 'la clinica', native: 'clinic' } },
-      { to: 'gym_entrance', name: { target: 'el gimnasio', native: 'gym' } },
-      { to: 'market_entrance', name: { target: 'el mercado', native: 'market' } },
-      { to: 'park_entrance', name: { target: 'el parque', native: 'park' } },
-      { to: 'bank_entrance', name: { target: 'el banco', native: 'bank' } },
     ],
     verbs: [
       { target: 'voy a', native: 'I go to' },
@@ -148,7 +143,7 @@ const npcs: NPC[] = [
     id: 'roommate',
     name: { target: 'Carlos', native: 'Carlos' },
     location: 'living_room',
-    personality: 'Sleepy but friendly roommate. Just woke up, sitting on the couch. Wants coffee or breakfast. Speaks casually.',
+    personality: 'Sleepy but friendly roommate. Just woke up, sitting on the couch. Hungry — will ask the player to make breakfast if they talk to him. Grateful when given food. Speaks casually.',
     gender: 'male',
   },
   {
@@ -171,109 +166,91 @@ const npcs: NPC[] = [
 // GOALS (checkComplete uses new state model)
 // ============================================================================
 
-const goals: Goal[] = [
+const tutorial: TutorialStep[] = [
   {
     id: 'wake_up',
-    title: 'Wake up and start your day',
-    description: 'Get out of bed to begin your morning.',
+    title: 'Get out of bed',
+    description: 'You just woke up. Get out of bed to start your day.',
     hint: 'Try "Me levanto" (I get up)',
     checkComplete: (state: GameState) => state.playerTags.includes('standing'),
-    nextGoalId: 'turn_off_alarm',
+    nextStepId: 'turn_off_alarm',
   },
   {
     id: 'turn_off_alarm',
     title: 'Turn off the alarm',
-    description: 'The alarm is still ringing! Turn it off.',
+    description: 'The alarm clock is ringing! Turn it off.',
     hint: 'Try "Apago el despertador" (I turn off the alarm)',
     checkComplete: (state: GameState) => {
       const alarm = state.objects.find(o => o.id === 'alarm_clock');
       return alarm ? !alarm.tags.includes('ringing') : false;
     },
-    nextGoalId: 'go_to_bathroom',
+    nextStepId: 'go_to_bathroom',
   },
   {
     id: 'go_to_bathroom',
     title: 'Go to the bathroom',
-    description: 'Time to get ready. Head to the bathroom.',
+    description: 'Time to get ready for the day.',
     hint: 'Try "Voy al baño" (I go to the bathroom)',
     checkComplete: (state: GameState) => state.currentLocation === 'bathroom',
-    nextGoalId: 'brush_teeth',
+    nextStepId: 'take_care_of_needs',
   },
   {
-    id: 'brush_teeth',
-    title: 'Brush your teeth',
-    description: 'Good hygiene is important!',
-    hint: 'Try "Me cepillo los dientes" (I brush my teeth)',
+    id: 'take_care_of_needs',
+    title: 'Take care of your needs',
+    description: 'Brush your teeth, take a shower, or use the toilet — anything to freshen up.',
+    hint: 'Try "Me cepillo los dientes" (I brush my teeth) or "Me ducho" (I shower)',
     checkComplete: (state: GameState) =>
-      state.completedGoals.includes('brush_teeth'),
-    nextGoalId: 'take_shower',
-  },
-  {
-    id: 'take_shower',
-    title: 'Take a shower',
-    description: 'A shower will help you feel fresh.',
-    hint: 'Try "Me ducho" (I shower)',
-    checkComplete: (state: GameState) =>
-      state.completedGoals.includes('take_shower'),
-    nextGoalId: 'go_to_kitchen',
-  },
-  {
-    id: 'go_to_kitchen',
-    title: 'Go to the kitchen',
-    description: "Your stomach is growling. Time for breakfast!",
-    hint: 'Try "Voy a la cocina" (I go to the kitchen)',
-    checkComplete: (state: GameState) => state.currentLocation === 'kitchen',
-    nextGoalId: 'make_breakfast',
-  },
-  {
-    id: 'make_breakfast',
-    title: 'Make breakfast',
-    description: 'Prepare something to eat. Maybe some eggs?',
-    hint: 'Try "Abro la nevera" to open the fridge, then "Cocino los huevos"',
-    checkComplete: (state: GameState) =>
-      state.completedGoals.includes('make_breakfast'),
-    nextGoalId: 'feed_pets',
-  },
-  {
-    id: 'feed_pets',
-    title: 'Feed the pets',
-    description: 'Luna the cat and Max the dog are hungry!',
-    hint: 'Try "Le doy comida al gato" or "Le doy comida al perro"',
-    checkComplete: (state: GameState) =>
-      state.completedGoals.includes('feed_pets'),
-    nextGoalId: 'go_to_living_room',
+      state.completedSteps.includes('take_care_of_needs'),
+    nextStepId: 'go_to_living_room',
   },
   {
     id: 'go_to_living_room',
     title: 'Go to the living room',
-    description: 'Time to check on your roommate Carlos.',
+    description: 'Head to the living room to see your roommate.',
     hint: 'Try "Voy a la sala" (I go to the living room)',
     checkComplete: (state: GameState) => state.currentLocation === 'living_room',
-    nextGoalId: 'greet_roommate',
+    nextStepId: 'talk_to_carlos',
   },
   {
-    id: 'greet_roommate',
-    title: 'Say good morning to Carlos',
-    description: 'Your roommate Carlos is on the couch. Say hi!',
+    id: 'talk_to_carlos',
+    title: 'Talk to Carlos',
+    description: 'Your roommate Carlos is on the couch. Say hi and chat with him.',
     hint: 'Try "Hola Carlos" or "Buenos días, Carlos"',
     checkComplete: (state: GameState) =>
-      state.completedGoals.includes('greet_roommate'),
-    nextGoalId: 'ask_roommate_breakfast',
+      state.completedSteps.includes('talk_to_carlos'),
+    nextStepId: 'go_to_kitchen',
   },
   {
-    id: 'ask_roommate_breakfast',
-    title: 'Ask Carlos what he wants for breakfast',
-    description: 'Carlos looks hungry. Ask what he wants!',
-    hint: 'Try "¿Qué quieres para desayunar?" or "¿Tienes hambre?"',
+    id: 'go_to_kitchen',
+    title: 'Go to the kitchen',
+    description: 'Carlos asked you to make breakfast. Head to the kitchen.',
+    hint: 'Try "Voy a la cocina" (I go to the kitchen)',
+    checkComplete: (state: GameState) => state.currentLocation === 'kitchen',
+    nextStepId: 'make_food',
+  },
+  {
+    id: 'make_food',
+    title: 'Make some food',
+    description: 'Cook something for breakfast. Anything will do!',
+    hint: 'Try "Abro la nevera" to open the fridge, then "Cocino los huevos" (I cook the eggs)',
     checkComplete: (state: GameState) =>
-      state.completedGoals.includes('ask_roommate_breakfast'),
-    nextGoalId: 'morning_complete',
+      state.completedSteps.includes('make_food'),
+    nextStepId: 'bring_carlos_food',
   },
   {
-    id: 'morning_complete',
-    title: 'Morning routine complete!',
-    description: 'Congratulations! You completed your morning routine.',
-    checkComplete: (state: GameState) => state.completedGoals.includes('ask_roommate_breakfast'),
+    id: 'bring_carlos_food',
+    title: 'Bring Carlos some food',
+    description: 'Take the food to Carlos in the living room.',
+    hint: 'Take food to the living room and give it to Carlos: "Le doy la comida a Carlos"',
+    checkComplete: (state: GameState) =>
+      state.completedSteps.includes('bring_carlos_food'),
+    nextStepId: 'tutorial_complete',
+  },
+  {
+    id: 'tutorial_complete',
+    title: 'Tutorial complete!',
+    description: 'You finished the tutorial! Now explore the world freely.',
+    checkComplete: (state: GameState) => state.completedSteps.includes('bring_carlos_food'),
   },
 ];
 
@@ -375,10 +352,10 @@ export const homeModule: ModuleDefinition = {
   locations,
   objects,
   npcs,
-  goals,
+  tutorial,
   vocabulary,
   startLocationId: 'bedroom',
-  startGoalId: 'wake_up',
+  firstStepId: 'wake_up',
   locationIds: Object.keys(locations).filter(id => id !== 'street'),
   unlockLevel: 1,
 
@@ -408,24 +385,23 @@ Consuming food = "remove" mutation + "needs" mutation with the food's needsEffec
 
 NPCs:
 - Carlos (roommate): In living_room. Sleepy but friendly. Casual Spanish.
-  When asked about breakfast, mentions wanting eggs or coffee (include wantsItem in npcResponse).
-  Loves receiving cooked food — be warm and grateful. Confused by raw ingredients.
-  Giving cooked food to Carlos = move food to "removed" (he eats it).
+  When the player talks to him, he mentions being hungry and asks them to make breakfast.
+  This triggers the talk_to_carlos goal. Loves receiving food — be warm and grateful.
+  Giving food to Carlos = move food to "removed" (he eats it). This triggers bring_carlos_food goal.
 - Luna (cat, isPet): In kitchen. Independent, aloof. Purrs when petted, ignores commands.
   Responds in English (no Spanish dialogue). Use npcResponse with just english field.
 - Max (dog, isPet): In kitchen. Excited, eager. Wags tail, barks happily.
   Responds in English. Loves pet_food. Use npcResponse with just english field.
 
-GOAL COMPLETION:
+GOAL COMPLETION (lax — complete as soon as the intent is clear):
 - wake_up: Player has "standing" in playerTags
 - turn_off_alarm: alarm_clock no longer has "ringing" tag
 - go_to_bathroom: Player is in bathroom
-- brush_teeth: Player interacts with toothbrush
-- take_shower: Player uses shower
-- go_to_kitchen: Player is in kitchen
-- make_breakfast: Player cooks something (eggs, bread, etc.)
+- take_care_of_needs: Player does ANY bathroom action (brush teeth, shower, use toilet, wash hands — anything)
 - go_to_living_room: Player is in living_room
-- greet_roommate: Player greets Carlos
-- ask_roommate_breakfast: Player asks Carlos about breakfast
-- feed_pets: Player feeds Luna or Max (pets are in kitchen)`,
+- talk_to_carlos: Player talks to Carlos. Carlos should mention he is hungry and ask the player to make breakfast.
+- go_to_kitchen: Player is in kitchen
+- make_food: Player cooks anything (eggs, bread, etc. — any food preparation counts)
+- bring_carlos_food: Player gives Carlos food in the living room. Carlos thanks them warmly.
+- tutorial_complete: Auto-completes when bring_carlos_food is done`,
 };

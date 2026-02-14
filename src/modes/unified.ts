@@ -13,7 +13,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import * as fs from 'fs';
 import type {
   GameState,
-  Goal,
+  TutorialStep,
   VocabularyProgress,
   Mutation,
   GrammarIssue,
@@ -32,11 +32,11 @@ import {
 import {
   allLocations as locations,
   allNPCs,
-  getGoalById,
-  getStartGoalForBuilding,
-  getAllGoalsForBuilding,
+  getStepById,
+  getStartStepForBuilding,
+  getAllStepsForBuilding,
   getGuidanceForBuilding,
-  getAllKnownGoalIds,
+  getAllKnownStepIds,
 } from '../data/module-registry.js';
 import type { LanguageConfig } from '../languages/types.js';
 import { createInitialVocabulary, recordWordUse, extractWordsFromText } from '../engine/vocabulary.js';
@@ -134,20 +134,20 @@ function buildPrompt(state: GameState): string {
       }).join('\n')
     : '(none)';
 
-  // Goal
-  const goalDesc = state.currentGoal
-    ? `Current goal: ${state.currentGoal.title}\nGoal ID: ${state.currentGoal.id}`
-    : 'No current goal';
+  // Tutorial step
+  const stepDesc = state.currentStep
+    ? `Current step: ${state.currentStep.title}\nStep ID: ${state.currentStep.id}`
+    : 'No current step';
 
-  const completedGoalsDesc = state.completedGoals.length > 0
-    ? state.completedGoals.join(', ')
+  const completedStepsDesc = state.completedSteps.length > 0
+    ? state.completedSteps.join(', ')
     : '(none)';
 
-  // Goal IDs for current building
+  // Step IDs for current building
   const currentBuilding = getBuildingForLocation(state.currentLocation);
-  const buildingGoals = getAllGoalsForBuilding(currentBuilding);
-  const goalIdsDesc = buildingGoals.length > 0
-    ? buildingGoals.map(g => `  - "${g.id}" - ${g.title}`).join('\n')
+  const buildingSteps = getAllStepsForBuilding(currentBuilding);
+  const stepIdsDesc = buildingSteps.length > 0
+    ? buildingSteps.map(g => `  - "${g.id}" - ${g.title}`).join('\n')
     : '  (none)';
 
   // Player tags
@@ -178,11 +178,11 @@ Needs (0-100, higher is better):
 - hygiene: ${state.needs.hygiene}
 - bladder: ${state.needs.bladder}
 
-${goalDesc}
-Completed goals: ${completedGoalsDesc}
+${stepDesc}
+Completed steps: ${completedStepsDesc}
 
-Available goal IDs for this location:
-${goalIdsDesc}`;
+Available step IDs for this location:
+${stepIdsDesc}`;
 }
 
 // ============================================================================
@@ -369,18 +369,18 @@ Generate the narrative response for these mutations.`;
 function handleBuildingTransition(state: GameState, newBuilding: BuildingName): GameState {
   const progress = loadLocationProgress(state, newBuilding);
 
-  let newGoal: Goal | null = null;
-  if (progress.goalId) {
-    newGoal = getGoalById(progress.goalId) || null;
+  let newStep: TutorialStep | null = null;
+  if (progress.stepId) {
+    newStep = getStepById(progress.stepId) || null;
   }
-  if (!newGoal) {
-    newGoal = getStartGoalForBuilding(newBuilding);
+  if (!newStep) {
+    newStep = getStartStepForBuilding(newBuilding);
   }
 
   return {
     ...state,
-    currentGoal: newGoal,
-    completedGoals: progress.completedGoals,
+    currentStep: newStep,
+    completedSteps: progress.completedSteps,
   };
 }
 
@@ -406,7 +406,7 @@ export interface TurnResult {
   // Progression
   pointsAwarded: number;
   leveledUp: boolean;
-  goalsCompleted: Goal[];
+  stepsCompleted: TutorialStep[];
   buildingChanged: boolean;
   newBuilding?: string;
 }
@@ -445,7 +445,7 @@ export async function processTurn(
       message: parseResult.invalidReason || "I didn't understand that.",
       pointsAwarded: 0,
       leveledUp: false,
-      goalsCompleted: [],
+      stepsCompleted: [],
       buildingChanged: false,
     };
   }
@@ -490,26 +490,26 @@ export async function processTurn(
   // --- Pass 2: Narrate what happened ---
   const narrateResult = await narrateTurn(parseResult, newState, input);
 
-  // Validate goal IDs from narration
-  if (narrateResult.goalComplete) {
-    const knownGoalIds = getAllKnownGoalIds();
-    narrateResult.goalComplete = narrateResult.goalComplete.filter(id => {
-      if (!knownGoalIds.has(id)) {
-        console.warn(`[validate] Narrate returned unknown goal ID: ${id}`);
+  // Validate step IDs from narration
+  if (narrateResult.stepsCompleted) {
+    const knownStepIds = getAllKnownStepIds();
+    narrateResult.stepsCompleted = narrateResult.stepsCompleted.filter(id => {
+      if (!knownStepIds.has(id)) {
+        console.warn(`[validate] Narrate returned unknown step ID: ${id}`);
         return false;
       }
       return true;
     });
-    if (narrateResult.goalComplete.length === 0) {
-      narrateResult.goalComplete = undefined;
+    if (narrateResult.stepsCompleted.length === 0) {
+      narrateResult.stepsCompleted = undefined;
     }
   }
 
-  // Apply narrative goal completions
-  if (narrateResult.goalComplete?.length) {
+  // Apply narrative step completions
+  if (narrateResult.stepsCompleted?.length) {
     newState = {
       ...newState,
-      completedGoals: [...newState.completedGoals, ...narrateResult.goalComplete],
+      completedSteps: [...newState.completedSteps, ...narrateResult.stepsCompleted],
     };
   }
 
@@ -535,37 +535,37 @@ export async function processTurn(
     newState = applyMutations(newState, narrateResult.mutations);
   }
 
-  // --- Check goals (engine-driven) ---
-  const goalsCompleted: Goal[] = [];
+  // --- Check tutorial steps (engine-driven) ---
+  const stepsCompleted: TutorialStep[] = [];
 
-  // Goals the AI flagged
-  if (narrateResult.goalComplete) {
-    for (const goalId of narrateResult.goalComplete) {
-      const goal = getGoalById(goalId);
-      if (goal) goalsCompleted.push(goal);
+  // Steps the AI flagged
+  if (narrateResult.stepsCompleted) {
+    for (const stepId of narrateResult.stepsCompleted) {
+      const step = getStepById(stepId);
+      if (step) stepsCompleted.push(step);
     }
   }
 
-  // Also check all building goals via checkComplete functions
+  // Also check all building steps via checkComplete functions
   const finalBuilding = getBuildingForLocation(newState.currentLocation);
-  const allBuildingGoals = getAllGoalsForBuilding(finalBuilding);
-  for (const goal of allBuildingGoals) {
-    if (!newState.completedGoals.includes(goal.id) && goal.checkComplete(newState)) {
-      if (!goalsCompleted.some(g => g.id === goal.id)) {
-        goalsCompleted.push(goal);
+  const allBuildingSteps = getAllStepsForBuilding(finalBuilding);
+  for (const step of allBuildingSteps) {
+    if (!newState.completedSteps.includes(step.id) && step.checkComplete(newState)) {
+      if (!stepsCompleted.some(g => g.id === step.id)) {
+        stepsCompleted.push(step);
       }
-      newState = { ...newState, completedGoals: [...newState.completedGoals, goal.id] };
+      newState = { ...newState, completedSteps: [...newState.completedSteps, step.id] };
     }
   }
 
-  // Update suggested goal (first uncompleted in chain)
-  let suggestedGoal = getStartGoalForBuilding(finalBuilding);
-  while (suggestedGoal && newState.completedGoals.includes(suggestedGoal.id)) {
-    suggestedGoal = suggestedGoal.nextGoalId
-      ? getGoalById(suggestedGoal.nextGoalId) || null
+  // Update suggested step (first uncompleted in chain)
+  let suggestedStep = getStartStepForBuilding(finalBuilding);
+  while (suggestedStep && newState.completedSteps.includes(suggestedStep.id)) {
+    suggestedStep = suggestedStep.nextStepId
+      ? getStepById(suggestedStep.nextStepId) || null
       : null;
   }
-  newState = { ...newState, currentGoal: suggestedGoal };
+  newState = { ...newState, currentStep: suggestedStep };
 
   return {
     newState,
@@ -578,7 +578,7 @@ export async function processTurn(
     npcResponse: narrateResult.npcResponse,
     pointsAwarded,
     leveledUp,
-    goalsCompleted,
+    stepsCompleted,
     buildingChanged,
     newBuilding: buildingChanged ? currentBuilding : undefined,
   };

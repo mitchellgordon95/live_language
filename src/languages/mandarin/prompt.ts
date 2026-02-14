@@ -38,7 +38,7 @@ RESPOND WITH ONLY VALID JSON:
 
   "message": "What happened, in English",
   "needsChanges": { "hunger": 10, "energy": -5 },
-  "goalComplete": ["goal_id"],
+  "stepsCompleted": ["step_id"],
   "npcResponse": { "npcId": "roommate", "mandarin": "...", "english": "...", "actionText": "室友给你倒了一杯水 (Shiyou gei ni dao le yi bei shui)" }
 }
 
@@ -87,7 +87,7 @@ IMPORTANT RULES:
 - Accept simplified Chinese characters
 - Show both characters and pinyin in corrections: 打开 (dakai)
 - Use EXACT object IDs from the lists
-- goalComplete: Array of goal IDs this action completes
+- stepsCompleted: Array of step IDs this action completes
 - needsChanges: Use small increments (-20 to +20). Positive = better.
 
 NPC responses should use simple Mandarin with pinyin in parentheses.
