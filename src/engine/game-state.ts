@@ -119,6 +119,7 @@ export function createInitialState(
     },
     objects: objects.map(o => ({ ...o })),  // deep copy
     npcStates,
+    npcChatHistory: {},
     time: { hour: 7, minute: 0 },
     currentStep: startStep,
     completedSteps: [],

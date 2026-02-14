@@ -15,6 +15,7 @@ import type {
   GameState,
   TutorialStep,
   Quest,
+  NPCChatEntry,
   VocabularyProgress,
   Mutation,
   GrammarIssue,
@@ -134,6 +135,31 @@ function buildPrompt(state: GameState): string {
         desc += ` - ${npc.personality}`;
         if (runtimeState?.mood) desc += ` [mood: ${runtimeState.mood}]`;
         if (runtimeState?.wantsItem) desc += ` [wants: ${runtimeState.wantsItem}]`;
+        // Append chat history for this NPC
+        const history = state.npcChatHistory[npc.id];
+        if (history?.length) {
+          desc += '\n  Recent interactions:';
+          for (const entry of history) {
+            if (entry.summary) {
+              desc += `\n    [${entry.summary}]`;
+            }
+            if (entry.playerInput) {
+              desc += `\n    Player: "${entry.playerInput}"`;
+            }
+            if (entry.npcResponse) {
+              desc += `\n    ${npc.name.native}: "${entry.npcResponse}"`;
+            }
+            if (entry.npcAction) {
+              desc += ` *${entry.npcAction}*`;
+            }
+            if (entry.questCompleted) {
+              desc += ` [Quest completed: ${entry.questCompleted}]`;
+            }
+            if (entry.moodAfter) {
+              desc += `\n    [mood changed to: ${entry.moodAfter}]`;
+            }
+          }
+        }
         return desc;
       }).join('\n')
     : '(none)';
@@ -577,6 +603,24 @@ export async function processTurn(
     };
   }
 
+  // Log NPC chat history
+  if (narrateResult.npcResponse) {
+    const npcId = narrateResult.npcResponse.npcId;
+    const entry: NPCChatEntry = {
+      playerInput: input,
+      npcResponse: narrateResult.npcResponse.spanish,
+      npcAction: narrateResult.npcResponse.actionText,
+    };
+    const existing = newState.npcChatHistory[npcId] || [];
+    newState = {
+      ...newState,
+      npcChatHistory: {
+        ...newState.npcChatHistory,
+        [npcId]: [...existing, entry],
+      },
+    };
+  }
+
   // Apply NPC-initiated mutations
   if (narrateResult.mutations?.length) {
     newState = applyMutations(newState, narrateResult.mutations);
@@ -631,6 +675,30 @@ export async function processTurn(
       if (rewardResult.leveledUp) leveledUp = true;
       if (quest.reward.badge) badgesEarned.push(quest.reward.badge.name);
       questsCompleted.push(quest);
+    }
+  }
+
+  // Enrich NPC chat history with quest completions and mood changes
+  if (narrateResult.npcResponse && questsCompleted.length > 0) {
+    const npcId = narrateResult.npcResponse.npcId;
+    const history = newState.npcChatHistory[npcId];
+    if (history?.length) {
+      const lastEntry = history[history.length - 1];
+      const relevantQuest = questsCompleted.find(q => q.sourceId === npcId);
+      const newMood = newState.npcStates[npcId]?.mood;
+      const oldMood = state.npcStates[npcId]?.mood;
+      const updated = {
+        ...lastEntry,
+        ...(relevantQuest ? { questCompleted: relevantQuest.title.native } : {}),
+        ...(newMood && newMood !== oldMood ? { moodAfter: newMood } : {}),
+      };
+      newState = {
+        ...newState,
+        npcChatHistory: {
+          ...newState.npcChatHistory,
+          [npcId]: [...history.slice(0, -1), updated],
+        },
+      };
     }
   }
 

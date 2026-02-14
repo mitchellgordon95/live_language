@@ -6,6 +6,7 @@ export interface GameState {
   needs: Needs;
   objects: WorldObject[];         // ALL objects in the world (flat list)
   npcStates: Record<string, NPCRuntimeState>;
+  npcChatHistory: Record<string, NPCChatEntry[]>;
   time: GameTime;
 
   // Tutorial
@@ -44,6 +45,15 @@ export interface NPCRuntimeState {
   location: string;
   lastResponse?: string;
   wantsItem?: string;
+}
+
+export interface NPCChatEntry {
+  playerInput: string;
+  npcResponse?: string;
+  npcAction?: string;
+  questCompleted?: string;
+  moodAfter?: string;
+  summary?: string;
 }
 
 export interface BilingualText {
