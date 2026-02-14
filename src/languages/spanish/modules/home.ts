@@ -10,7 +10,6 @@ const locations: Record<string, Location> = {
     name: { target: 'el dormitorio', native: 'bedroom' },
     exits: [
       { to: 'bathroom', name: { target: 'el baño', native: 'bathroom' } },
-      { to: 'kitchen', name: { target: 'la cocina', native: 'kitchen' } },
       { to: 'living_room', name: { target: 'la sala', native: 'living room' } },
     ],
     verbs: [
@@ -25,7 +24,6 @@ const locations: Record<string, Location> = {
     name: { target: 'el baño', native: 'bathroom' },
     exits: [
       { to: 'bedroom', name: { target: 'el dormitorio', native: 'bedroom' } },
-      { to: 'kitchen', name: { target: 'la cocina', native: 'kitchen' } },
       { to: 'living_room', name: { target: 'la sala', native: 'living room' } },
     ],
     verbs: [
@@ -39,8 +37,6 @@ const locations: Record<string, Location> = {
     id: 'kitchen',
     name: { target: 'la cocina', native: 'kitchen' },
     exits: [
-      { to: 'bedroom', name: { target: 'el dormitorio', native: 'bedroom' } },
-      { to: 'bathroom', name: { target: 'el baño', native: 'bathroom' } },
       { to: 'living_room', name: { target: 'la sala', native: 'living room' } },
     ],
     verbs: [
@@ -48,7 +44,8 @@ const locations: Record<string, Location> = {
       { target: 'cocino', native: 'I cook' },
       { target: 'como', native: 'I eat' },
       { target: 'tomo', native: 'I drink' },
-      { target: 'enciendo', native: 'I turn on' },
+      { target: 'le doy', native: 'I give' },
+      { target: 'acaricio', native: 'I pet' },
     ],
   },
   living_room: {
@@ -56,14 +53,15 @@ const locations: Record<string, Location> = {
     name: { target: 'la sala', native: 'living room' },
     exits: [
       { to: 'bedroom', name: { target: 'el dormitorio', native: 'bedroom' } },
+      { to: 'bathroom', name: { target: 'el baño', native: 'bathroom' } },
       { to: 'kitchen', name: { target: 'la cocina', native: 'kitchen' } },
       { to: 'street', name: { target: 'la calle', native: 'street' } },
     ],
     verbs: [
       { target: 'hablo con', native: 'I talk to' },
-      { target: 'le doy', native: 'I give' },
-      { target: 'acaricio', native: 'I pet' },
-      { target: 'juego con', native: 'I play with' },
+      { target: 'me siento', native: 'I sit down' },
+      { target: 'enciendo', native: 'I turn on' },
+      { target: 'miro', native: 'I look at' },
     ],
   },
   street: {
@@ -134,7 +132,7 @@ const objects: WorldObject[] = [
   { id: 'coffee_table', name: { target: 'la mesa de centro', native: 'coffee table' }, location: 'living_room', tags: [] },
   { id: 'bookshelf', name: { target: 'la estantería', native: 'bookshelf' }, location: 'living_room', tags: [] },
   { id: 'remote', name: { target: 'el control remoto', native: 'remote control' }, location: 'living_room', tags: ['takeable'] },
-  { id: 'pet_food', name: { target: 'la comida para mascotas', native: 'pet food' }, location: 'living_room', tags: ['takeable'] },
+  { id: 'pet_food', name: { target: 'la comida para mascotas', native: 'pet food' }, location: 'kitchen', tags: ['takeable'] },
 
   // Street
   { id: 'streetlamp', name: { target: 'la farola', native: 'streetlamp' }, location: 'street', tags: ['on'] },
@@ -156,14 +154,14 @@ const npcs: NPC[] = [
   {
     id: 'cat',
     name: { target: 'Luna', native: 'Luna (cat)' },
-    location: 'living_room',
+    location: 'kitchen',
     personality: 'Independent and aloof cat. Occasionally affectionate. Purrs when petted, ignores most commands.',
     isPet: true,
   },
   {
     id: 'dog',
     name: { target: 'Max', native: 'Max (dog)' },
-    location: 'living_room',
+    location: 'kitchen',
     personality: 'Excited and hungry dog. Always wants attention and food. Wags tail enthusiastically.',
     isPet: true,
   },
@@ -234,12 +232,21 @@ const goals: Goal[] = [
     hint: 'Try "Abro la nevera" to open the fridge, then "Cocino los huevos"',
     checkComplete: (state: GameState) =>
       state.completedGoals.includes('make_breakfast'),
+    nextGoalId: 'feed_pets',
+  },
+  {
+    id: 'feed_pets',
+    title: 'Feed the pets',
+    description: 'Luna the cat and Max the dog are hungry!',
+    hint: 'Try "Le doy comida al gato" or "Le doy comida al perro"',
+    checkComplete: (state: GameState) =>
+      state.completedGoals.includes('feed_pets'),
     nextGoalId: 'go_to_living_room',
   },
   {
     id: 'go_to_living_room',
     title: 'Go to the living room',
-    description: 'Time to check on your roommate and the pets.',
+    description: 'Time to check on your roommate Carlos.',
     hint: 'Try "Voy a la sala" (I go to the living room)',
     checkComplete: (state: GameState) => state.currentLocation === 'living_room',
     nextGoalId: 'greet_roommate',
@@ -260,22 +267,13 @@ const goals: Goal[] = [
     hint: 'Try "¿Qué quieres para desayunar?" or "¿Tienes hambre?"',
     checkComplete: (state: GameState) =>
       state.completedGoals.includes('ask_roommate_breakfast'),
-    nextGoalId: 'feed_pets',
-  },
-  {
-    id: 'feed_pets',
-    title: 'Feed the pets',
-    description: 'Luna the cat and Max the dog are hungry!',
-    hint: 'Try "Le doy comida al gato" or "Le doy comida al perro"',
-    checkComplete: (state: GameState) =>
-      state.completedGoals.includes('feed_pets'),
     nextGoalId: 'morning_complete',
   },
   {
     id: 'morning_complete',
     title: 'Morning routine complete!',
     description: 'Congratulations! You completed your morning routine.',
-    checkComplete: (state: GameState) => state.completedGoals.includes('feed_pets'),
+    checkComplete: (state: GameState) => state.completedGoals.includes('ask_roommate_breakfast'),
   },
 ];
 
@@ -401,7 +399,7 @@ OBJECTS:
 - coffee_maker: Turn on to make coffee available.
 - shower, toilet, toothbrush, sink: Bathroom fixtures. Using them improves hygiene/bladder needs.
 - tv: Living room. Can be turned on/off.
-- pet_food: In living room. Takeable, used to feed pets.
+- pet_food: In kitchen. Takeable, used to feed pets.
 
 COOKING FLOW:
 When the player cooks something, add "cooked" tag to the food item. The stove should get "on" tag.
@@ -413,9 +411,9 @@ NPCs:
   When asked about breakfast, mentions wanting eggs or coffee (include wantsItem in npcResponse).
   Loves receiving cooked food — be warm and grateful. Confused by raw ingredients.
   Giving cooked food to Carlos = move food to "removed" (he eats it).
-- Luna (cat, isPet): Independent, aloof. Purrs when petted, ignores commands.
+- Luna (cat, isPet): In kitchen. Independent, aloof. Purrs when petted, ignores commands.
   Responds in English (no Spanish dialogue). Use npcResponse with just english field.
-- Max (dog, isPet): Excited, eager. Wags tail, barks happily.
+- Max (dog, isPet): In kitchen. Excited, eager. Wags tail, barks happily.
   Responds in English. Loves pet_food. Use npcResponse with just english field.
 
 GOAL COMPLETION:
@@ -429,5 +427,5 @@ GOAL COMPLETION:
 - go_to_living_room: Player is in living_room
 - greet_roommate: Player greets Carlos
 - ask_roommate_breakfast: Player asks Carlos about breakfast
-- feed_pets: Player feeds Luna or Max`,
+- feed_pets: Player feeds Luna or Max (pets are in kitchen)`,
 };
