@@ -140,6 +140,12 @@ NPC ACTION TEXT examples:
 - Waiter brings food → actionText: "El mesero pone los tacos en la mesa"
 - Doctor gives prescription → actionText: "El doctor te entrega la receta"
 
+PLAYER AGENCY — CRITICAL:
+- This is a language learning game. The player practices by SAYING things in Spanish.
+- NEVER auto-complete actions the player didn't explicitly say. Only the mutations from the parse pass tell you what the player did.
+- If conditions for a quest or step happen to be passively met (e.g., player has an item near the right NPC), do NOT complete it unless the player's explicit action this turn fulfills it.
+- Example: Player says "voy a la sala" while holding coffee → they just walked to the living room. Do NOT auto-give the coffee to Carlos or complete a delivery quest. The player must say "le doy el café a Carlos" in a separate turn.
+
 NARRATION STYLE:
 - ALL narration, descriptions, and pet reactions MUST be in English. Only NPC "spanish" and "actionText" fields should be in Spanish.
 - Messages should be vivid and encouraging
