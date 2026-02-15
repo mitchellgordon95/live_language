@@ -227,6 +227,26 @@ ${activeQuestDescs.join('\n')}`;
     prompt += `\nCOMPLETED QUESTS: ${state.completedQuests.join(', ')}`;
   }
 
+  // Available quests — eligible but not yet started, for NPCs to offer during dialog
+  const availableQuests = moduleQuests.filter(q =>
+    !q.autoStart &&
+    !state.activeQuests.includes(q.id) &&
+    !state.completedQuests.includes(q.id) &&
+    !state.abandonedQuests.includes(q.id) &&
+    (!q.prereqs || q.prereqs.every(p => state.completedQuests.includes(p))) &&
+    q.triggerCondition(state)
+  );
+
+  if (availableQuests.length > 0) {
+    const descs = availableQuests.map(q =>
+      `- "${q.id}" (offered by ${q.sourceId || 'event'}): ${q.description}`
+    );
+    prompt += `
+
+AVAILABLE QUESTS (start these via questsStarted when the NPC naturally offers them in conversation):
+${descs.join('\n')}`;
+  }
+
   return prompt;
 }
 
@@ -538,12 +558,13 @@ export async function processTurn(
     }
   }
 
-  // --- Check quest triggers (before AI call so quests appear in prompt) ---
+  // --- Check quest triggers (only autoStart quests — others are AI-driven) ---
   const questsStarted: Quest[] = [];
   const finalBuilding = getBuildingForLocation(newState.currentLocation);
   const moduleQuests = getAllQuestsForModule(finalBuilding);
   for (const quest of moduleQuests) {
     if (
+      quest.autoStart &&
       !newState.activeQuests.includes(quest.id) &&
       !newState.completedQuests.includes(quest.id) &&
       !newState.abandonedQuests.includes(quest.id) &&
@@ -697,9 +718,10 @@ export async function processTurn(
     }
   }
 
-  // Re-check quest triggers after completions (new quests may now be eligible)
+  // Re-check autoStart quest triggers after completions
   for (const quest of moduleQuests) {
     if (
+      quest.autoStart &&
       !newState.activeQuests.includes(quest.id) &&
       !newState.completedQuests.includes(quest.id) &&
       !newState.abandonedQuests.includes(quest.id) &&
@@ -707,6 +729,20 @@ export async function processTurn(
       quest.triggerCondition(newState)
     ) {
       newState = { ...newState, activeQuests: [...newState.activeQuests, quest.id] };
+      questsStarted.push(quest);
+    }
+  }
+
+  // Process AI-started quests (NPC offered a quest during dialog)
+  if (narrateResult.questsStarted?.length) {
+    for (const questId of narrateResult.questsStarted) {
+      if (newState.activeQuests.includes(questId) || newState.completedQuests.includes(questId)) continue;
+      const quest = getQuestById(questId);
+      if (!quest) {
+        console.warn(`[validate] Narrate returned unknown quest ID for start: ${questId}`);
+        continue;
+      }
+      newState = { ...newState, activeQuests: [...newState.activeQuests, questId] };
       questsStarted.push(quest);
     }
   }

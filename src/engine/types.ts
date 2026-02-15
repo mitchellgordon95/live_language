@@ -128,6 +128,7 @@ export interface Quest {
   triggerCondition: (state: GameState) => boolean;
   reward: QuestReward;
   prereqs?: string[];
+  autoStart?: boolean;  // true = engine auto-triggers; false/undefined = AI starts via NPC dialog
 }
 
 export interface QuestReward {
@@ -174,6 +175,7 @@ export interface ParseResponse {
 export interface NarrateResponse {
   message: string;
   stepsCompleted?: string[];
+  questsStarted?: string[];
   questsCompleted?: string[];
   npcResponse?: {
     npcId: string;
