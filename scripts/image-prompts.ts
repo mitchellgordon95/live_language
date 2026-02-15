@@ -17,7 +17,7 @@ export const SCENE_DESCRIPTIONS: Record<string, string> = {
   // Home
   bedroom: 'A cozy bedroom with morning light filtering through curtains. Bed with rumpled sheets, nightstand with alarm clock, a wardrobe, and a desk lamp.',
   bathroom: 'A small but clean bathroom with white tiles. Shower stall with glass door, toilet, sink with mirror above it, toothbrush in a cup, towel rack.',
-  kitchen: 'A warm kitchen with wooden cabinets. Refrigerator, gas stove, small dining table with chair, coffee maker on the counter, various food items visible.',
+  kitchen: 'A warm kitchen with wooden cabinets. Refrigerator, gas stove, small dining table with chair, coffee maker on the counter, kitchen sink with window above it, a sealed bag of dry pet food on the floor near the counter (just the bag, no bowl), various food items visible.',
   living_room: 'A comfortable living room with a sofa facing a TV. Coffee table with remote, bookshelf along one wall, pet food bowl on the floor.',
   street: 'A quiet residential street with a streetlamp and a bench. Buildings in the background, trees lining the sidewalk.',
 
@@ -83,6 +83,32 @@ STYLE:
 - ${palette}
 - Each object should be distinct and clearly identifiable at a glance
 - Consistent 3/4 overhead viewing angle
+- No people in the scene (characters are handled separately)
+- 1024x1024 square format`;
+}
+
+/**
+ * Generate a reference-based image prompt (uses existing image as style guide).
+ */
+export function getReferenceImagePrompt(ctx: ScenePromptContext): string {
+  const palette = PALETTES[ctx.moduleName] || PALETTES.home;
+  const sceneDesc = SCENE_DESCRIPTIONS[ctx.locationId] || `A ${ctx.locationName} scene.`;
+
+  return `Here is the current scene image. Generate a new version that keeps the SAME art style, color palette, and general layout, but with the CHANGES listed below. Only include the objects explicitly listed — remove anything else.
+
+SCENE: ${sceneDesc}
+
+ONLY THESE OBJECTS SHOULD APPEAR (remove anything not on this list):
+${ctx.objectNames.map(name => `- ${name}`).join('\n')}
+
+IMPORTANT: Do NOT include any objects that are not on the list above. If the reference image has items not listed, remove them.
+
+STYLE (match the reference image):
+- ${EDITORIAL_STYLE}
+- ${palette}
+- Keep the same warm, cozy feel as the reference
+- Same 3/4 overhead viewing angle
+- Each object should be distinct and clearly identifiable at a glance
 - No people in the scene (characters are handled separately)
 - 1024x1024 square format`;
 }

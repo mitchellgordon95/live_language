@@ -13,7 +13,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI, Modality } from '@google/genai';
-import { getImagePrompt, getCoordinateExtractionPrompt } from './image-prompts.ts';
+import { getImagePrompt, getReferenceImagePrompt, getCoordinateExtractionPrompt } from './image-prompts.ts';
 
 // Resolve paths relative to the project root (parent of scripts/)
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -22,7 +22,7 @@ const PROJECT_ROOT = path.resolve(__dirname, '..');
 // --- Parse CLI args ---
 function parseArgs() {
   const args = process.argv.slice(2);
-  const result: { module?: string; location?: string; skipCoordinates?: boolean; outputDir?: string } = {};
+  const result: { module?: string; location?: string; skipCoordinates?: boolean; outputDir?: string; reference?: string } = {};
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
@@ -30,6 +30,7 @@ function parseArgs() {
     if (arg === '--module' && next) { result.module = next; i++; }
     else if (arg === '--location' && next) { result.location = next; i++; }
     else if (arg === '--output-dir' && next) { result.outputDir = next; i++; }
+    else if (arg === '--reference' && next) { result.reference = next; i++; }
     else if (arg === '--skip-coordinates') { result.skipCoordinates = true; }
   }
 
@@ -37,10 +38,11 @@ function parseArgs() {
     console.error('Usage: npx tsx scripts/generate-scene.ts --module <name> --location <id>');
     console.error('  --skip-coordinates  Skip coordinate extraction step');
     console.error('  --output-dir <dir>  Custom output directory (default: web/public/scenes)');
+    console.error('  --reference <path>  Use existing image as style reference');
     process.exit(1);
   }
 
-  return result as { module: string; location: string; skipCoordinates: boolean; outputDir: string };
+  return result as { module: string; location: string; skipCoordinates: boolean; outputDir: string; reference?: string };
 }
 
 // --- Load location data from the game engine ---
@@ -57,10 +59,15 @@ async function loadLocationData(moduleName: string, locationId: string) {
     process.exit(1);
   }
 
+  // Objects are stored flat with a location field, not on the Location object
+  const objectsHere = registry.allObjects.filter(
+    (obj: { location: string }) => obj.location === locationId
+  );
+
   return {
     locationId: location.id,
     locationName: location.name.native,
-    objects: location.objects.map((obj: { id: string; name: { native: string } }) => ({
+    objects: objectsHere.map((obj: { id: string; name: { native: string } }) => ({
       id: obj.id,
       name: obj.name.native,
     })),
@@ -95,16 +102,39 @@ async function main() {
   // --- Step 1: Generate the scene image ---
   console.log('\n  Step 1: Generating scene image...');
 
-  const imagePrompt = getImagePrompt({
+  const promptCtx = {
     locationId: locationData.locationId,
     locationName: locationData.locationName,
     moduleName: opts.module,
     objectNames: locationData.objects.map((o: { name: string }) => o.name),
-  });
+  };
+
+  let contents: Parameters<typeof ai.models.generateContent>[0]['contents'];
+
+  if (opts.reference) {
+    const refPath = path.resolve(PROJECT_ROOT, opts.reference);
+    if (!fs.existsSync(refPath)) {
+      console.error(`Reference image not found: ${refPath}`);
+      process.exit(1);
+    }
+    const refData = fs.readFileSync(refPath);
+    const refBase64 = refData.toString('base64');
+    const refMime = refPath.endsWith('.png') ? 'image/png' : refPath.endsWith('.webp') ? 'image/webp' : 'image/jpeg';
+    const prompt = getReferenceImagePrompt(promptCtx);
+    console.log('  Using reference image:', refPath);
+    contents = [
+      { role: 'user', parts: [
+        { inlineData: { mimeType: refMime, data: refBase64 } },
+        { text: prompt },
+      ]},
+    ];
+  } else {
+    contents = getImagePrompt(promptCtx);
+  }
 
   const imageResponse = await ai.models.generateContent({
     model: 'gemini-2.5-flash-image',
-    contents: imagePrompt,
+    contents,
     config: {
       responseModalities: [Modality.IMAGE, Modality.TEXT],
     },

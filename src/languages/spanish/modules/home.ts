@@ -106,9 +106,11 @@ const objects: WorldObject[] = [
   { id: 'table', name: { target: 'la mesa', native: 'table' }, location: 'kitchen', tags: [] },
   { id: 'chair', name: { target: 'la silla', native: 'chair' }, location: 'kitchen', tags: [] },
   { id: 'coffee_maker', name: { target: 'la cafetera', native: 'coffee maker' }, location: 'kitchen', tags: ['off'] },
+  { id: 'kitchen_sink', name: { target: 'el fregadero', native: 'kitchen sink' }, location: 'kitchen', tags: [] },
   { id: 'cup', name: { target: 'la taza', native: 'cup' }, location: 'kitchen', tags: ['takeable'] },
   { id: 'plate', name: { target: 'el plato', native: 'plate' }, location: 'kitchen', tags: ['takeable'] },
   { id: 'pan', name: { target: 'la sartén', native: 'pan' }, location: 'kitchen', tags: ['takeable'] },
+  { id: 'pet_food', name: { target: 'la comida para mascotas', native: 'pet food' }, location: 'kitchen', tags: ['takeable'] },
 
   // Food (inside fridge — location is the container ID)
   { id: 'milk', name: { target: 'la leche', native: 'milk' }, location: 'refrigerator', tags: ['takeable', 'consumable'], needsEffect: { hunger: 10 } },
@@ -127,7 +129,6 @@ const objects: WorldObject[] = [
   { id: 'coffee_table', name: { target: 'la mesa de centro', native: 'coffee table' }, location: 'living_room', tags: [] },
   { id: 'bookshelf', name: { target: 'la estantería', native: 'bookshelf' }, location: 'living_room', tags: [] },
   { id: 'remote', name: { target: 'el control remoto', native: 'remote control' }, location: 'living_room', tags: ['takeable'] },
-  { id: 'pet_food', name: { target: 'la comida para mascotas', native: 'pet food' }, location: 'kitchen', tags: ['takeable'] },
 
   // Street
   { id: 'streetlamp', name: { target: 'la farola', native: 'streetlamp' }, location: 'street', tags: ['on'] },
@@ -331,6 +332,8 @@ const vocabulary: VocabWord[] = [
   { target: 'el plato', native: 'plate', category: 'noun', gender: 'masculine' },
   { target: 'la sartén', native: 'pan', category: 'noun', gender: 'feminine' },
   { target: 'la cafetera', native: 'coffee maker', category: 'noun', gender: 'feminine' },
+  { target: 'el fregadero', native: 'kitchen sink', category: 'noun', gender: 'masculine' },
+  { target: 'la comida para mascotas', native: 'pet food', category: 'noun', gender: 'feminine' },
   // Food
   { target: 'la leche', native: 'milk', category: 'noun', gender: 'feminine' },
   { target: 'los huevos', native: 'eggs', category: 'noun', gender: 'masculine' },
@@ -420,6 +423,7 @@ OBJECTS:
 - bread, coffee, water: On counter in kitchen. Consumable.
 - stove: Must have "on" tag to cook. Turn on = tag add "on", remove "off".
 - coffee_maker: Turn on to make coffee available.
+- kitchen_sink: Kitchen sink. Can be used to wash dishes or hands.
 - toilet: Using it ALWAYS sets bladder to full. Emit needs mutation { bladder: 100 } (additive, clamped to 100).
 - shower: Using it improves hygiene significantly. Emit needs mutation { hygiene: 40 }.
 - toothbrush, sink: Bathroom fixtures. Using them improves hygiene slightly.
