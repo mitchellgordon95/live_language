@@ -4,11 +4,11 @@ import { playTurn, handleLearnCommand } from '@/lib/game-bridge';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { sessionId, input } = body;
+    const { profile, input } = body;
 
-    if (!sessionId || !input) {
+    if (!profile || !input) {
       return NextResponse.json(
-        { error: 'Missing sessionId or input' },
+        { error: 'Missing profile or input' },
         { status: 400 },
       );
     }
@@ -19,18 +19,18 @@ export async function POST(request: Request) {
       if (!topic) {
         return NextResponse.json({ learn: { error: 'Usage: /learn <topic>\nExample: /learn ser vs estar' } });
       }
-      const result = await handleLearnCommand(sessionId, topic);
+      const result = await handleLearnCommand(topic);
       return NextResponse.json({ learn: result });
     }
 
-    const gameView = await playTurn(sessionId, input);
+    const gameView = await playTurn(profile, input);
     return NextResponse.json(gameView);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to process turn';
     console.error('Game turn error:', message);
-    if (message.includes('Session not found')) {
+    if (message.includes('No saved game found')) {
       return NextResponse.json(
-        { error: 'Session expired. Please refresh.', sessionExpired: true },
+        { error: 'No saved game found. Please start a new game.', sessionExpired: true },
         { status: 410 },
       );
     }

@@ -92,7 +92,7 @@ export interface VignetteHint {
 }
 
 export interface GameView {
-  sessionId: string;
+  profile: string;
   locationId: string;
   locationName: BilingualText;
   module: string;

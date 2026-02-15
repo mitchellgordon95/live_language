@@ -26,20 +26,6 @@ import {
 import { getLanguage, getDefaultLanguage, getAvailableLanguages } from '../src/languages/index';
 import Anthropic from '@anthropic-ai/sdk';
 
-// --- Session Management ---
-
-interface GameSession {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  state: any; // GameState from engine
-  languageId: string;
-}
-
-const sessions = new Map<string, GameSession>();
-
-function generateSessionId(): string {
-  return Math.random().toString(36).substring(2) + Date.now().toString(36);
-}
-
 // --- Serialization (GameState ↔ DB) ---
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -60,7 +46,7 @@ function deserializeState(raw: any): any {
 export async function initGame(options: {
   module?: string;
   language?: string;
-  profile?: string;
+  profile: string;
 }): Promise<GameView & { resumed?: boolean }> {
 
   const languageId = options.language || getDefaultLanguage();
@@ -69,16 +55,14 @@ export async function initGame(options: {
     throw new Error(`Unknown language: ${languageId}. Available: ${getAvailableLanguages().join(', ')}`);
   }
 
-  // Check DB for existing save when profile is provided and no specific module requested
-  if (options.profile && !options.module) {
+  // Check DB for existing save when no specific module requested
+  if (!options.module) {
     try {
       const save = await loadGame(options.profile);
       if (save) {
         const state = deserializeState(save.state);
-        const sessionId = generateSessionId();
-        sessions.set(sessionId, { state, languageId: save.languageId });
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const view = buildGameView(sessionId, state, null, undefined, (languageConfig as any).helpText);
+        const view = buildGameView(options.profile, state, null, undefined, (languageConfig as any).helpText);
         return { ...view, resumed: true };
       }
     } catch (err) {
@@ -121,53 +105,36 @@ export async function initGame(options: {
     };
   }
 
-  state = { ...state, audioEnabled: false, profile: options.profile || undefined };
+  state = { ...state, audioEnabled: false };
 
-  // Save initial state to DB
-  if (options.profile) {
-    try {
-      await saveGame(options.profile, moduleName, languageId, serializeState(state));
-    } catch (err) {
-      console.error('Failed to save initial state:', err);
-    }
-  }
-
-  const sessionId = generateSessionId();
-  sessions.set(sessionId, { state, languageId });
+  await saveGame(options.profile, moduleName, languageId, serializeState(state));
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return buildGameView(sessionId, state, null, undefined, (languageConfig as any).helpText);
+  return buildGameView(options.profile, state, null, undefined, (languageConfig as any).helpText);
 }
 
-export async function playTurn(sessionId: string, input: string): Promise<GameView> {
-  const session = sessions.get(sessionId);
-  if (!session) {
-    throw new Error('Session not found. Start a new game.');
+export async function playTurn(profile: string, input: string): Promise<GameView> {
+  const save = await loadGame(profile);
+  if (!save) {
+    throw new Error('No saved game found. Start a new game.');
   }
 
-  const languageConfig = getLanguage(session.languageId);
+  const state = deserializeState(save.state);
+  const languageConfig = getLanguage(save.languageId);
   if (!languageConfig) {
-    throw new Error(`Language config not found: ${session.languageId}`);
+    throw new Error(`Language config not found: ${save.languageId}`);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const result = await processTurn(input, session.state, languageConfig) as any;
+  const result = await processTurn(input, state, languageConfig) as any;
 
-  session.state = result.newState;
-  sessions.set(sessionId, session);
+  const newState = result.newState;
+  const module = getModuleForLocation(newState.currentLocation);
+  await saveGame(profile, module, save.languageId, serializeState(newState));
 
-  // Persist game state to DB
-  const profile = session.state.profile;
-  if (profile) {
-    const module = getModuleForLocation(session.state.currentLocation);
-    saveGame(profile, module, session.languageId, serializeState(session.state)).catch(err =>
-      console.error('Failed to save game state:', err)
-    );
-  }
-
-  const turnResult = buildTurnResultView(result, session.state);
+  const turnResult = buildTurnResultView(result, newState);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return buildGameView(sessionId, session.state, turnResult, result, (languageConfig as any).helpText);
+  return buildGameView(profile, newState, turnResult, result, (languageConfig as any).helpText);
 }
 
 // --- Scene Manifest Loading ---
@@ -421,7 +388,7 @@ function getModuleForLocation(locationId: string): string {
 // --- View Model Builders ---
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function buildGameView(sessionId: string, state: any, turnResult: TurnResultView | null, result?: any, helpText?: string): GameView {
+function buildGameView(profile: string, state: any, turnResult: TurnResultView | null, result?: any, helpText?: string): GameView {
   const locationId = state.currentLocation;
   const module = getModuleForLocation(locationId) || 'home';
   const manifest = loadManifest(module, locationId);
@@ -507,7 +474,7 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
   const tutorialComplete = tutorialSteps.length > 0 && tutorialSteps.every(s => s.completed);
 
   return {
-    sessionId,
+    profile,
     locationId,
     locationName,
     module,
@@ -636,12 +603,7 @@ export function getAvailableModules(): string[] {
 
 // --- /learn Command ---
 
-export async function handleLearnCommand(sessionId: string, topic: string): Promise<{ lesson: string } | { error: string }> {
-  const session = sessions.get(sessionId);
-  if (!session) {
-    return { error: 'Session not found. Start a new game.' };
-  }
-
+export async function handleLearnCommand(topic: string): Promise<{ lesson: string } | { error: string }> {
   try {
     const client = new Anthropic();
 

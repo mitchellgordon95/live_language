@@ -47,12 +47,15 @@ export default function Home() {
     setError(null);
     setChatHistory([]);
     chatIdRef.current = 0;
-    if (profile) localStorage.setItem('profile', profile);
+    // Auto-generate profile if blank
+    const activeProfile = profile || ('anon_' + Math.random().toString(36).substring(2, 10));
+    if (!profile) setProfile(activeProfile);
+    localStorage.setItem('profile', activeProfile);
     try {
       const res = await fetch('/api/game/init', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ module, language: 'spanish', profile: profile || undefined }),
+        body: JSON.stringify({ module, language: 'spanish', profile: activeProfile }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -133,15 +136,15 @@ export default function Home() {
       const res = await fetch('/api/game', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId: game.sessionId, input }),
+        body: JSON.stringify({ profile: game.profile, input }),
       });
       if (!res.ok) {
         const data = await res.json();
-        if (data.sessionExpired && profile) {
-          // Session lost (server restart) — re-init from DB
+        if (data.sessionExpired) {
           setChatHistory(prev => prev.map(e => e.id === entryId ? { ...e, pending: false } : e));
           setIsProcessing(false);
-          await startGame();
+          setAppState('menu');
+          setGame(null);
           return;
         }
         throw new Error(data.error || 'Failed to process turn');
