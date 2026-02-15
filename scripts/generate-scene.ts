@@ -3,8 +3,8 @@
  * Generate a single scene image + extract object coordinates via Gemini 2.5 Flash.
  *
  * Usage:
- *   npx tsx scripts/generate-scene.ts --module home --location kitchen
- *   npx tsx scripts/generate-scene.ts --module restaurant --location restaurant_table --skip-coordinates
+ *   npx tsx scripts/generate-scene.ts --language spanish --module home --location kitchen
+ *   npx tsx scripts/generate-scene.ts --language spanish --module restaurant --location restaurant_table --skip-coordinates
  *
  * Requires GEMINI_API_KEY in .env.local
  */
@@ -22,12 +22,13 @@ const PROJECT_ROOT = path.resolve(__dirname, '..');
 // --- Parse CLI args ---
 function parseArgs() {
   const args = process.argv.slice(2);
-  const result: { module?: string; location?: string; skipCoordinates?: boolean; outputDir?: string; reference?: string } = {};
+  const result: { language?: string; module?: string; location?: string; skipCoordinates?: boolean; outputDir?: string; reference?: string } = {};
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     const next = args[i + 1];
-    if (arg === '--module' && next) { result.module = next; i++; }
+    if (arg === '--language' && next) { result.language = next; i++; }
+    else if (arg === '--module' && next) { result.module = next; i++; }
     else if (arg === '--location' && next) { result.location = next; i++; }
     else if (arg === '--output-dir' && next) { result.outputDir = next; i++; }
     else if (arg === '--reference' && next) { result.reference = next; i++; }
@@ -35,32 +36,43 @@ function parseArgs() {
   }
 
   if (!result.module || !result.location) {
-    console.error('Usage: npx tsx scripts/generate-scene.ts --module <name> --location <id>');
+    console.error('Usage: npx tsx scripts/generate-scene.ts --language <lang> --module <name> --location <id>');
+    console.error('  --language <lang>   Language (default: spanish)');
     console.error('  --skip-coordinates  Skip coordinate extraction step');
-    console.error('  --output-dir <dir>  Custom output directory (default: web/public/scenes)');
+    console.error('  --output-dir <dir>  Custom output directory');
     console.error('  --reference <path>  Use existing image as style reference');
     process.exit(1);
   }
 
-  return result as { module: string; location: string; skipCoordinates: boolean; outputDir: string; reference?: string };
+  return result as { language: string; module: string; location: string; skipCoordinates: boolean; outputDir: string; reference?: string };
 }
 
 // --- Load location data from the game engine ---
-async function loadLocationData(moduleName: string, locationId: string) {
+async function loadLocationData(languageId: string, moduleName: string, locationId: string) {
   const engineRoot = path.join(PROJECT_ROOT, 'src');
 
-  // Import the module registry to get location data
+  // Import language config and set active modules
   const registry = await import(path.join(engineRoot, 'data', 'module-registry.ts'));
-  const location = registry.allLocations[locationId];
+  const languages = await import(path.join(engineRoot, 'languages', 'index.ts'));
+  const langConfig = languages.getLanguage(languageId);
+  if (!langConfig) {
+    console.error(`Language "${languageId}" not found. Available: ${languages.getAvailableLanguages().join(', ')}`);
+    process.exit(1);
+  }
+  registry.setActiveModules(langConfig.modules);
+
+  const allLocs = registry.getAllLocations();
+  const location = allLocs[locationId];
 
   if (!location) {
     console.error(`Location "${locationId}" not found. Available locations:`);
-    console.error(Object.keys(registry.allLocations).join(', '));
+    console.error(Object.keys(allLocs).join(', '));
     process.exit(1);
   }
 
   // Objects are stored flat with a location field, not on the Location object
-  const objectsHere = registry.allObjects.filter(
+  const allObjs = registry.getAllObjects();
+  const objectsHere = allObjs.filter(
     (obj: { location: string }) => obj.location === locationId
   );
 
@@ -90,13 +102,15 @@ async function main() {
 
   const ai = new GoogleGenAI({ apiKey });
 
+  const language = opts.language || 'spanish';
+
   // Load location data from game engine
-  const locationData = await loadLocationData(opts.module, opts.location);
-  console.log(`\nGenerating scene: ${opts.module}/${locationData.locationId}`);
+  const locationData = await loadLocationData(language, opts.module, opts.location);
+  console.log(`\nGenerating scene: ${language}/${opts.module}/${locationData.locationId}`);
   console.log(`  Objects: ${locationData.objects.map((o: { name: string }) => o.name).join(', ')}`);
 
   // Output directory
-  const outputDir = opts.outputDir || path.join(PROJECT_ROOT, 'public', 'scenes', opts.module);
+  const outputDir = opts.outputDir || path.join(PROJECT_ROOT, 'public', 'scenes', language, opts.module);
   fs.mkdirSync(outputDir, { recursive: true });
 
   // --- Step 1: Generate the scene image ---

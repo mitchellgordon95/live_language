@@ -34,12 +34,13 @@ const PROJECT_ROOT = path.resolve(__dirname, '..');
 
 function parseArgs() {
   const args = process.argv.slice(2);
-  const result: { module?: string; id?: string; variant?: string; allVariants?: boolean; force?: boolean } = {};
+  const result: { language?: string; module?: string; id?: string; variant?: string; allVariants?: boolean; force?: boolean } = {};
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     const next = args[i + 1];
-    if (arg === '--module' && next) { result.module = next; i++; }
+    if (arg === '--language' && next) { result.language = next; i++; }
+    else if (arg === '--module' && next) { result.module = next; i++; }
     else if (arg === '--id' && next) { result.id = next; i++; }
     else if (arg === '--variant' && next) { result.variant = next; i++; }
     else if (arg === '--all-variants') { result.allVariants = true; }
@@ -48,6 +49,7 @@ function parseArgs() {
 
   if (!result.module) {
     console.error('Usage: npx tsx scripts/generate-vignettes.ts --module <name> [options]');
+    console.error('  --language <lang>   Language (default: spanish)');
     console.error('  --module <name>     Module (e.g., home, restaurant)');
     console.error('  --id <id>           Specific vignette ID');
     console.error('  --variant <variant> Specific variant');
@@ -56,14 +58,17 @@ function parseArgs() {
     process.exit(1);
   }
 
-  return result as { module: string; id?: string; variant?: string; allVariants?: boolean; force?: boolean };
+  return result as { language?: string; module: string; id?: string; variant?: string; allVariants?: boolean; force?: boolean };
 }
 
-async function loadModuleData(moduleName: string): Promise<ModuleData> {
+async function loadModuleData(languageId: string, moduleName: string): Promise<ModuleData> {
   const engineRoot = path.join(PROJECT_ROOT, 'src');
   const languages = await import(path.join(engineRoot, 'languages', 'index.ts'));
-  const config = languages.getLanguage('spanish');
-  if (!config) throw new Error('Spanish language config not found');
+  const config = languages.getLanguage(languageId);
+  if (!config) {
+    const available = languages.getAvailableLanguages().join(', ');
+    throw new Error(`Language "${languageId}" not found. Available: ${available}`);
+  }
 
   const mod = config.modules.find((m: { name: string }) => m.name === moduleName);
   if (!mod) throw new Error(`Module "${moduleName}" not found. Available: ${config.modules.map((m: { name: string }) => m.name).join(', ')}`);
@@ -153,8 +158,10 @@ async function main() {
 
   const ai = new GoogleGenAI({ apiKey });
 
+  const language = opts.language || 'spanish';
+
   // Load module data and derive vignettes
-  const moduleData = await loadModuleData(opts.module);
+  const moduleData = await loadModuleData(language, opts.module);
   let allVignettes = deriveVignetteDefs(moduleData);
 
   // Filter to requested subset
@@ -181,7 +188,7 @@ async function main() {
   vignettes = sortBasesFirst(vignettes);
   console.log(`\nGenerating ${vignettes.length} vignette(s) for module "${opts.module}"...\n`);
 
-  const outputDir = path.join(PROJECT_ROOT, 'public', 'scenes', opts.module, 'vignettes');
+  const outputDir = path.join(PROJECT_ROOT, 'public', 'scenes', language, opts.module, 'vignettes');
   fs.mkdirSync(outputDir, { recursive: true });
 
   const generatedFiles = new Map<string, string>();

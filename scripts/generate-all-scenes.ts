@@ -4,9 +4,9 @@
  * Iterates every module + location and calls generate-scene.ts for each.
  *
  * Usage:
- *   npx tsx scripts/generate-all-scenes.ts
- *   npx tsx scripts/generate-all-scenes.ts --skip-coordinates
- *   npx tsx scripts/generate-all-scenes.ts --module restaurant   # Only one module
+ *   npx tsx scripts/generate-all-scenes.ts --language spanish
+ *   npx tsx scripts/generate-all-scenes.ts --language spanish --skip-coordinates
+ *   npx tsx scripts/generate-all-scenes.ts --language spanish --module restaurant
  *
  * For parallel generation via agent swarm, use generate-scene.ts directly
  * with --module and --location flags for each scene.
@@ -21,12 +21,13 @@ const PROJECT_ROOT = path.resolve(__dirname, '..');
 
 function parseArgs() {
   const args = process.argv.slice(2);
-  const result: { module?: string; skipCoordinates?: boolean } = {};
+  const result: { language?: string; module?: string; skipCoordinates?: boolean } = {};
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     const next = args[i + 1];
-    if (arg === '--module' && next) { result.module = next; i++; }
+    if (arg === '--language' && next) { result.language = next; i++; }
+    else if (arg === '--module' && next) { result.module = next; i++; }
     else if (arg === '--skip-coordinates') { result.skipCoordinates = true; }
   }
 
@@ -44,23 +45,24 @@ async function main() {
   const registry = await import(path.join(engineRoot, 'data', 'module-registry.ts'));
   const languages = await import(path.join(engineRoot, 'languages', 'index.ts'));
 
-  // Get Spanish modules (primary language for scene generation)
-  const spanishConfig = languages.getLanguage('spanish');
-  if (!spanishConfig) {
-    console.error('Spanish language config not found');
+  const language = opts.language || 'spanish';
+  const langConfig = languages.getLanguage(language);
+  if (!langConfig) {
+    console.error(`Language "${language}" not found. Available: ${languages.getAvailableLanguages().join(', ')}`);
     process.exit(1);
   }
+  registry.setActiveModules(langConfig.modules);
 
   // Build module→locations map
   const moduleLocations: Map<string, string[]> = new Map();
-  for (const mod of spanishConfig.modules) {
+  for (const mod of langConfig.modules) {
     if (opts.module && mod.name !== opts.module) continue;
     moduleLocations.set(mod.name, mod.locationIds || Object.keys(mod.locations));
   }
 
   // Also include "street" which is a pseudo-location
-  // (defined inline in Spanish config, not a module)
-  if (!opts.module && registry.allLocations['street']) {
+  const allLocs = registry.getAllLocations();
+  if (!opts.module && allLocs['street']) {
     const homeLocations = moduleLocations.get('home') || [];
     if (!homeLocations.includes('street')) {
       moduleLocations.set('home', [...homeLocations, 'street']);
@@ -88,7 +90,7 @@ async function main() {
       try {
         const skipFlag = opts.skipCoordinates ? ' --skip-coordinates' : '';
         execSync(
-          `npx tsx scripts/generate-scene.ts --module ${moduleName} --location ${locationId}${skipFlag}`,
+          `npx tsx scripts/generate-scene.ts --language ${language} --module ${moduleName} --location ${locationId}${skipFlag}`,
           { stdio: 'inherit', cwd: PROJECT_ROOT }
         );
       } catch (err) {

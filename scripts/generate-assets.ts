@@ -56,6 +56,7 @@ interface AssetAudit {
 function parseArgs() {
   const args = process.argv.slice(2);
   const result: {
+    language?: string;
     module?: string;
     dryRun?: boolean;
     force?: boolean;
@@ -66,7 +67,8 @@ function parseArgs() {
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     const next = args[i + 1];
-    if (arg === '--module' && next) { result.module = next; i++; }
+    if (arg === '--language' && next) { result.language = next; i++; }
+    else if (arg === '--module' && next) { result.module = next; i++; }
     else if (arg === '--dry-run') { result.dryRun = true; }
     else if (arg === '--force') { result.force = true; }
     else if (arg === '--scenes-only') { result.scenesOnly = true; }
@@ -82,6 +84,7 @@ function parseArgs() {
     console.error('Usage: npx tsx scripts/generate-assets.ts --module <name> [options]');
     console.error('');
     console.error('Options:');
+    console.error('  --language <lang>    Language (default: spanish)');
     console.error('  --module <name>      Module to audit/generate (required)');
     console.error('  --dry-run            List missing assets without generating');
     console.error('  --force              Regenerate all assets even if they exist');
@@ -90,7 +93,7 @@ function parseArgs() {
     process.exit(1);
   }
 
-  return result as { module: string } & typeof result;
+  return result as { language?: string; module: string } & typeof result;
 }
 
 // --- Module data loading ---
@@ -103,11 +106,14 @@ interface ModuleLocations {
   }>;
 }
 
-async function loadModuleInfo(moduleName: string): Promise<{ moduleData: ModuleData; locations: ModuleLocations }> {
+async function loadModuleInfo(languageId: string, moduleName: string): Promise<{ moduleData: ModuleData; locations: ModuleLocations }> {
   const engineRoot = path.join(PROJECT_ROOT, 'src');
   const languages = await import(path.join(engineRoot, 'languages', 'index.ts'));
-  const config = languages.getLanguage('spanish');
-  if (!config) throw new Error('Spanish language config not found');
+  const config = languages.getLanguage(languageId);
+  if (!config) {
+    const available = languages.getAvailableLanguages().join(', ');
+    throw new Error(`Language "${languageId}" not found. Available: ${available}`);
+  }
 
   const mod = config.modules.find((m: { name: string }) => m.name === moduleName);
   if (!mod) {
@@ -124,10 +130,12 @@ async function loadModuleInfo(moduleName: string): Promise<{ moduleData: ModuleD
   // Get locations for scene audit
   const locationIds: string[] = mod.locationIds || Object.keys(mod.locations || {});
   const registry = await import(path.join(engineRoot, 'data', 'module-registry.ts'));
+  registry.setActiveModules(config.modules);
 
+  const allLocs = registry.getAllLocations();
   const locations: ModuleLocations = {
     locations: locationIds.map((id: string) => {
-      const loc = registry.allLocations[id];
+      const loc = allLocs[id];
       if (!loc) return { id, name: { native: id }, objects: [] };
       return {
         id: loc.id,
@@ -154,11 +162,12 @@ function findExistingImage(dir: string, baseName: string): string | null {
 }
 
 function auditAssets(
+  languageId: string,
   moduleName: string,
   locations: ModuleLocations,
   vignetteDefs: VignetteDef[],
 ): AssetAudit {
-  const moduleDir = path.join(SCENES_ROOT, moduleName);
+  const moduleDir = path.join(SCENES_ROOT, languageId, moduleName);
   const vignetteDir = path.join(moduleDir, 'vignettes');
 
   // Audit scenes
@@ -254,7 +263,7 @@ function runScript(cmd: string) {
   execSync(cmd, { stdio: 'inherit', cwd: PROJECT_ROOT });
 }
 
-function generateMissingScenes(audit: AssetAudit, moduleName: string, force: boolean) {
+function generateMissingScenes(audit: AssetAudit, languageId: string, moduleName: string, force: boolean) {
   const toGenerate = force
     ? audit.scenes
     : audit.scenes.filter(s => !s.hasImage || !s.hasManifest);
@@ -268,19 +277,19 @@ function generateMissingScenes(audit: AssetAudit, moduleName: string, force: boo
 
   for (const scene of toGenerate) {
     try {
-      runScript(`npx tsx scripts/generate-scene.ts --module ${moduleName} --location ${scene.locationId}`);
+      runScript(`npx tsx scripts/generate-scene.ts --language ${languageId} --module ${moduleName} --location ${scene.locationId}`);
     } catch (err) {
       console.error(`  FAILED: ${scene.locationId}`);
     }
   }
 }
 
-function generateMissingVignettes(moduleName: string, force: boolean) {
+function generateMissingVignettes(languageId: string, moduleName: string, force: boolean) {
   // Delegate to generate-vignettes.ts which handles its own skip/force logic
   console.log(`\n=== Generating Vignettes ===`);
   const forceFlag = force ? ' --force' : '';
   try {
-    runScript(`npx tsx scripts/generate-vignettes.ts --module ${moduleName}${forceFlag}`);
+    runScript(`npx tsx scripts/generate-vignettes.ts --language ${languageId} --module ${moduleName}${forceFlag}`);
   } catch (err) {
     console.error('  Vignette generation failed');
   }
@@ -300,15 +309,17 @@ async function main() {
     process.exit(1);
   }
 
+  const language = opts.language || 'spanish';
+
   // Load module data from compiled engine
-  console.log(`Loading module data for "${opts.module}"...`);
-  const { moduleData, locations } = await loadModuleInfo(opts.module);
+  console.log(`Loading module data for "${language}/${opts.module}"...`);
+  const { moduleData, locations } = await loadModuleInfo(language, opts.module);
 
   // Derive vignette needs
   const vignetteDefs = deriveVignetteDefs(moduleData);
 
   // Audit existing assets
-  const audit = auditAssets(opts.module, locations, vignetteDefs);
+  const audit = auditAssets(language, opts.module, locations, vignetteDefs);
   const toGenerate = printAudit(audit, opts.module, !!opts.force);
 
   if (opts.dryRun) {
@@ -327,11 +338,11 @@ async function main() {
   }
 
   if (!opts.vignettesOnly && toGenerate.scenes > 0) {
-    generateMissingScenes(audit, opts.module, !!opts.force);
+    generateMissingScenes(audit, language, opts.module, !!opts.force);
   }
 
   if (!opts.scenesOnly && (toGenerate.vignettes > 0 || !audit.hasVignetteManifest)) {
-    generateMissingVignettes(opts.module, !!opts.force);
+    generateMissingVignettes(language, opts.module, !!opts.force);
   }
 
   console.log('\nAsset generation complete!');
