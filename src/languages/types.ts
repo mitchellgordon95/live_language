@@ -1,4 +1,4 @@
-import type { WorldObject, ModuleDefinition } from '../engine/types.js';
+import type { WorldObject, ModuleDefinition } from '../engine/types';
 
 export interface LanguageConfig {
   id: string;                    // 'spanish', 'mandarin'

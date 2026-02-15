@@ -45,7 +45,7 @@ function parseArgs() {
 
 // --- Load location data from the compiled game engine ---
 async function loadLocationData(moduleName: string, locationId: string) {
-  const engineRoot = path.join(PROJECT_ROOT, 'dist');
+  const engineRoot = path.join(PROJECT_ROOT, 'src');
 
   // Import the module registry to get location data
   const registry = await import(path.join(engineRoot, 'data', 'module-registry.js'));
@@ -89,7 +89,7 @@ async function main() {
   console.log(`  Objects: ${locationData.objects.map((o: { name: string }) => o.name).join(', ')}`);
 
   // Output directory
-  const outputDir = opts.outputDir || path.join(PROJECT_ROOT, 'web', 'public', 'scenes', opts.module);
+  const outputDir = opts.outputDir || path.join(PROJECT_ROOT, 'public', 'scenes', opts.module);
   fs.mkdirSync(outputDir, { recursive: true });
 
   // --- Step 1: Generate the scene image ---

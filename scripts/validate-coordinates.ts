@@ -13,7 +13,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, '..');
-const SCENES_DIR = path.join(PROJECT_ROOT, 'web', 'public', 'scenes');
+const SCENES_DIR = path.join(PROJECT_ROOT, 'public', 'scenes');
 
 interface Coords {
   x: number;

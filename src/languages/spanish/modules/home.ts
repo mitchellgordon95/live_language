@@ -1,4 +1,4 @@
-import type { Location, TutorialStep, Quest, VocabWord, GameState, NPC, WorldObject, ModuleDefinition } from '../../../engine/types.js';
+import type { Location, TutorialStep, Quest, VocabWord, GameState, NPC, WorldObject, ModuleDefinition } from '../../../engine/types';
 
 // ============================================================================
 // LOCATIONS (exits only — objects are in the flat list below)

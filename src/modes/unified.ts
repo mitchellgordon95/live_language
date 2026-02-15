@@ -10,7 +10,6 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
-import * as fs from 'fs';
 import type {
   GameState,
   TutorialStep,
@@ -21,7 +20,7 @@ import type {
   GrammarIssue,
   ParseResponse,
   NarrateResponse,
-} from '../engine/types.js';
+} from '../engine/types';
 import {
   advanceTime,
   applyMutations,
@@ -31,7 +30,7 @@ import {
   saveLocationProgress,
   loadLocationProgress,
   type BuildingName,
-} from '../engine/game-state.js';
+} from '../engine/game-state';
 import {
   allLocations as locations,
   allNPCs,
@@ -42,9 +41,9 @@ import {
   getAllKnownStepIds,
   getAllQuestsForModule,
   getQuestById,
-} from '../data/module-registry.js';
-import type { LanguageConfig } from '../languages/types.js';
-import { createInitialVocabulary, recordWordUse, extractWordsFromText } from '../engine/vocabulary.js';
+} from '../data/module-registry';
+import type { LanguageConfig } from '../languages/types';
+import { createInitialVocabulary, recordWordUse, extractWordsFromText } from '../engine/vocabulary';
 
 let client: Anthropic | null = null;
 function getClient(): Anthropic {
@@ -67,10 +66,6 @@ function extractJSON(text: string): Record<string, unknown> {
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error('No JSON found in response');
   return JSON.parse(jsonMatch[0]);
-}
-
-function getSaveFile(profile?: string): string {
-  return profile ? `vocabulary-progress-${profile}.json` : 'vocabulary-progress.json';
 }
 
 // ============================================================================
@@ -755,27 +750,3 @@ export async function processTurn(
   };
 }
 
-// ============================================================================
-// VOCABULARY I/O
-// ============================================================================
-
-export function loadVocabulary(profile?: string): VocabularyProgress {
-  const saveFile = getSaveFile(profile);
-  try {
-    if (fs.existsSync(saveFile)) {
-      return JSON.parse(fs.readFileSync(saveFile, 'utf-8'));
-    }
-  } catch (error) {
-    console.error('Could not load vocabulary:', error);
-  }
-  return createInitialVocabulary();
-}
-
-export function saveVocabulary(vocab: VocabularyProgress, profile?: string): void {
-  const saveFile = getSaveFile(profile);
-  try {
-    fs.writeFileSync(saveFile, JSON.stringify(vocab, null, 2));
-  } catch (error) {
-    console.error('Could not save vocabulary:', error);
-  }
-}

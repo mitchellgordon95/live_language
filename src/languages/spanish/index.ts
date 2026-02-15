@@ -1,8 +1,8 @@
-import type { LanguageConfig } from '../types.js';
-import { SPANISH_SYSTEM_PROMPT, SPANISH_NARRATE_PROMPT } from './prompt.js';
-import { stripArticles, findObjectByName } from './helpers.js';
-import { homeModule } from './modules/home.js';
-import { restaurantModule } from './modules/restaurant.js';
+import type { LanguageConfig } from '../types';
+import { SPANISH_SYSTEM_PROMPT, SPANISH_NARRATE_PROMPT } from './prompt';
+import { stripArticles, findObjectByName } from './helpers';
+import { homeModule } from './modules/home';
+import { restaurantModule } from './modules/restaurant';
 
 export const spanishConfig: LanguageConfig = {
   id: 'spanish',

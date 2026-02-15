@@ -3,8 +3,8 @@ import type {
   VocabularyProgress,
   FamiliarityStage,
   WorldObject,
-} from './types.js';
-import { allVocabulary } from '../data/module-registry.js';
+} from './types';
+import { allVocabulary } from '../data/module-registry';
 
 // Stage transition thresholds
 const THRESHOLDS = {

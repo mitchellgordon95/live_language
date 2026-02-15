@@ -40,7 +40,7 @@ async function main() {
   const dotenv = await import('dotenv');
   dotenv.config({ path: path.join(PROJECT_ROOT, '.env.local') });
 
-  const engineRoot = path.join(PROJECT_ROOT, 'dist');
+  const engineRoot = path.join(PROJECT_ROOT, 'src');
   const registry = await import(path.join(engineRoot, 'data', 'module-registry.js'));
   const languages = await import(path.join(engineRoot, 'languages', 'index.js'));
 

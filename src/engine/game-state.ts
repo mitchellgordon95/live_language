@@ -11,9 +11,9 @@ import type {
   LocationProgress,
   NPCRuntimeState,
   NPC,
-} from './types.js';
-import { createInitialVocabulary } from './vocabulary.js';
-import { type BuildingName, getBuildingForLocation, BUILDING_UNLOCK_LEVELS } from '../data/module-registry.js';
+} from './types';
+import { createInitialVocabulary } from './vocabulary';
+import { type BuildingName, getBuildingForLocation, BUILDING_UNLOCK_LEVELS } from '../data/module-registry';
 export { type BuildingName, getBuildingForLocation, BUILDING_UNLOCK_LEVELS };
 
 // Level thresholds

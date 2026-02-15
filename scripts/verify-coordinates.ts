@@ -43,7 +43,7 @@ function main() {
   const opts = parseArgs();
   const port = opts.port || 8765;
 
-  const scenesDir = path.join(PROJECT_ROOT, 'web', 'public', 'scenes', opts.module);
+  const scenesDir = path.join(PROJECT_ROOT, 'public', 'scenes', opts.module);
   const manifestPath = path.join(scenesDir, `${opts.location}.json`);
 
   if (!fs.existsSync(manifestPath)) {
@@ -61,7 +61,7 @@ function main() {
   }
 
   // Load location data for object names
-  const engineRoot = path.join(PROJECT_ROOT, 'dist');
+  const engineRoot = path.join(PROJECT_ROOT, 'src');
 
   const html = `<!DOCTYPE html>
 <html>

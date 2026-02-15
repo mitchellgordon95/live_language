@@ -60,7 +60,7 @@ function parseArgs() {
 }
 
 async function loadModuleData(moduleName: string): Promise<ModuleData> {
-  const engineRoot = path.join(PROJECT_ROOT, 'dist');
+  const engineRoot = path.join(PROJECT_ROOT, 'src');
   const languages = await import(path.join(engineRoot, 'languages', 'index.js'));
   const config = languages.getLanguage('spanish');
   if (!config) throw new Error('Spanish language config not found');
@@ -181,7 +181,7 @@ async function main() {
   vignettes = sortBasesFirst(vignettes);
   console.log(`\nGenerating ${vignettes.length} vignette(s) for module "${opts.module}"...\n`);
 
-  const outputDir = path.join(PROJECT_ROOT, 'web', 'public', 'scenes', opts.module, 'vignettes');
+  const outputDir = path.join(PROJECT_ROOT, 'public', 'scenes', opts.module, 'vignettes');
   fs.mkdirSync(outputDir, { recursive: true });
 
   const generatedFiles = new Map<string, string>();

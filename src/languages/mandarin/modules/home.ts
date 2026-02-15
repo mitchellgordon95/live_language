@@ -1,4 +1,4 @@
-import type { Location, TutorialStep, VocabWord, GameState, NPC, WorldObject, ModuleDefinition } from '../../../engine/types.js';
+import type { Location, TutorialStep, VocabWord, GameState, NPC, WorldObject, ModuleDefinition } from '../../../engine/types';
 
 // ============================================================================
 // MANDARIN HOME MODULE - Stub (not converted for mutation engine experiment)

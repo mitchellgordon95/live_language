@@ -1,7 +1,7 @@
-import type { Location, TutorialStep, Quest, VocabWord, NPC, WorldObject, ModuleDefinition } from '../engine/types.js';
+import type { Location, TutorialStep, Quest, VocabWord, NPC, WorldObject, ModuleDefinition } from '../engine/types';
 
-import { homeModule } from '../languages/spanish/modules/home.js';
-import { restaurantModule } from '../languages/spanish/modules/restaurant.js';
+import { homeModule } from '../languages/spanish/modules/home';
+import { restaurantModule } from '../languages/spanish/modules/restaurant';
 
 export type { ModuleDefinition };
 

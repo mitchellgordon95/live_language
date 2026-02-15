@@ -5,23 +5,26 @@ A Spanish language learning game where you control a character by typing command
 ## Development
 
 ```bash
-npm run build    # Compile TypeScript engine (required before running web UI)
-cd web && npm run dev   # Start the Next.js web UI
+npm install    # Install dependencies
+npm run dev    # Start the Next.js dev server
 ```
 
-Requires `ANTHROPIC_API_KEY` in `.env.local`.
-
-**IMPORTANT**: Running `npm run build` while the dev server is running will break it — the dev server imports from `dist/` and the build overwrites those files mid-run. Always kill the dev server before building, then restart it after:
-```bash
-# Kill dev server → build → restart
-lsof -ti:3000 | xargs kill -9; sleep 2; npm run build && cd web && npm run dev
-```
+Requires `ANTHROPIC_API_KEY` and `DATABASE_URL` in `.env.local`.
 
 ## Architecture
 
+This is a standard Next.js project. The game engine lives in `src/` and is imported directly by the server-side bridge code — no separate build step.
+
 ```
-src/
-├── modes/unified.ts      # Game engine: AI integration, state management, turn processing
+app/                      # Next.js pages and API routes
+components/               # ScenePanel, ChatPanel, InputBar
+lib/
+├── game-bridge.ts        # Server-side bridge: sessions, view models, engine imports
+├── types.ts              # View model types (GameView, TurnResultView)
+├── db.ts                 # Postgres persistence
+└── vignette-generator.ts # Dynamic portrait generation
+src/                      # Game engine (pure TypeScript, no Node.js file APIs)
+├── modes/unified.ts      # AI integration, state management, turn processing
 ├── engine/
 │   ├── types.ts          # Core types: GameState, Location, Goal, NPC, etc.
 │   ├── game-state.ts     # State helpers, points/levels, building transitions
@@ -32,27 +35,19 @@ src/
     ├── types.ts, index.ts # Language config registry
     ├── spanish/           # Spanish config, prompt, helpers, modules/
     └── mandarin/          # Mandarin config (stub)
-web/
-├── app/                  # Next.js pages and API routes
-├── components/           # ScenePanel, ChatPanel, InputBar
-├── lib/
-│   ├── game-bridge.ts    # Server-side bridge to compiled engine (dist/)
-│   └── types.ts          # View model types (GameView, TurnResultView)
-└── public/scenes/        # Generated scene images and portraits
+scripts/                  # Scene/vignette generation (npx tsx)
+public/scenes/            # Generated scene images and portraits
 ```
 
 ## Key Concepts
 
-**Game Engine** (`unified.ts`): The AI receives game state context and Spanish input, returns structured JSON with:
-- Grammar feedback (score, corrections)
-- Ordered actions to execute (go, take, open, talk, etc.)
-- Goal completions, NPC responses, needs changes
+**Game Engine** (`src/modes/unified.ts`): The AI receives game state context and Spanish input, returns structured JSON with grammar feedback, ordered mutations, goal completions, NPC responses, and needs changes.
 
-**Web UI** (`web/`): Next.js app that calls the compiled engine via `game-bridge.ts`. Session state is kept in-memory on the server. The client receives `GameView` objects with scene images, object coordinates, and turn results.
+**Web UI**: Next.js app with API routes (`app/api/game/`). `game-bridge.ts` imports the engine directly and maps its internal state to `GameView` types for the client. Session state is in-memory + persisted to Postgres.
 
-**Modules**: Each location module exports locations, NPCs, goals, vocabulary, and `promptInstructions` (AI prompt text for that module's NPC interactions). All modules are registered in `module-registry.ts` which provides merged lookups. The AI system prompt is composed dynamically: core rules + current building's module instructions.
+**Modules**: Each location module exports locations, NPCs, goals, vocabulary, and `promptInstructions`. All modules are registered in `module-registry.ts`. The AI system prompt is composed dynamically: core rules + current building's module instructions.
 
-**State**: `GameState` tracks location, inventory, needs, goals, vocabulary progress, points/level, and per-building goal progress (paused when you leave a building).
+**State**: `GameState` tracks location, inventory, needs, goals, vocabulary progress, points/level, and per-building goal progress (paused when you leave a building). Persisted to Postgres as JSONB per profile.
 
 ## Adding a New Module
 

@@ -1,8 +1,5 @@
 /**
  * Server-only bridge to the game engine.
- * Uses dynamic imports with webpackIgnore to load the compiled game engine
- * from the parent project's dist/ directory at runtime (Node.js resolves it).
- *
  * Maps the engine's mutation-based state model to GameView types for the UI.
  */
 import 'server-only';
@@ -12,71 +9,22 @@ import type { GameView, TurnResultView, QuestView, ObjectCoords, SceneInfo, Exit
 import { getCachedVignette, getPlaceholderPath, isGenerationEnabled, isGenerating, triggerGeneration } from './vignette-generator';
 import { saveGame, loadGame } from './db';
 
-// Path to compiled game engine
-const ENGINE_ROOT = join(process.cwd(), '..', 'dist');
-
-// Cached engine modules
-let engine: {
-  processTurn: (...args: unknown[]) => Promise<unknown>;
-  loadVocabulary: (profile?: string) => unknown;
-  saveVocabulary: (vocab: unknown, profile?: string) => void;
-  createInitialState: (...args: unknown[]) => unknown;
-  getStepById: (id: string) => unknown;
-  getStartStepForBuilding: (building: string) => unknown;
-  getModuleByName: (name: string) => unknown;
-  allLocations: Record<string, unknown>;
-  allNPCs: unknown[];
-  getLanguage: (id: string) => unknown;
-  getDefaultLanguage: () => string;
-  getAvailableLanguages: () => string[];
-  getNPCsInLocation: (locationId: string) => unknown[];
-  getVocabStage: (vocab: unknown, objectId: string) => string;
-  getAllStepsForBuilding: (building: string) => unknown[];
-  getAllQuestsForModule: (moduleName: string) => unknown[];
-  getBuildingForLocation: (locationId: string) => string;
-} | null = null;
-
-async function getEngine() {
-  if (engine) return engine;
-
-  // Load dotenv from parent project
-  const dotenvPath = join(process.cwd(), '..', '.env.local');
-  const dotenv = await import(/* webpackIgnore: true */ 'dotenv');
-  dotenv.config({ path: dotenvPath });
-
-  const [unified, gameStateMod, registryMod, languagesMod, vocabMod] = await Promise.all([
-    import(/* webpackIgnore: true */ join(ENGINE_ROOT, 'modes', 'unified.js')),
-    import(/* webpackIgnore: true */ join(ENGINE_ROOT, 'engine', 'game-state.js')),
-    import(/* webpackIgnore: true */ join(ENGINE_ROOT, 'data', 'module-registry.js')),
-    import(/* webpackIgnore: true */ join(ENGINE_ROOT, 'languages', 'index.js')),
-    import(/* webpackIgnore: true */ join(ENGINE_ROOT, 'engine', 'vocabulary.js')),
-  ]);
-
-  engine = {
-    processTurn: unified.processTurn,
-    loadVocabulary: unified.loadVocabulary,
-    saveVocabulary: unified.saveVocabulary,
-    createInitialState: gameStateMod.createInitialState,
-    getStepById: registryMod.getStepById,
-    getStartStepForBuilding: registryMod.getStartStepForBuilding,
-    getModuleByName: registryMod.getModuleByName,
-    allLocations: registryMod.allLocations,
-    allNPCs: registryMod.allNPCs,
-    getNPCsInLocation: registryMod.getNPCsInLocation,
-    getLanguage: languagesMod.getLanguage,
-    getDefaultLanguage: languagesMod.getDefaultLanguage,
-    getAvailableLanguages: languagesMod.getAvailableLanguages,
-    getVocabStage: (vocab: unknown, objectId: string) => {
-      const v = vocab as { words: Record<string, { stage: string }> };
-      return v.words[objectId]?.stage || 'new';
-    },
-    getAllStepsForBuilding: registryMod.getAllStepsForBuilding,
-    getAllQuestsForModule: registryMod.getAllQuestsForModule,
-    getBuildingForLocation: registryMod.getBuildingForLocation,
-  };
-
-  return engine;
-}
+// Engine imports (compiled by Next.js directly from TypeScript source)
+import { processTurn } from '../src/modes/unified';
+import { createInitialState } from '../src/engine/game-state';
+import {
+  getStepById,
+  getStartStepForBuilding,
+  getModuleByName,
+  allLocations,
+  allNPCs,
+  getNPCsInLocation,
+  getAllStepsForBuilding,
+  getAllQuestsForModule,
+  getBuildingForLocation,
+} from '../src/data/module-registry';
+import { getLanguage, getDefaultLanguage, getAvailableLanguages } from '../src/languages/index';
+import Anthropic from '@anthropic-ai/sdk';
 
 // --- Session Management ---
 
@@ -100,10 +48,10 @@ function serializeState(state: any): object {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function deserializeState(raw: any, eng: NonNullable<typeof engine>): any {
+function deserializeState(raw: any): any {
   return {
     ...raw,
-    currentStep: raw.currentStep ? eng.getStepById(raw.currentStep) ?? null : null,
+    currentStep: raw.currentStep ? getStepById(raw.currentStep) ?? null : null,
   };
 }
 
@@ -114,12 +62,11 @@ export async function initGame(options: {
   language?: string;
   profile?: string;
 }): Promise<GameView & { resumed?: boolean }> {
-  const eng = await getEngine();
 
-  const languageId = options.language || eng.getDefaultLanguage();
-  const languageConfig = eng.getLanguage(languageId);
+  const languageId = options.language || getDefaultLanguage();
+  const languageConfig = getLanguage(languageId);
   if (!languageConfig) {
-    throw new Error(`Unknown language: ${languageId}. Available: ${eng.getAvailableLanguages().join(', ')}`);
+    throw new Error(`Unknown language: ${languageId}. Available: ${getAvailableLanguages().join(', ')}`);
   }
 
   // Check DB for existing save when profile is provided and no specific module requested
@@ -127,9 +74,10 @@ export async function initGame(options: {
     try {
       const save = await loadGame(options.profile);
       if (save) {
-        const state = deserializeState(save.state, eng);
+        const state = deserializeState(save.state);
         const sessionId = generateSessionId();
         sessions.set(sessionId, { state, languageId: save.languageId });
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const view = buildGameView(sessionId, state, null, undefined, (languageConfig as any).helpText);
         return { ...view, resumed: true };
       }
@@ -142,27 +90,27 @@ export async function initGame(options: {
   let moduleName = 'home';
   if (options.module) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mod = eng.getModuleByName(options.module) as any;
+    const mod = getModuleByName(options.module) as any;
     if (mod) {
       moduleName = mod.name;
     }
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const mod = eng.getModuleByName(moduleName) as any;
+  const mod = getModuleByName(moduleName) as any;
   const startLocationId = mod?.startLocationId || 'bedroom';
   const firstStepId = mod?.firstStepId;
   const forceStanding = moduleName !== 'home';
 
-  let startStep = eng.getStartStepForBuilding('home');
+  let startStep = getStartStepForBuilding('home');
   if (firstStepId) {
-    startStep = eng.getStepById(firstStepId) || startStep;
+    startStep = getStepById(firstStepId) || startStep;
   }
 
   const objects = mod?.objects || [];
   const npcs = mod?.npcs || [];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let state = eng.createInitialState(startLocationId, startStep, objects, npcs) as any;
+  let state = createInitialState(startLocationId, startStep, objects, npcs) as any;
 
   if (forceStanding) {
     state = {
@@ -187,23 +135,23 @@ export async function initGame(options: {
   const sessionId = generateSessionId();
   sessions.set(sessionId, { state, languageId });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return buildGameView(sessionId, state, null, undefined, (languageConfig as any).helpText);
 }
 
 export async function playTurn(sessionId: string, input: string): Promise<GameView> {
-  const eng = await getEngine();
   const session = sessions.get(sessionId);
   if (!session) {
     throw new Error('Session not found. Start a new game.');
   }
 
-  const languageConfig = eng.getLanguage(session.languageId);
+  const languageConfig = getLanguage(session.languageId);
   if (!languageConfig) {
     throw new Error(`Language config not found: ${session.languageId}`);
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const result = await eng.processTurn(input, session.state, languageConfig) as any;
+  const result = await processTurn(input, session.state, languageConfig) as any;
 
   session.state = result.newState;
   sessions.set(sessionId, session);
@@ -218,6 +166,7 @@ export async function playTurn(sessionId: string, input: string): Promise<GameVi
   }
 
   const turnResult = buildTurnResultView(result, session.state);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return buildGameView(sessionId, session.state, turnResult, result, (languageConfig as any).helpText);
 }
 
@@ -341,8 +290,8 @@ function resolveVignettes(state: any, result: any | null, module: string): Vigne
   if (!manifest) {
     // No pre-generated vignettes — still check cache for object vignettes
     const objectChanges: Array<{ objectId: string; image: string; generating?: boolean }> = [];
-    const allObjects: Array<{ id: string; name: { native: string }; tags: string[]; location: string }> = state.objects || [];
-    const objectsInLocation = allObjects.filter(
+    const allObjectsState: Array<{ id: string; name: { native: string }; tags: string[]; location: string }> = state.objects || [];
+    const objectsInLocation = allObjectsState.filter(
       (o: { location: string }) => o.location === state.currentLocation
     );
 
@@ -407,10 +356,10 @@ function resolveVignettes(state: any, result: any | null, module: string): Vigne
 
   // 3. Object state vignettes — match tags against vignette manifest conditions
   const objectChanges: Array<{ objectId: string; image: string; generating?: boolean }> = [];
-  const allObjects: Array<{ id: string; name: { native: string }; tags: string[]; location: string }> = state.objects || [];
+  const allObjectsState: Array<{ id: string; name: { native: string }; tags: string[]; location: string }> = state.objects || [];
 
   // Get objects in current location (including containers)
-  const objectsInLocation = allObjects.filter(
+  const objectsInLocation = allObjectsState.filter(
     (o: { location: string }) => o.location === state.currentLocation
   );
 
@@ -438,7 +387,6 @@ function resolveVignettes(state: any, result: any | null, module: string): Vigne
     // Check vignette cache
     const cached = getCachedVignette(module, obj.id, visualTags);
     if (cached) {
-      // Cached vignette found — image is a full URL path, extract just the filename portion
       objectChanges.push({ objectId: obj.id, image: cached });
       continue;
     }
@@ -452,7 +400,6 @@ function resolveVignettes(state: any, result: any | null, module: string): Vigne
         objectChanges.push({ objectId: obj.id, image: getPlaceholderPath(), generating: true });
       }
     }
-    // When generation is disabled and no cached vignette, don't show anything
   }
 
   if (objectChanges.length > 0) {
@@ -462,11 +409,10 @@ function resolveVignettes(state: any, result: any | null, module: string): Vigne
   return hint;
 }
 
-// Dynamic module lookup for any location (no more hardcoded map)
+// Dynamic module lookup for any location
 function getModuleForLocation(locationId: string): string {
-  if (!engine) return 'home';
   try {
-    return engine.getBuildingForLocation(locationId) || 'home';
+    return getBuildingForLocation(locationId) || 'home';
   } catch {
     return 'home';
   }
@@ -481,19 +427,18 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
   const manifest = loadManifest(module, locationId);
 
   // Objects in current location from flat list
-  const allObjects: Array<{ id: string; name: { target: string; native: string }; location: string; tags: string[] }> = state.objects || [];
+  const allObjectsState: Array<{ id: string; name: { target: string; native: string }; location: string; tags: string[] }> = state.objects || [];
 
   // Visible objects: in current location + in open containers at current location
-  const objectsHere = allObjects.filter(o => o.location === locationId);
-  const inOpenContainers = allObjects.filter(o => {
+  const objectsHere = allObjectsState.filter(o => o.location === locationId);
+  const inOpenContainers = allObjectsState.filter(o => {
     if (o.location === 'removed') return false;
-    const container = allObjects.find(c => c.id === o.location);
+    const container = allObjectsState.find(c => c.id === o.location);
     return container !== undefined && container.location === locationId && container.tags.includes('open');
   });
   const visibleObjects = [...objectsHere, ...inOpenContainers];
 
   const objects = visibleObjects.map(obj => {
-    // Determine containerId: if object's location is another object (not a location ID and not 'inventory')
     const isInContainer = obj.location !== locationId && obj.location !== 'inventory' && obj.location !== 'removed';
     return {
       id: obj.id,
@@ -510,7 +455,7 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
     : null;
 
   // Exits from allLocations lookup
-  const currentLoc = (engine as NonNullable<typeof engine>).allLocations[locationId] as { exits: Array<{ to: string; name: { target: string; native: string } }>; name: { target: string; native: string }; verbs?: Array<{ target: string; native: string }> } | undefined;
+  const currentLoc = allLocations[locationId] as { exits: Array<{ to: string; name: { target: string; native: string } }>; name: { target: string; native: string }; verbs?: Array<{ target: string; native: string }> } | undefined;
   const visitedLocations: string[] = state.visitedLocations || [];
   const exits: ExitView[] = (currentLoc?.exits || []).map(exit => ({
     to: exit.to,
@@ -520,8 +465,7 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
 
   // NPCs in this location (check runtime npcStates for current location)
   const vignetteManifest = loadVignetteManifest(module);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const allNPCsDef = (engine as any).allNPCs as Array<{ id: string; name: { target: string; native: string }; location: string; isPet?: boolean; gender?: string }>;
+  const allNPCsDef = allNPCs as Array<{ id: string; name: { target: string; native: string }; location: string; isPet?: boolean; gender?: string }>;
   const npcsHere = allNPCsDef.filter(npc => {
     const runtimeState = state.npcStates?.[npc.id];
     return runtimeState
@@ -536,7 +480,7 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
   }));
 
   // Inventory from flat object list
-  const inventory = allObjects
+  const inventory = allObjectsState
     .filter(o => o.location === 'inventory')
     .map(o => ({
       id: o.id,
@@ -590,12 +534,12 @@ function buildGameView(sessionId: string, state: any, turnResult: TurnResultView
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildTutorialChecklist(state: any): TutorialStepView[] {
-  const building = (engine as NonNullable<typeof engine>).getBuildingForLocation(state.currentLocation);
+  const building = getBuildingForLocation(state.currentLocation);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const allSteps = (engine as NonNullable<typeof engine>).getAllStepsForBuilding(building) as any[];
+  const steps = getAllStepsForBuilding(building) as any[];
   const suggestedId = state.currentStep?.id || null;
 
-  return allSteps.map((g: { id: string; title: string; hint?: string }) => ({
+  return steps.map((g: { id: string; title: string; hint?: string }) => ({
     id: g.id,
     title: g.title,
     hint: g.hint || '',
@@ -606,14 +550,13 @@ function buildTutorialChecklist(state: any): TutorialStepView[] {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildQuestList(state: any, module: string): QuestView[] {
-  const building = (engine as NonNullable<typeof engine>).getBuildingForLocation(state.currentLocation);
+  const building = getBuildingForLocation(state.currentLocation);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const allQuests = (engine as NonNullable<typeof engine>).getAllQuestsForModule(building) as any[];
+  const quests = getAllQuestsForModule(building) as any[];
   const activeIds: string[] = state.activeQuests || [];
   const completedIds: string[] = state.completedQuests || [];
 
-  // Show active quests + recently completed quests
-  return allQuests
+  return quests
     .filter(q => activeIds.includes(q.id) || completedIds.includes(q.id))
     .map(q => ({
       id: q.id,
@@ -633,8 +576,7 @@ function getVocabStageForObject(vocabulary: { words: Record<string, { stage: str
 
 // Map NPC gender to Gemini TTS voice
 function npcVoice(npcId: string): string {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const allNPCsDef = (engine as any).allNPCs as Array<{ id: string; gender?: string; isPet?: boolean }>;
+  const allNPCsDef = allNPCs as Array<{ id: string; gender?: string; isPet?: boolean }>;
   const npc = allNPCsDef.find(n => n.id === npcId);
   if (npc?.gender === 'female') return 'Leda';
   if (npc?.gender === 'male') return 'Charon';
@@ -643,7 +585,6 @@ function npcVoice(npcId: string): string {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function buildTurnResultView(result: any, state: any): TurnResultView {
-  // TurnResult fields are now flat (no more result.response wrapper)
   const view: TurnResultView = {
     valid: result.valid,
     understood: result.understood ?? true,
@@ -702,7 +643,6 @@ export async function handleLearnCommand(sessionId: string, topic: string): Prom
   }
 
   try {
-    const Anthropic = (await import(/* webpackIgnore: true */ '@anthropic-ai/sdk')).default;
     const client = new Anthropic();
 
     const response = await client.messages.create({

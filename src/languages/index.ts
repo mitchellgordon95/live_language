@@ -1,6 +1,6 @@
-import type { LanguageConfig } from './types.js';
-import { spanishConfig } from './spanish/index.js';
-import { mandarinConfig } from './mandarin/index.js';
+import type { LanguageConfig } from './types';
+import { spanishConfig } from './spanish/index';
+import { mandarinConfig } from './mandarin/index';
 
 const languages: Record<string, LanguageConfig> = {};
 
@@ -24,4 +24,4 @@ export function getDefaultLanguage(): string {
   return 'spanish';
 }
 
-export type { LanguageConfig } from './types.js';
+export type { LanguageConfig } from './types';

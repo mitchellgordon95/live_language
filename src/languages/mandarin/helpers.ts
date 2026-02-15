@@ -1,4 +1,4 @@
-import type { WorldObject } from '../../engine/types.js';
+import type { WorldObject } from '../../engine/types';
 
 /**
  * Mandarin has no articles to strip. Returns the word as-is.

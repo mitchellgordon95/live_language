@@ -1,4 +1,4 @@
-import type { WorldObject } from '../../engine/types.js';
+import type { WorldObject } from '../../engine/types';
 
 /**
  * Strip Spanish articles (el, la, los, las) from a word.

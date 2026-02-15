@@ -30,7 +30,7 @@ import {
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, '..');
-const SCENES_ROOT = path.join(PROJECT_ROOT, 'web', 'public', 'scenes');
+const SCENES_ROOT = path.join(PROJECT_ROOT, 'public', 'scenes');
 
 // --- Types ---
 
@@ -104,7 +104,7 @@ interface ModuleLocations {
 }
 
 async function loadModuleInfo(moduleName: string): Promise<{ moduleData: ModuleData; locations: ModuleLocations }> {
-  const engineRoot = path.join(PROJECT_ROOT, 'dist');
+  const engineRoot = path.join(PROJECT_ROOT, 'src');
   const languages = await import(path.join(engineRoot, 'languages', 'index.js'));
   const config = languages.getLanguage('spanish');
   if (!config) throw new Error('Spanish language config not found');

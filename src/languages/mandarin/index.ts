@@ -1,7 +1,7 @@
-import type { LanguageConfig } from '../types.js';
-import { MANDARIN_SYSTEM_PROMPT } from './prompt.js';
-import { stripArticles, findObjectByName } from './helpers.js';
-import { homeModule } from './modules/home.js';
+import type { LanguageConfig } from '../types';
+import { MANDARIN_SYSTEM_PROMPT } from './prompt';
+import { stripArticles, findObjectByName } from './helpers';
+import { homeModule } from './modules/home';
 
 export const mandarinConfig: LanguageConfig = {
   id: 'mandarin',
