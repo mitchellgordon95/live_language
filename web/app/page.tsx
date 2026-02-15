@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import type { GameView } from '@/lib/types';
 import ChatPanel from '@/components/ChatPanel';
 import type { ChatEntry } from '@/components/ChatPanel';
@@ -17,14 +17,37 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatEntry[]>([]);
   const [profile, setProfile] = useState('');
+  const [savedGame, setSavedGame] = useState<{ module: string } | null>(null);
   const chatIdRef = useRef(0);
   const { speak, isMuted, toggleMute } = useTTS();
+
+  // Restore profile from localStorage and check for saved game
+  useEffect(() => {
+    const saved = localStorage.getItem('profile');
+    if (saved) {
+      setProfile(saved);
+      fetch(`/api/game/check?profile=${encodeURIComponent(saved)}`)
+        .then(r => r.json())
+        .then(data => { if (data.hasSave) setSavedGame({ module: data.module }); })
+        .catch(() => {});
+    }
+  }, []);
+
+  // Re-check for saved game when profile changes
+  useEffect(() => {
+    if (!profile) { setSavedGame(null); return; }
+    fetch(`/api/game/check?profile=${encodeURIComponent(profile)}`)
+      .then(r => r.json())
+      .then(data => setSavedGame(data.hasSave ? { module: data.module } : null))
+      .catch(() => setSavedGame(null));
+  }, [profile]);
 
   const startGame = useCallback(async (module?: string) => {
     setAppState('loading');
     setError(null);
     setChatHistory([]);
     chatIdRef.current = 0;
+    if (profile) localStorage.setItem('profile', profile);
     try {
       const res = await fetch('/api/game/init', {
         method: 'POST',
@@ -35,11 +58,11 @@ export default function Home() {
         const data = await res.json();
         throw new Error(data.error || 'Failed to start game');
       }
-      const gameView: GameView = await res.json();
+      const gameView = await res.json();
       setGame(gameView);
 
-      // Tutorial hint for home module
-      if (gameView.module === 'home') {
+      // Tutorial hint for fresh home module games (not resumed)
+      if (gameView.module === 'home' && !gameView.resumed) {
         chatIdRef.current += 1;
         const hint1: ChatEntry = { id: chatIdRef.current, playerInput: '', systemHint: 'Try typing "Me levanto" to get out of bed' };
         setChatHistory([hint1]);
@@ -114,6 +137,13 @@ export default function Home() {
       });
       if (!res.ok) {
         const data = await res.json();
+        if (data.sessionExpired && profile) {
+          // Session lost (server restart) — re-init from DB
+          setChatHistory(prev => prev.map(e => e.id === entryId ? { ...e, pending: false } : e));
+          setIsProcessing(false);
+          await startGame();
+          return;
+        }
         throw new Error(data.error || 'Failed to process turn');
       }
       const data = await res.json();
@@ -154,7 +184,7 @@ export default function Home() {
     } finally {
       setIsProcessing(false);
     }
-  }, [game, isProcessing, speak]);
+  }, [game, isProcessing, speak, profile, startGame]);
 
   const handleHelp = useCallback(() => {
     if (!game) return;
@@ -186,18 +216,27 @@ export default function Home() {
           </div>
 
           <div className="space-y-3">
+            {savedGame && profile && (
+              <button
+                onClick={() => startGame()}
+                className="w-full py-3 px-4 bg-green-700 hover:bg-green-600 rounded-lg font-medium transition-colors text-left"
+              >
+                <div>Continue</div>
+                <div className="text-green-200 text-sm">Resume your game in {savedGame.module}</div>
+              </button>
+            )}
             <button
               onClick={() => startGame('home')}
               className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 rounded-lg font-medium transition-colors text-left"
             >
-              <div>Home</div>
+              <div>Home{savedGame ? ' (New Game)' : ''}</div>
               <div className="text-blue-200 text-sm">Wake up, make breakfast, greet your roommate</div>
             </button>
             <button
               onClick={() => startGame('restaurant')}
               className="w-full py-3 px-4 bg-gray-800 hover:bg-gray-700 rounded-lg font-medium transition-colors text-left"
             >
-              <div>Restaurant</div>
+              <div>Restaurant{savedGame ? ' (New Game)' : ''}</div>
               <div className="text-gray-400 text-sm">Order food, talk to the waiter</div>
             </button>
           </div>

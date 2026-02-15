@@ -10,6 +10,7 @@ import { join } from 'path';
 import { readFileSync, existsSync } from 'fs';
 import type { GameView, TurnResultView, QuestView, ObjectCoords, SceneInfo, ExitView, NPCView, TutorialStepView, VignetteHint } from './types';
 import { getCachedVignette, getPlaceholderPath, isGenerationEnabled, isGenerating, triggerGeneration } from './vignette-generator';
+import { saveGame, loadGame } from './db';
 
 // Path to compiled game engine
 const ENGINE_ROOT = join(process.cwd(), '..', 'dist');
@@ -91,13 +92,28 @@ function generateSessionId(): string {
   return Math.random().toString(36).substring(2) + Date.now().toString(36);
 }
 
+// --- Serialization (GameState ↔ DB) ---
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function serializeState(state: any): object {
+  return { ...state, currentStep: state.currentStep?.id ?? null };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function deserializeState(raw: any, eng: NonNullable<typeof engine>): any {
+  return {
+    ...raw,
+    currentStep: raw.currentStep ? eng.getStepById(raw.currentStep) ?? null : null,
+  };
+}
+
 // --- Public API ---
 
 export async function initGame(options: {
   module?: string;
   language?: string;
   profile?: string;
-}): Promise<GameView> {
+}): Promise<GameView & { resumed?: boolean }> {
   const eng = await getEngine();
 
   const languageId = options.language || eng.getDefaultLanguage();
@@ -106,9 +122,23 @@ export async function initGame(options: {
     throw new Error(`Unknown language: ${languageId}. Available: ${eng.getAvailableLanguages().join(', ')}`);
   }
 
-  const vocab = eng.loadVocabulary(options.profile || undefined);
+  // Check DB for existing save when profile is provided and no specific module requested
+  if (options.profile && !options.module) {
+    try {
+      const save = await loadGame(options.profile);
+      if (save) {
+        const state = deserializeState(save.state, eng);
+        const sessionId = generateSessionId();
+        sessions.set(sessionId, { state, languageId: save.languageId });
+        const view = buildGameView(sessionId, state, null, undefined, (languageConfig as any).helpText);
+        return { ...view, resumed: true };
+      }
+    } catch (err) {
+      console.error('Failed to load save, starting fresh:', err);
+    }
+  }
 
-  // Determine start location and goal from module
+  // No save found (or specific module requested) — create fresh state
   let moduleName = 'home';
   if (options.module) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -129,11 +159,10 @@ export async function initGame(options: {
     startStep = eng.getStepById(firstStepId) || startStep;
   }
 
-  // New createInitialState takes (startLocationId, startStep, objects, npcs, existingVocabulary)
   const objects = mod?.objects || [];
   const npcs = mod?.npcs || [];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let state = eng.createInitialState(startLocationId, startStep, objects, npcs, vocab) as any;
+  let state = eng.createInitialState(startLocationId, startStep, objects, npcs) as any;
 
   if (forceStanding) {
     state = {
@@ -144,8 +173,16 @@ export async function initGame(options: {
     };
   }
 
-  // Disable audio in web mode, set vocab profile
   state = { ...state, audioEnabled: false, profile: options.profile || undefined };
+
+  // Save initial state to DB
+  if (options.profile) {
+    try {
+      await saveGame(options.profile, moduleName, languageId, serializeState(state));
+    } catch (err) {
+      console.error('Failed to save initial state:', err);
+    }
+  }
 
   const sessionId = generateSessionId();
   sessions.set(sessionId, { state, languageId });
@@ -171,8 +208,14 @@ export async function playTurn(sessionId: string, input: string): Promise<GameVi
   session.state = result.newState;
   sessions.set(sessionId, session);
 
-  // Save vocabulary periodically
-  eng.saveVocabulary(session.state.vocabulary, session.state.profile);
+  // Persist game state to DB
+  const profile = session.state.profile;
+  if (profile) {
+    const module = getModuleForLocation(session.state.currentLocation);
+    saveGame(profile, module, session.languageId, serializeState(session.state)).catch(err =>
+      console.error('Failed to save game state:', err)
+    );
+  }
 
   const turnResult = buildTurnResultView(result, session.state);
   return buildGameView(sessionId, session.state, turnResult, result, (languageConfig as any).helpText);

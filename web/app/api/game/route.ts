@@ -26,9 +26,16 @@ export async function POST(request: Request) {
     const gameView = await playTurn(sessionId, input);
     return NextResponse.json(gameView);
   } catch (error) {
-    console.error('Game turn error:', error);
+    const message = error instanceof Error ? error.message : 'Failed to process turn';
+    console.error('Game turn error:', message);
+    if (message.includes('Session not found')) {
+      return NextResponse.json(
+        { error: 'Session expired. Please refresh.', sessionExpired: true },
+        { status: 410 },
+      );
+    }
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to process turn' },
+      { error: message },
       { status: 500 },
     );
   }
