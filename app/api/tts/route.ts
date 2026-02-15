@@ -45,21 +45,29 @@ export async function POST(request: Request) {
 
     const ai = new GoogleGenAI({ apiKey });
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-preview-tts',
-      contents: [{ parts: [{ text }] }],
-      config: {
-        responseModalities: ['AUDIO'],
-        speechConfig: {
-          voiceConfig: {
-            prebuiltVoiceConfig: { voiceName: voice || 'Puck' },
+    // Retry up to 2 times — Gemini TTS sometimes returns empty audio on rate limits
+    let audioData: string | undefined;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt > 0) await new Promise(r => setTimeout(r, 1000 * attempt));
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-preview-tts',
+        contents: [{ parts: [{ text }] }],
+        config: {
+          responseModalities: ['AUDIO'],
+          speechConfig: {
+            voiceConfig: {
+              prebuiltVoiceConfig: { voiceName: voice || 'Puck' },
+            },
           },
         },
-      },
-    });
+      });
 
-    const audioData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      audioData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+      if (audioData) break;
+    }
+
     if (!audioData) {
+      console.error('TTS no audio after retries — text:', JSON.stringify(text), 'voice:', voice);
       return NextResponse.json({ error: 'No audio generated' }, { status: 500 });
     }
 
@@ -73,10 +81,12 @@ export async function POST(request: Request) {
       },
     });
   } catch (error) {
-    console.error('TTS error:', error);
+    const msg = error instanceof Error ? error.message : String(error);
+    const isRateLimit = msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('quota');
+    console.error('TTS error:', isRateLimit ? '429 rate limited' : msg);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'TTS generation failed' },
-      { status: 500 },
+      { error: isRateLimit ? 'Rate limited — try again shortly' : msg },
+      { status: isRateLimit ? 429 : 500 },
     );
   }
 }

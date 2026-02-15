@@ -9,7 +9,7 @@ export const mandarinConfig: LanguageConfig = {
   nativeLanguage: 'english',
   coreSystemPrompt: MANDARIN_PARSE_PROMPT,
   narrateSystemPrompt: MANDARIN_NARRATE_PROMPT,
-  ttsVoice: 'Ting-Ting',
+  ttsVoice: 'Kore',
   promptConfig: mandarinPromptConfig,
   stripArticles,
   findObjectByName,

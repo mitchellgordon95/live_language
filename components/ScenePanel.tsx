@@ -5,6 +5,7 @@ import type { GameView, GameObjectView, ExitView } from '@/lib/types';
 
 interface ScenePanelProps {
   game: GameView;
+  onSpeak?: (text: string) => void;
 }
 
 function distributeExits(exits: ExitView[]): { west: ExitView[]; east: ExitView[]; north: ExitView[] } {
@@ -14,7 +15,7 @@ function distributeExits(exits: ExitView[]): { west: ExitView[]; east: ExitView[
   return { west: [exits[0]], east: [exits[1]], north: exits.slice(2) };
 }
 
-export default function ScenePanel({ game }: ScenePanelProps) {
+export default function ScenePanel({ game, onSpeak }: ScenePanelProps) {
   const [hoveredObjId, setHoveredObjId] = useState<string | null>(null);
   const [tutorialExpanded, setTutorialExpanded] = useState(false);
 
@@ -180,6 +181,7 @@ export default function ScenePanel({ game }: ScenePanelProps) {
                   isHighlighted={hoveredObjId === obj.id}
                   onMouseEnter={() => setHoveredObjId(obj.id)}
                   onMouseLeave={() => setHoveredObjId(null)}
+                  onSpeak={onSpeak}
                 />
               ))}
             </div>
@@ -445,9 +447,10 @@ interface ObjectLabelProps {
   isHighlighted: boolean;
   onMouseEnter: () => void;
   onMouseLeave: () => void;
+  onSpeak?: (text: string) => void;
 }
 
-function ObjectLabel({ obj, isHighlighted, onMouseEnter, onMouseLeave }: ObjectLabelProps) {
+function ObjectLabel({ obj, isHighlighted, onMouseEnter, onMouseLeave, onSpeak }: ObjectLabelProps) {
   if (!obj.coords) return null;
 
   const isKnown = obj.vocabStage === 'known';
@@ -473,6 +476,18 @@ function ObjectLabel({ obj, isHighlighted, onMouseEnter, onMouseLeave }: ObjectL
             <span className="font-medium">{obj.name.target}</span>
             {!isKnown && (
               <span className="text-blue-200">({obj.name.native})</span>
+            )}
+            {onSpeak && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onSpeak(obj.name.target); }}
+                className="ml-0.5 text-cyan-400 hover:text-cyan-300 transition-colors flex-shrink-0"
+                title="Listen"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                  <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                </svg>
+              </button>
             )}
           </div>
         ) : !isKnown ? (

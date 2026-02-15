@@ -10,7 +10,7 @@ export const spanishConfig: LanguageConfig = {
   nativeLanguage: 'english',
   coreSystemPrompt: SPANISH_SYSTEM_PROMPT,
   narrateSystemPrompt: SPANISH_NARRATE_PROMPT,
-  ttsVoice: 'Paulina',
+  ttsVoice: 'Aoede',
   promptConfig: spanishPromptConfig,
   stripArticles,
   findObjectByName,

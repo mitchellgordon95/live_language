@@ -25,7 +25,7 @@ export interface LanguageConfig {
   nativeLanguage: string;        // 'english'
   coreSystemPrompt: string;      // Pass 1: Parse prompt (target language → mutations)
   narrateSystemPrompt: string;   // Pass 2: Narrate prompt (mutations → story)
-  ttsVoice: string;              // 'Paulina' for Spanish, 'Ting-Ting' for Mandarin
+  ttsVoice: string;              // Gemini TTS voice name (e.g. 'Aoede', 'Kore')
   promptConfig: PromptConfig;    // Language-specific prompt configuration
 
   // Language-specific helpers

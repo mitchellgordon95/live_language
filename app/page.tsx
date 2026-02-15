@@ -6,7 +6,26 @@ import ChatPanel from '@/components/ChatPanel';
 import type { ChatEntry } from '@/components/ChatPanel';
 import ScenePanel from '@/components/ScenePanel';
 import InputBar from '@/components/InputBar';
+import { SpeakerPopup } from '@/components/SpeakerPopup';
 import { useTTS } from '@/hooks/useTTS';
+import { useTextSelection } from '@/hooks/useTextSelection';
+
+const TTS_VOICES: Record<string, string> = {
+  spanish: 'Aoede',
+  mandarin: 'Kore',
+};
+
+// Strip parenthetical annotations (pinyin, translations) so TTS gets clean text
+function prepareTTSText(text: string, languageId?: string): string {
+  // Remove all (...) groups: "起床 (qǐchuáng)" → "起床", "abrir (to open)" → "abrir"
+  const cleaned = text.replace(/\s*\([^)]*\)/g, '').trim();
+  const result = cleaned || text;
+  // Gemini TTS fails on very short text (1-2 chars) — repeat for minimum length
+  if (result.length <= 2 && languageId === 'mandarin') {
+    return `${result}，${result}`;
+  }
+  return result;
+}
 
 type AppState = 'menu' | 'loading' | 'playing' | 'error';
 
@@ -31,6 +50,7 @@ export default function Home() {
   const [savedGame, setSavedGame] = useState<{ module: string; languageId: string } | null>(null);
   const chatIdRef = useRef(0);
   const { speak, isMuted, toggleMute } = useTTS();
+  const { selectedText, position, isVisible, dismiss, popupRef } = useTextSelection();
 
   // Restore profile from localStorage and check for saved game
   useEffect(() => {
@@ -360,7 +380,7 @@ export default function Home() {
       <div className="flex-1 flex overflow-hidden">
         {/* World panel */}
         <div className="w-[55%] border-r border-gray-800">
-          <ScenePanel game={game} />
+          <ScenePanel game={game} onSpeak={(text) => speak(prepareTTSText(text, game.languageId), TTS_VOICES[game.languageId] || 'Puck')} />
         </div>
 
         {/* Chat + Input column */}
@@ -379,6 +399,17 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Text selection speaker popup */}
+      {isVisible && selectedText && (
+        <SpeakerPopup
+          ref={popupRef}
+          text={selectedText}
+          position={position}
+          onSpeak={(text) => speak(prepareTTSText(text, game.languageId), TTS_VOICES[game.languageId] || 'Puck')}
+          onDismiss={dismiss}
+        />
+      )}
     </div>
   );
 }
