@@ -83,6 +83,7 @@ export interface ItemView {
 export interface SceneInfo {
   image: string;       // filename, e.g. "kitchen.png"
   module: string;      // e.g. "home"
+  languageId: string;  // e.g. "spanish"
 }
 
 export interface VignetteHint {
@@ -93,6 +94,7 @@ export interface VignetteHint {
 
 export interface GameView {
   profile: string;
+  languageId: string;
   locationId: string;
   locationName: BilingualText;
   module: string;

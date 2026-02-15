@@ -32,8 +32,8 @@ import {
   type BuildingName,
 } from '../engine/game-state';
 import {
-  allLocations as locations,
-  allNPCs,
+  getAllLocations,
+  getAllNPCs,
   getStepById,
   getStartStepForBuilding,
   getAllStepsForBuilding,
@@ -41,6 +41,7 @@ import {
   getAllKnownStepIds,
   getAllQuestsForModule,
   getQuestById,
+  setActiveModules,
 } from '../data/module-registry';
 import type { LanguageConfig } from '../languages/types';
 import { createInitialVocabulary, recordWordUse, extractWordsFromText } from '../engine/vocabulary';
@@ -101,6 +102,7 @@ function buildPrompt(state: GameState): string {
     : '(none)';
 
   // Exits
+  const locations = getAllLocations();
   const currentLoc = locations[state.currentLocation];
   const exitsDesc = currentLoc
     ? currentLoc.exits.map(e => `- ${e.to}: "${e.name.target}" (${e.name.native})`).join('\n')
@@ -115,7 +117,7 @@ function buildPrompt(state: GameState): string {
     : '(empty)';
 
   // NPCs in current location (check runtime state for location)
-  const npcsHere = allNPCs.filter(npc => {
+  const npcsHere = getAllNPCs().filter(npc => {
     const runtimeState = state.npcStates[npc.id];
     return runtimeState
       ? runtimeState.location === state.currentLocation
@@ -256,6 +258,7 @@ ${descs.join('\n')}`;
 
 function validateMutations(mutations: Mutation[], state: GameState): Mutation[] {
   let effectiveLocation = state.currentLocation;
+  const locations = getAllLocations();
 
   return mutations.filter(mutation => {
     switch (mutation.type) {
@@ -508,6 +511,7 @@ export async function processTurn(
   languageConfig: LanguageConfig,
 ): Promise<TurnResult> {
   activeLanguage = languageConfig;
+  setActiveModules(languageConfig.modules);
 
   // --- Pass 1: Parse input into mutations ---
   const parseResult = await parseIntent(input, state);

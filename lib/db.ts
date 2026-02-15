@@ -66,13 +66,13 @@ export async function loadGame(
   return { module: row.module, languageId: row.language_id, state: row.state };
 }
 
-export async function hasSave(profile: string): Promise<{ exists: boolean; module?: string }> {
+export async function hasSave(profile: string): Promise<{ exists: boolean; module?: string; languageId?: string }> {
   await ensureSchema();
   const pool = getPool();
   const result = await pool.query(
-    'SELECT module FROM game_saves WHERE profile = $1',
+    'SELECT module, language_id FROM game_saves WHERE profile = $1',
     [profile],
   );
   if (result.rows.length === 0) return { exists: false };
-  return { exists: true, module: result.rows[0].module };
+  return { exists: true, module: result.rows[0].module, languageId: result.rows[0].language_id };
 }

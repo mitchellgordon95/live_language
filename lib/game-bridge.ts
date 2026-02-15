@@ -13,11 +13,12 @@ import { saveGame, loadGame } from './db';
 import { processTurn } from '../src/modes/unified';
 import { createInitialState } from '../src/engine/game-state';
 import {
+  setActiveModules,
   getStepById,
   getStartStepForBuilding,
   getModuleByName,
-  allLocations,
-  allNPCs,
+  getAllLocations,
+  getAllNPCs,
   getNPCsInLocation,
   getAllStepsForBuilding,
   getAllQuestsForModule,
@@ -54,15 +55,18 @@ export async function initGame(options: {
   if (!languageConfig) {
     throw new Error(`Unknown language: ${languageId}. Available: ${getAvailableLanguages().join(', ')}`);
   }
+  setActiveModules(languageConfig.modules);
 
   // Check DB for existing save when no specific module requested
   if (!options.module) {
     try {
       const save = await loadGame(options.profile);
       if (save) {
-        const state = deserializeState(save.state);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const view = buildGameView(options.profile, state, null, undefined, (languageConfig as any).helpText);
+        const savedLangConfig = getLanguage(save.languageId) || languageConfig;
+        setActiveModules(savedLangConfig.modules);
+        const state = deserializeState(save.state);
+        const view = buildGameView(options.profile, save.languageId, state, null, undefined, (savedLangConfig as any).helpText);
         return { ...view, resumed: true };
       }
     } catch (err) {
@@ -110,7 +114,7 @@ export async function initGame(options: {
   await saveGame(options.profile, moduleName, languageId, serializeState(state));
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return buildGameView(options.profile, state, null, undefined, (languageConfig as any).helpText);
+  return buildGameView(options.profile, languageId, state, null, undefined, (languageConfig as any).helpText);
 }
 
 export async function playTurn(profile: string, input: string): Promise<GameView> {
@@ -124,6 +128,7 @@ export async function playTurn(profile: string, input: string): Promise<GameView
   if (!languageConfig) {
     throw new Error(`Language config not found: ${save.languageId}`);
   }
+  setActiveModules(languageConfig.modules);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const result = await processTurn(input, state, languageConfig) as any;
@@ -134,7 +139,7 @@ export async function playTurn(profile: string, input: string): Promise<GameView
 
   const turnResult = buildTurnResultView(result, newState);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return buildGameView(profile, newState, turnResult, result, (languageConfig as any).helpText);
+  return buildGameView(profile, save.languageId, newState, turnResult, result, (languageConfig as any).helpText);
 }
 
 // --- Scene Manifest Loading ---
@@ -146,11 +151,11 @@ interface SceneManifest {
 
 const manifestCache = new Map<string, SceneManifest | null>();
 
-function loadManifest(module: string, locationId: string): SceneManifest | null {
-  const key = `${module}/${locationId}`;
+function loadManifest(languageId: string, module: string, locationId: string): SceneManifest | null {
+  const key = `${languageId}/${module}/${locationId}`;
   if (manifestCache.has(key)) return manifestCache.get(key)!;
 
-  const scenesDir = join(process.cwd(), 'public', 'scenes', module);
+  const scenesDir = join(process.cwd(), 'public', 'scenes', languageId, module);
   const manifestPath = join(scenesDir, `${locationId}.json`);
 
   if (!existsSync(manifestPath)) {
@@ -182,22 +187,23 @@ interface VignetteManifest {
 
 const vignetteManifestCache = new Map<string, VignetteManifest | null>();
 
-function loadVignetteManifest(module: string): VignetteManifest | null {
-  if (vignetteManifestCache.has(module)) return vignetteManifestCache.get(module)!;
+function loadVignetteManifest(languageId: string, module: string): VignetteManifest | null {
+  const key = `${languageId}/${module}`;
+  if (vignetteManifestCache.has(key)) return vignetteManifestCache.get(key)!;
 
-  const manifestPath = join(process.cwd(), 'public', 'scenes', module, 'vignettes', 'manifest.json');
+  const manifestPath = join(process.cwd(), 'public', 'scenes', languageId, module, 'vignettes', 'manifest.json');
 
   if (!existsSync(manifestPath)) {
-    vignetteManifestCache.set(module, null);
+    vignetteManifestCache.set(key, null);
     return null;
   }
 
   try {
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8')) as VignetteManifest;
-    vignetteManifestCache.set(module, manifest);
+    vignetteManifestCache.set(key, manifest);
     return manifest;
   } catch {
-    vignetteManifestCache.set(module, null);
+    vignetteManifestCache.set(key, null);
     return null;
   }
 }
@@ -248,8 +254,8 @@ function deriveLastAction(result: any): string | null {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function resolveVignettes(state: any, result: any | null, module: string): VignetteHint | null {
-  const manifest = loadVignetteManifest(module);
+function resolveVignettes(state: any, result: any | null, languageId: string, module: string): VignetteHint | null {
+  const manifest = loadVignetteManifest(languageId, module);
 
   // Even without a manifest, we may have cached/generated vignettes
   const hint: VignetteHint = {};
@@ -269,14 +275,14 @@ function resolveVignettes(state: any, result: any | null, module: string): Vigne
       const visualTags = tags.filter(t => !['takeable', 'consumable', 'container'].includes(t));
       if (visualTags.length === 0) continue;
 
-      const cached = getCachedVignette(module, obj.id, visualTags);
+      const cached = getCachedVignette(languageId, module, obj.id, visualTags);
       if (cached) {
         objectChanges.push({ objectId: obj.id, image: cached });
         continue;
       }
 
-      if (!isGenerating(module, obj.id, visualTags)) {
-        triggerGeneration(module, obj.id, obj.name.native, visualTags);
+      if (!isGenerating(languageId, module, obj.id, visualTags)) {
+        triggerGeneration(languageId, module, obj.id, obj.name.native, visualTags);
       }
       objectChanges.push({ objectId: obj.id, image: getPlaceholderPath(), generating: true });
     }
@@ -352,14 +358,14 @@ function resolveVignettes(state: any, result: any | null, module: string): Vigne
       const visualTags = tags.filter(t => !['takeable', 'consumable', 'container'].includes(t));
       if (visualTags.length === 0) continue;
 
-      const cached = getCachedVignette(module, obj.id, visualTags);
+      const cached = getCachedVignette(languageId, module, obj.id, visualTags);
       if (cached) {
         objectChanges.push({ objectId: obj.id, image: cached });
         continue;
       }
 
-      if (!isGenerating(module, obj.id, visualTags)) {
-        triggerGeneration(module, obj.id, obj.name.native, visualTags);
+      if (!isGenerating(languageId, module, obj.id, visualTags)) {
+        triggerGeneration(languageId, module, obj.id, obj.name.native, visualTags);
       }
       objectChanges.push({ objectId: obj.id, image: getPlaceholderPath(), generating: true });
     }
@@ -384,10 +390,10 @@ function getModuleForLocation(locationId: string): string {
 // --- View Model Builders ---
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function buildGameView(profile: string, state: any, turnResult: TurnResultView | null, result?: any, helpText?: string): GameView {
+function buildGameView(profile: string, langId: string, state: any, turnResult: TurnResultView | null, result?: any, helpText?: string): GameView {
   const locationId = state.currentLocation;
   const module = getModuleForLocation(locationId) || 'home';
-  const manifest = loadManifest(module, locationId);
+  const manifest = loadManifest(langId, module, locationId);
 
   // Objects in current location from flat list
   const allObjectsState: Array<{ id: string; name: { target: string; native: string }; location: string; tags: string[] }> = state.objects || [];
@@ -414,11 +420,12 @@ function buildGameView(profile: string, state: any, turnResult: TurnResultView |
 
   // Scene info
   const scene: SceneInfo | null = manifest
-    ? { image: manifest.image, module }
+    ? { image: manifest.image, module, languageId: langId }
     : null;
 
-  // Exits from allLocations lookup
-  const currentLoc = allLocations[locationId] as { exits: Array<{ to: string; name: { target: string; native: string } }>; name: { target: string; native: string }; verbs?: Array<{ target: string; native: string }> } | undefined;
+  // Exits from locations lookup
+  const allLocs = getAllLocations();
+  const currentLoc = allLocs[locationId] as { exits: Array<{ to: string; name: { target: string; native: string } }>; name: { target: string; native: string }; verbs?: Array<{ target: string; native: string }> } | undefined;
   const visitedLocations: string[] = state.visitedLocations || [];
   const exits: ExitView[] = (currentLoc?.exits || []).map(exit => ({
     to: exit.to,
@@ -427,8 +434,8 @@ function buildGameView(profile: string, state: any, turnResult: TurnResultView |
   }));
 
   // NPCs in this location (check runtime npcStates for current location)
-  const vignetteManifest = loadVignetteManifest(module);
-  const allNPCsDef = allNPCs as Array<{ id: string; name: { target: string; native: string }; location: string; isPet?: boolean; gender?: string }>;
+  const vignetteManifest = loadVignetteManifest(langId, module);
+  const allNPCsDef = getAllNPCs() as Array<{ id: string; name: { target: string; native: string }; location: string; isPet?: boolean; gender?: string }>;
   const npcsHere = allNPCsDef.filter(npc => {
     const runtimeState = state.npcStates?.[npc.id];
     return runtimeState
@@ -455,11 +462,11 @@ function buildGameView(profile: string, state: any, turnResult: TurnResultView |
   const pointsToNextLevel = 150 * state.level;
 
   // Resolve vignettes for this turn
-  const vignetteHint = resolveVignettes(state, result || null, module);
+  const vignetteHint = resolveVignettes(state, result || null, langId, module);
 
   // Attach NPC portrait to turn result if applicable
   if (turnResult?.npcResponse && vignetteHint?.activeNpc) {
-    turnResult.npcResponse.portrait = `/scenes/${module}/vignettes/${vignetteHint.activeNpc}`;
+    turnResult.npcResponse.portrait = `/scenes/${langId}/${module}/vignettes/${vignetteHint.activeNpc}`;
   }
 
   // Location name from allLocations
@@ -471,6 +478,7 @@ function buildGameView(profile: string, state: any, turnResult: TurnResultView |
 
   return {
     profile,
+    languageId: langId,
     locationId,
     locationName,
     module,
@@ -539,7 +547,7 @@ function getVocabStageForObject(vocabulary: { words: Record<string, { stage: str
 
 // Map NPC gender to Gemini TTS voice
 function npcVoice(npcId: string): string {
-  const allNPCsDef = allNPCs as Array<{ id: string; gender?: string; isPet?: boolean }>;
+  const allNPCsDef = getAllNPCs() as Array<{ id: string; gender?: string; isPet?: boolean }>;
   const npc = allNPCsDef.find(n => n.id === npcId);
   if (npc?.gender === 'female') return 'Leda';
   if (npc?.gender === 'male') return 'Charon';

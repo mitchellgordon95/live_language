@@ -1,148 +1,119 @@
 import type { Location, TutorialStep, Quest, VocabWord, NPC, WorldObject, ModuleDefinition } from '../engine/types';
 
-import { homeModule } from '../languages/spanish/modules/home';
-import { restaurantModule } from '../languages/spanish/modules/restaurant';
-
 export type { ModuleDefinition };
-
-const modules: ModuleDefinition[] = [
-  homeModule,
-  {
-    name: 'street',
-    displayName: 'Street',
-    locations: { street: homeModule.locations.street },
-    objects: [],
-    npcs: [],
-    tutorial: [],
-    quests: [],
-    vocabulary: [],
-    startLocationId: 'street',
-    firstStepId: '',
-    locationIds: ['street'],
-    unlockLevel: 1,
-    guidance: '',
-  },
-  restaurantModule,
-];
-
-// --- Derived lookups (computed once at import time) ---
-
 export type BuildingName = string;
 
-// All locations merged
-export const allLocations: Record<string, Location> = {};
-for (const mod of modules) {
-  Object.assign(allLocations, mod.locations);
+// Active modules — set per request via setActiveModules()
+let activeModules: ModuleDefinition[] = [];
+
+export function setActiveModules(modules: ModuleDefinition[]): void {
+  activeModules = modules;
 }
 
-// All NPCs merged
-export const allNPCs: NPC[] = modules.flatMap(m => m.npcs);
+// --- Derived lookups (recomputed from activeModules) ---
 
-// All vocabulary merged
-export const allVocabulary: VocabWord[] = modules.flatMap(m => m.vocabulary);
-
-// All objects merged
-export const allObjects: WorldObject[] = modules.flatMap(m => m.objects);
-
-// Location ID -> building name mapping
-const locationToBuildingMap: Record<string, string> = {};
-for (const mod of modules) {
-  for (const locId of mod.locationIds) {
-    locationToBuildingMap[locId] = mod.name;
+export function getAllLocations(): Record<string, Location> {
+  const result: Record<string, Location> = {};
+  for (const mod of activeModules) {
+    Object.assign(result, mod.locations);
   }
+  return result;
+}
+
+export function getAllNPCs(): NPC[] {
+  return activeModules.flatMap(m => m.npcs);
+}
+
+export function getAllVocabulary(): VocabWord[] {
+  return activeModules.flatMap(m => m.vocabulary);
+}
+
+export function getAllObjects(): WorldObject[] {
+  return activeModules.flatMap(m => m.objects);
 }
 
 export function getBuildingForLocation(locationId: string): string {
-  return locationToBuildingMap[locationId] || 'home';
+  for (const mod of activeModules) {
+    for (const locId of mod.locationIds) {
+      if (locId === locationId) return mod.name;
+    }
+  }
+  return 'home';
 }
 
-// Building unlock levels
-export const BUILDING_UNLOCK_LEVELS: Record<string, number> = {};
-for (const mod of modules) {
-  BUILDING_UNLOCK_LEVELS[mod.name] = mod.unlockLevel;
-}
-
-// Module lookup by name
-const modulesByName: Record<string, ModuleDefinition> = {};
-for (const mod of modules) {
-  modulesByName[mod.name] = mod;
+export function getBuildingUnlockLevels(): Record<string, number> {
+  const result: Record<string, number> = {};
+  for (const mod of activeModules) {
+    result[mod.name] = mod.unlockLevel;
+  }
+  return result;
 }
 
 export function getModuleByName(name: string): ModuleDefinition | undefined {
-  return modulesByName[name];
+  return activeModules.find(m => m.name === name);
 }
 
 export function getAllStepsForBuilding(building: string): TutorialStep[] {
-  return modulesByName[building]?.tutorial || [];
+  return getModuleByName(building)?.tutorial || [];
 }
 
 export function getModuleForLocation(locationId: string): ModuleDefinition | undefined {
   const building = getBuildingForLocation(locationId);
-  return modulesByName[building];
+  return getModuleByName(building);
 }
 
-// Step lookup across all modules (generic - iterates registry)
 export function getStepById(id: string): TutorialStep | undefined {
-  for (const mod of modules) {
+  for (const mod of activeModules) {
     const step = mod.tutorial.find(g => g.id === id);
     if (step) return step;
   }
   return undefined;
 }
 
-// Start step for a building (generic - uses registry)
 export function getStartStepForBuilding(building: string): TutorialStep | null {
-  const mod = modulesByName[building];
+  const mod = getModuleByName(building);
   if (!mod || !mod.firstStepId) return null;
   return mod.tutorial.find(g => g.id === mod.firstStepId) || null;
 }
 
-// Quest lookup functions
 export function getAllQuestsForModule(moduleName: string): Quest[] {
-  return modulesByName[moduleName]?.quests || [];
+  return getModuleByName(moduleName)?.quests || [];
 }
 
 export function getQuestById(id: string): Quest | undefined {
-  for (const mod of modules) {
+  for (const mod of activeModules) {
     const quest = mod.quests.find(q => q.id === id);
     if (quest) return quest;
   }
   return undefined;
 }
 
-// NPCs in a specific location (from definitions — runtime locations are in npcStates)
 export function getNPCsInLocation(locationId: string): NPC[] {
-  return allNPCs.filter(npc => npc.location === locationId);
+  return getAllNPCs().filter(npc => npc.location === locationId);
 }
 
-// Display name for a building
 export function getDisplayName(building: string): string {
-  return modulesByName[building]?.displayName || building;
+  return getModuleByName(building)?.displayName || building;
 }
 
-// Guidance for current building (used by both AI passes)
 export function getGuidanceForBuilding(building: string): string {
-  return modulesByName[building]?.guidance || '';
+  return getModuleByName(building)?.guidance || '';
 }
 
-// All registered module names (for help text, etc.)
 export function getModuleNames(): string[] {
-  return modules.filter(m => m.name !== 'street' && m.name !== 'home').map(m => m.name);
+  return activeModules.filter(m => m.name !== 'street' && m.name !== 'home').map(m => m.name);
 }
 
-// All registered modules
 export function getAllModules(): ModuleDefinition[] {
-  return modules;
-}
-
-// All known step IDs across all modules (for validation)
-const _allStepIds: Set<string> = new Set();
-for (const mod of modules) {
-  for (const step of mod.tutorial) {
-    _allStepIds.add(step.id);
-  }
+  return activeModules;
 }
 
 export function getAllKnownStepIds(): Set<string> {
-  return _allStepIds;
+  const ids = new Set<string>();
+  for (const mod of activeModules) {
+    for (const step of mod.tutorial) {
+      ids.add(step.id);
+    }
+  }
+  return ids;
 }

@@ -15,6 +15,7 @@ import { createHash } from 'crypto';
 // --- Types ---
 
 interface CacheEntry {
+  languageId?: string;
   module: string;
   objectId: string;
   tags: string[];
@@ -83,26 +84,26 @@ function saveCacheIndex(): void {
   writeFileSync(INDEX_PATH, JSON.stringify(cacheIndex, null, 2));
 }
 
-function getCacheKey(module: string, objectId: string, tags: string[]): string {
+function getCacheKey(languageId: string, module: string, objectId: string, tags: string[]): string {
   const sorted = [...tags].sort().join(',');
-  return `${module}/${objectId}/${sorted}`;
+  return `${languageId}/${module}/${objectId}/${sorted}`;
 }
 
-function getFilename(module: string, objectId: string, tags: string[]): string {
+function getFilename(languageId: string, module: string, objectId: string, tags: string[]): string {
   const sorted = [...tags].sort();
   const hash = createHash('md5').update(sorted.join(',')).digest('hex').substring(0, 8);
-  return `${module}--${objectId}--${hash}.png`;
+  return `${languageId}--${module}--${objectId}--${hash}.png`;
 }
 
 /**
  * Look up a cached vignette for the given object state.
  * Returns the relative URL path if found, null if not cached.
  */
-export function getCachedVignette(module: string, objectId: string, tags: string[]): string | null {
+export function getCachedVignette(languageId: string, module: string, objectId: string, tags: string[]): string | null {
   const index = loadCacheIndex();
-  const key = getCacheKey(module, objectId, tags);
+  const key = getCacheKey(languageId, module, objectId, tags);
 
-  const entry = index.entries.find(e => getCacheKey(e.module, e.objectId, e.tags) === key);
+  const entry = index.entries.find(e => getCacheKey(e.languageId || 'spanish', e.module, e.objectId, e.tags) === key);
   if (entry) {
     const filePath = join(CACHE_DIR, entry.filename);
     if (existsSync(filePath)) {
@@ -126,8 +127,8 @@ const pendingQueue = new Map<string, Promise<string>>();
 /**
  * Check if a vignette is currently being generated.
  */
-export function isGenerating(module: string, objectId: string, tags: string[]): boolean {
-  return pendingQueue.has(getCacheKey(module, objectId, tags));
+export function isGenerating(languageId: string, module: string, objectId: string, tags: string[]): boolean {
+  return pendingQueue.has(getCacheKey(languageId, module, objectId, tags));
 }
 
 /**
@@ -135,21 +136,23 @@ export function isGenerating(module: string, objectId: string, tags: string[]): 
  * Returns immediately. The vignette will be available on next cache check.
  */
 export function triggerGeneration(
+  languageId: string,
   module: string,
   objectId: string,
   objectName: string,
   tags: string[],
 ): void {
-  const key = getCacheKey(module, objectId, tags);
+  const key = getCacheKey(languageId, module, objectId, tags);
   if (pendingQueue.has(key)) return; // Already generating
 
-  const promise = generateVignette(module, objectId, objectName, tags)
+  const promise = generateVignette(languageId, module, objectId, objectName, tags)
     .finally(() => pendingQueue.delete(key));
 
   pendingQueue.set(key, promise);
 }
 
 async function generateVignette(
+  languageId: string,
   module: string,
   objectId: string,
   objectName: string,
@@ -167,7 +170,7 @@ async function generateVignette(
     const ai = new GoogleGenAI({ apiKey });
 
     // Try to load a base vignette image for reference
-    const baseImagePath = findBaseVignette(module, objectId);
+    const baseImagePath = findBaseVignette(languageId, module, objectId);
     let contents: Parameters<typeof ai.models.generateContent>[0]['contents'];
 
     if (baseImagePath) {
@@ -205,7 +208,7 @@ async function generateVignette(
     for (const part of parts) {
       if (part.inlineData?.mimeType?.startsWith('image/')) {
         const imageData = Buffer.from(part.inlineData.data!, 'base64');
-        const filename = getFilename(module, objectId, tags);
+        const filename = getFilename(languageId, module, objectId, tags);
         const filePath = join(CACHE_DIR, filename);
 
         ensureCacheDir();
@@ -214,6 +217,7 @@ async function generateVignette(
         // Update cache index
         const index = loadCacheIndex();
         index.entries.push({
+          languageId,
           module,
           objectId,
           tags: [...tags].sort(),
@@ -239,8 +243,8 @@ async function generateVignette(
  * Find a base vignette image on disk for the given object.
  * Looks in the module's vignettes directory for an image matching the object id.
  */
-function findBaseVignette(module: string, objectId: string): string | null {
-  const vignetteDir = join(process.cwd(), 'public', 'scenes', module, 'vignettes');
+function findBaseVignette(languageId: string, module: string, objectId: string): string | null {
+  const vignetteDir = join(process.cwd(), 'public', 'scenes', languageId, module, 'vignettes');
   if (!existsSync(vignetteDir)) return null;
 
   // Try common base filename patterns

@@ -4,7 +4,7 @@ import type {
   FamiliarityStage,
   WorldObject,
 } from './types';
-import { allVocabulary } from '../data/module-registry';
+import { getAllVocabulary } from '../data/module-registry';
 
 // Stage transition thresholds
 const THRESHOLDS = {
@@ -23,7 +23,7 @@ export function createInitialVocabulary(): VocabularyProgress {
   const words: Record<string, WordFamiliarity> = {};
 
   // Initialize from all registered vocabulary
-  for (const word of allVocabulary) {
+  for (const word of getAllVocabulary()) {
     const wordId = word.native.toLowerCase().replace(/[^a-z0-9]/g, '_');
     words[wordId] = {
       wordId,

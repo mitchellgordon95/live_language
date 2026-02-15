@@ -10,6 +10,16 @@ import { useTTS } from '@/hooks/useTTS';
 
 type AppState = 'menu' | 'loading' | 'playing' | 'error';
 
+const LANGUAGES = [
+  { id: 'spanish', name: 'Spanish', flag: '\u{1F1EA}\u{1F1F8}', hint: 'Me levanto', hintDesc: 'to get out of bed' },
+  { id: 'mandarin', name: 'Mandarin Chinese', flag: '\u{1F1E8}\u{1F1F3}', hint: '\u6211\u8D77\u5E8A (w\u01D2 q\u01D0chu\u00E1ng)', hintDesc: 'to get out of bed' },
+] as const;
+
+const PLACEHOLDERS: Record<string, string> = {
+  spanish: "Type in Spanish... (e.g., 'abro la nevera')",
+  mandarin: "Type in Mandarin... (e.g., '\u6253\u5F00\u51B0\u7BB1' or 'dakai bingxiang')",
+};
+
 export default function Home() {
   const [appState, setAppState] = useState<AppState>('menu');
   const [game, setGame] = useState<GameView | null>(null);
@@ -17,7 +27,8 @@ export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [chatHistory, setChatHistory] = useState<ChatEntry[]>([]);
   const [profile, setProfile] = useState('');
-  const [savedGame, setSavedGame] = useState<{ module: string } | null>(null);
+  const [selectedLanguage, setSelectedLanguage] = useState<string>('spanish');
+  const [savedGame, setSavedGame] = useState<{ module: string; languageId: string } | null>(null);
   const chatIdRef = useRef(0);
   const { speak, isMuted, toggleMute } = useTTS();
 
@@ -28,7 +39,11 @@ export default function Home() {
       setProfile(saved);
       fetch(`/api/game/check?profile=${encodeURIComponent(saved)}`)
         .then(r => r.json())
-        .then(data => { if (data.hasSave) setSavedGame({ module: data.module }); })
+        .then(data => {
+          if (data.hasSave) {
+            setSavedGame({ module: data.module, languageId: data.languageId || 'spanish' });
+          }
+        })
         .catch(() => {});
     }
   }, []);
@@ -38,7 +53,13 @@ export default function Home() {
     if (!profile) { setSavedGame(null); return; }
     fetch(`/api/game/check?profile=${encodeURIComponent(profile)}`)
       .then(r => r.json())
-      .then(data => setSavedGame(data.hasSave ? { module: data.module } : null))
+      .then(data => {
+        if (data.hasSave) {
+          setSavedGame({ module: data.module, languageId: data.languageId || 'spanish' });
+        } else {
+          setSavedGame(null);
+        }
+      })
       .catch(() => setSavedGame(null));
   }, [profile]);
 
@@ -47,15 +68,19 @@ export default function Home() {
     setError(null);
     setChatHistory([]);
     chatIdRef.current = 0;
-    // Auto-generate profile if blank
     const activeProfile = profile || ('anon_' + Math.random().toString(36).substring(2, 10));
     if (!profile) setProfile(activeProfile);
     localStorage.setItem('profile', activeProfile);
+
+    // For continue, don't pass language (server uses saved language)
+    // For new game, pass selected language
+    const language = module ? selectedLanguage : undefined;
+
     try {
       const res = await fetch('/api/game/init', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ module, language: 'spanish', profile: activeProfile }),
+        body: JSON.stringify({ module, language, profile: activeProfile }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -66,8 +91,10 @@ export default function Home() {
 
       // Tutorial hint for fresh home module games (not resumed)
       if (gameView.module === 'home' && !gameView.resumed) {
+        const lang = LANGUAGES.find(l => l.id === (gameView.languageId || selectedLanguage));
+        const hintText = lang ? `Try typing "${lang.hint}" ${lang.hintDesc}` : 'Try typing a command to get started';
         chatIdRef.current += 1;
-        const hint1: ChatEntry = { id: chatIdRef.current, playerInput: '', systemHint: 'Try typing "Me levanto" to get out of bed' };
+        const hint1: ChatEntry = { id: chatIdRef.current, playerInput: '', systemHint: hintText };
         setChatHistory([hint1]);
       }
 
@@ -76,7 +103,7 @@ export default function Home() {
       setError(err instanceof Error ? err.message : 'Failed to start game');
       setAppState('error');
     }
-  }, [profile]);
+  }, [profile, selectedLanguage]);
 
   const handleInput = useCallback(async (input: string) => {
     // /say command: entirely client-side TTS
@@ -123,7 +150,6 @@ export default function Home() {
     setIsProcessing(true);
     setError(null);
 
-    // Show player input immediately with pending state
     chatIdRef.current += 1;
     const entryId = chatIdRef.current;
     setChatHistory(prev => [...prev, {
@@ -151,7 +177,6 @@ export default function Home() {
       }
       const data = await res.json();
 
-      // Handle /learn response
       if (data.learn) {
         setChatHistory(prev => prev.map(e => e.id === entryId ? {
           ...e,
@@ -163,7 +188,6 @@ export default function Home() {
         return;
       }
 
-      // Normal game turn
       const gameView = data as GameView;
       setGame(gameView);
       if (gameView.turnResult) {
@@ -172,17 +196,14 @@ export default function Home() {
           pending: false,
           turnResult: gameView.turnResult!,
         } : e));
-        // Auto-speak NPC dialog with gendered voice
         if (gameView.turnResult.npcResponse?.target) {
           speak(gameView.turnResult.npcResponse.target, gameView.turnResult.npcResponse.voice);
         }
       } else {
-        // No turn result — just remove pending
         setChatHistory(prev => prev.map(e => e.id === entryId ? { ...e, pending: false } : e));
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error');
-      // Remove pending on error
       setChatHistory(prev => prev.map(e => e.id === entryId ? { ...e, pending: false } : e));
     } finally {
       setIsProcessing(false);
@@ -205,9 +226,9 @@ export default function Home() {
       <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
         <div className="max-w-md w-full p-8">
           <h1 className="text-3xl font-bold mb-2 text-center">Language Life Sim</h1>
-          <p className="text-gray-400 text-center mb-6">Learn Spanish through an interactive life simulation</p>
+          <p className="text-gray-400 text-center mb-6">Learn a language through an interactive life simulation</p>
 
-          <div className="mb-6">
+          <div className="mb-5">
             <label className="text-gray-500 text-xs block mb-1">Profile</label>
             <input
               type="text"
@@ -218,6 +239,32 @@ export default function Home() {
             />
           </div>
 
+          <div className="mb-5">
+            <label className="text-gray-500 text-xs block mb-2">Language</label>
+            <div className="grid grid-cols-2 gap-3">
+              {LANGUAGES.map(lang => {
+                const isSelected = selectedLanguage === lang.id;
+                const isSavedLang = savedGame?.languageId === lang.id;
+                return (
+                  <button
+                    key={lang.id}
+                    onClick={() => setSelectedLanguage(lang.id)}
+                    className={`py-3 px-4 rounded-lg text-left transition-colors border-2 ${
+                      isSelected
+                        ? 'border-blue-500 bg-blue-500/10'
+                        : 'border-gray-700 bg-gray-900 hover:border-gray-600'
+                    }`}
+                  >
+                    <div className="font-medium">{lang.flag} {lang.name}</div>
+                    {isSavedLang && profile && (
+                      <div className="text-xs text-green-400 mt-1">Saved game</div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="space-y-3">
             {savedGame && profile && (
               <button
@@ -225,23 +272,31 @@ export default function Home() {
                 className="w-full py-3 px-4 bg-green-700 hover:bg-green-600 rounded-lg font-medium transition-colors text-left"
               >
                 <div>Continue</div>
-                <div className="text-green-200 text-sm">Resume your game in {savedGame.module}</div>
+                <div className="text-green-200 text-sm">
+                  Resume {LANGUAGES.find(l => l.id === savedGame.languageId)?.name || savedGame.languageId} game
+                </div>
               </button>
             )}
             <button
               onClick={() => startGame('home')}
               className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 rounded-lg font-medium transition-colors text-left"
             >
-              <div>Home{savedGame ? ' (New Game)' : ''}</div>
-              <div className="text-blue-200 text-sm">Wake up, make breakfast, greet your roommate</div>
+              <div>{savedGame && profile ? 'New Game' : 'Start Game'}</div>
+              <div className="text-blue-200 text-sm">
+                Begin learning {LANGUAGES.find(l => l.id === selectedLanguage)?.name}
+              </div>
             </button>
-            <button
-              onClick={() => startGame('restaurant')}
-              className="w-full py-3 px-4 bg-gray-800 hover:bg-gray-700 rounded-lg font-medium transition-colors text-left"
+          </div>
+
+          <div className="mt-6 text-center">
+            <a
+              href="https://discord.gg/gBKykJc4MW"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-gray-500 hover:text-gray-300 text-sm transition-colors"
             >
-              <div>Restaurant{savedGame ? ' (New Game)' : ''}</div>
-              <div className="text-gray-400 text-sm">Order food, talk to the waiter</div>
-            </button>
+              Join our Discord
+            </a>
           </div>
         </div>
       </div>
@@ -273,6 +328,8 @@ export default function Home() {
 
   // --- Game Screen ---
   if (!game) return null;
+
+  const placeholder = PLACEHOLDERS[game.languageId] || PLACEHOLDERS.spanish;
 
   return (
     <div className="h-screen bg-gray-950 text-white flex flex-col">
@@ -317,7 +374,7 @@ export default function Home() {
               onSubmit={handleInput}
               onHelp={handleHelp}
               disabled={isProcessing}
-              placeholder="Type in Spanish... (e.g., 'abro la nevera')"
+              placeholder={placeholder}
             />
           </div>
         </div>

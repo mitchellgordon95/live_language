@@ -19,7 +19,8 @@ export default function ScenePanel({ game }: ScenePanelProps) {
   const [tutorialExpanded, setTutorialExpanded] = useState(false);
 
   const hasScene = !!game.scene;
-  const imageSrc = hasScene ? `/scenes/${game.scene!.module}/${game.scene!.image}` : null;
+  const sceneBase = hasScene ? `/scenes/${game.scene!.languageId}/${game.scene!.module}` : '';
+  const imageSrc = hasScene ? `${sceneBase}/${game.scene!.image}` : null;
 
   const labeledObjects = game.objects.filter(
     (obj) => obj.coords && (obj.coords.w > 0 || obj.coords.h > 0)
@@ -191,7 +192,7 @@ export default function ScenePanel({ game }: ScenePanelProps) {
         <div className="-mt-14 flex justify-center items-end gap-4 z-10 pointer-events-none px-3 mb-1">
           {game.vignetteHint?.player && (
             <VignetteAvatar
-              src={`/scenes/${game.scene!.module}/vignettes/${game.vignetteHint.player}`}
+              src={`${sceneBase}/vignettes/${game.vignetteHint.player}`}
               alt="You"
               size="lg"
             />
@@ -199,7 +200,7 @@ export default function ScenePanel({ game }: ScenePanelProps) {
           {game.npcs.map((npc) => (
             <VignetteAvatar
               key={npc.id}
-              src={npc.portrait ? `/scenes/${game.scene!.module}/vignettes/${npc.portrait}` : undefined}
+              src={npc.portrait ? `${sceneBase}/vignettes/${npc.portrait}` : undefined}
               alt={npc.name.native}
               label={npc.name.target}
               mood={npc.mood}
@@ -213,7 +214,7 @@ export default function ScenePanel({ game }: ScenePanelProps) {
             // Cached vignettes use full paths (starting with /), pre-generated use relative filenames
             const imgSrc = change.image.startsWith('/')
               ? change.image
-              : `/scenes/${game.scene!.module}/vignettes/${change.image}`;
+              : `${sceneBase}/vignettes/${change.image}`;
             return (
               <VignetteWithItems
                 key={`obj-${change.objectId}`}

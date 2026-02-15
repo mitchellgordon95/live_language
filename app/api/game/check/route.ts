@@ -11,7 +11,7 @@ export async function GET(request: Request) {
 
   try {
     const result = await hasSave(profile);
-    return NextResponse.json({ hasSave: result.exists, module: result.module });
+    return NextResponse.json({ hasSave: result.exists, module: result.module, languageId: result.languageId });
   } catch (error) {
     console.error('Error checking save:', error);
     return NextResponse.json({ hasSave: false });

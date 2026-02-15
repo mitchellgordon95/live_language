@@ -13,8 +13,8 @@ import type {
   NPC,
 } from './types';
 import { createInitialVocabulary } from './vocabulary';
-import { type BuildingName, getBuildingForLocation, BUILDING_UNLOCK_LEVELS } from '../data/module-registry';
-export { type BuildingName, getBuildingForLocation, BUILDING_UNLOCK_LEVELS };
+import { type BuildingName, getBuildingForLocation, getBuildingUnlockLevels } from '../data/module-registry';
+export { type BuildingName, getBuildingForLocation, getBuildingUnlockLevels };
 
 // Level thresholds
 export function getPointsForLevel(level: number): number {
@@ -254,7 +254,7 @@ export function applyQuestReward(state: GameState, quest: Quest): { state: GameS
 }
 
 export function isBuildingUnlocked(state: GameState, building: BuildingName): boolean {
-  return state.level >= BUILDING_UNLOCK_LEVELS[building];
+  return state.level >= getBuildingUnlockLevels()[building];
 }
 
 export function saveLocationProgress(state: GameState, building: BuildingName): GameState {
