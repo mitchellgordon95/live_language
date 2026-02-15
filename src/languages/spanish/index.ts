@@ -1,5 +1,5 @@
 import type { LanguageConfig } from '../types';
-import { SPANISH_SYSTEM_PROMPT, SPANISH_NARRATE_PROMPT } from './prompt';
+import { SPANISH_SYSTEM_PROMPT, SPANISH_NARRATE_PROMPT, spanishPromptConfig } from './prompt';
 import { stripArticles, findObjectByName } from './helpers';
 import { homeModule } from './modules/home';
 import { restaurantModule } from './modules/restaurant';
@@ -11,11 +11,7 @@ export const spanishConfig: LanguageConfig = {
   coreSystemPrompt: SPANISH_SYSTEM_PROMPT,
   narrateSystemPrompt: SPANISH_NARRATE_PROMPT,
   ttsVoice: 'Paulina',
-  aiFields: {
-    targetModel: 'spanishModel',
-    npcTargetField: 'spanish',
-    objectTargetName: 'spanishName',
-  },
+  promptConfig: spanishPromptConfig,
   stripArticles,
   findObjectByName,
   helpText: `Stuck? Here's what you can do:

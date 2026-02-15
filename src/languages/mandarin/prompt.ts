@@ -1,95 +1,78 @@
 /**
- * Core system prompt for Mandarin Chinese language learning.
- * Teaches simplified Chinese characters, pinyin, tones, and basic grammar.
+ * Mandarin Chinese language prompt configuration.
+ * Uses shared prompt builders with Mandarin-specific tone, measure word, and particle teaching.
  */
-export const MANDARIN_SYSTEM_PROMPT = `You are the game engine for a Mandarin Chinese language learning life simulation. The player types commands in Mandarin (pinyin or characters) to control their character.
 
-Your job:
-1. Understand their Mandarin input (accept pinyin with or without tone marks, and simplified characters)
-2. Provide grammar and pronunciation feedback to help them learn
-3. Decide if the action is valid in the current context
-4. Specify exactly what game state changes should occur, IN ORDER
+import type { PromptConfig } from '../types';
+import { buildParsePrompt, buildNarratePrompt } from '../shared-prompts';
 
-RESPOND WITH ONLY VALID JSON:
-{
-  "understood": boolean,
-  "grammar": {
-    "score": 0-100,
-    "issues": [
-      {
-        "type": "tone|measure_word|word_order|particle|vocabulary|other",
-        "original": "what they wrote",
-        "corrected": "correct form",
-        "explanation": "brief helpful explanation"
-      }
-    ]
+export const mandarinPromptConfig: PromptConfig = {
+  languageName: 'Mandarin Chinese',
+  inputDescription: 'Mandarin (pinyin with or without tone marks, or simplified characters)',
+  targetModelField: 'mandarinModel',
+  npcTargetField: 'mandarin',
+  grammarIssueTypes: 'tone|measure_word|word_order|particle|vocabulary|other',
+  targetModelDescription: 'Natural Mandarin way to express what they meant (characters with pinyin in parentheses)',
+  mixedInputExamples: {
+    question: {
+      english: 'How do I open the fridge?',
+      suggestion: "To open the fridge, try saying: '打开冰箱 (dakai bingxiang)'",
+    },
+    command: {
+      english: 'go to kitchen',
+      suggestion: "Try saying it in Mandarin: '去厨房 (qu chufang)'",
+    },
+    mixed: {
+      attempt: '我 want 去 kitchen',
+      correction: "Good start! Try: '我想去厨房 (wo xiang qu chufang)'",
+    },
   },
-  "mandarinModel": "Natural Mandarin way to express what they meant (characters with pinyin in parentheses)",
-
-  "valid": boolean,
-  "invalidReason": "Why the action can't be done (only if valid=false)",
-
-  "actions": [
-    { "type": "position", "position": "standing" },
-    { "type": "go", "locationId": "kitchen" },
-    { "type": "open", "objectId": "refrigerator" },
-    { "type": "take", "objectId": "milk" }
+  npcExample: {
+    target: '谢谢你！(Xiexie ni!)',
+    english: 'Thank you!',
+    actionText: '室友给你倒了一杯水 (Shiyou gei ni dao le yi bei shui)',
+  },
+  npcActionExamples: [
+    'Roommate pours water → actionText: "室友给你倒了一杯水 (Shiyou gei ni dao le yi bei shui)"',
+    'Shopkeeper hands item → actionText: "店员把东西递给你 (Dianyuan ba dongxi di gei ni)"',
+    'Doctor writes prescription → actionText: "医生给你开了药方 (Yisheng gei ni kai le yaofang)"',
   ],
-
-  "message": "What happened, in English",
-  "needsChanges": { "hunger": 10, "energy": -5 },
-  "stepsCompleted": ["step_id"],
-  "npcResponse": { "npcId": "roommate", "mandarin": "...", "english": "...", "actionText": "室友给你倒了一杯水 (Shiyou gei ni dao le yi bei shui)" }
-}
-
-ACTIONS (put them in the order they should happen):
-- { "type": "position", "position": "standing" } - get up from bed
-- { "type": "go", "locationId": "kitchen" } - move to another room
-- { "type": "open", "objectId": "refrigerator" } - open something
-- { "type": "close", "objectId": "refrigerator" } - close something
-- { "type": "turn_on", "objectId": "stove" } - turn on
-- { "type": "turn_off", "objectId": "alarm_clock" } - turn off
-- { "type": "take", "objectId": "milk" } - pick up an item
-- { "type": "eat", "objectId": "eggs" } - eat food
-- { "type": "drink", "objectId": "milk" } - drink something
-- { "type": "use", "objectId": "toilet" } - use toilet, brush teeth, shower
-- { "type": "cook", "objectId": "eggs" } - cook food
-- { "type": "talk", "npcId": "roommate" } - talk to someone
-
-MANDARIN-SPECIFIC TEACHING:
+  languageRules: 'All grammar explanations and invalidReason messages MUST be in English. Only "corrected" and "mandarinModel" fields should be in Mandarin. Always show both characters and pinyin: 打开 (dakai).',
+  languageSpecificInstructions: `MANDARIN-SPECIFIC TEACHING:
 
 TONES: Always note tone errors. The four tones change meaning:
-- ma1 (妈 mother), ma2 (麻 hemp), ma3 (马 horse), ma4 (骂 scold)
-- When correcting, show pinyin with tone numbers or marks
+- mā (妈 mother), má (麻 hemp), mǎ (马 horse), mà (骂 scold)
+- When correcting, show pinyin with tone marks or numbers
 
 MEASURE WORDS (量词): Correct missing or wrong measure words:
-- 一个人 (yi ge ren) - general measure word 个
-- 一杯水 (yi bei shui) - cup measure word 杯
-- 一张床 (yi zhang chuang) - flat things 张
-- 一把椅子 (yi ba yizi) - things with handles 把
-- 一件衣服 (yi jian yifu) - clothing 件
+- 一个人 (yī gè rén) — general measure word 个
+- 一杯水 (yī bēi shuǐ) — cup measure word 杯
+- 一张床 (yī zhāng chuáng) — flat things 张
+- 一把椅子 (yī bǎ yǐzi) — things with handles 把
+- 一件衣服 (yī jiàn yīfu) — clothing 件
 
 SENTENCE PARTICLES:
-- 了 (le) - completed action or change of state
-- 吗 (ma) - yes/no question
-- 吧 (ba) - suggestion or assumption
-- 呢 (ne) - follow-up question or "what about...?"
+- 了 (le) — completed action or change of state
+- 吗 (ma) — yes/no question
+- 吧 (ba) — suggestion or assumption
+- 呢 (ne) — follow-up question or "what about...?"
 
 COMMON PATTERNS TO TEACH:
-- Subject + Verb + Object: 我吃饭 (wo chi fan - I eat)
-- 在 + location: 我在厨房 (wo zai chufang - I'm in the kitchen)
-- 去 + place: 我去厨房 (wo qu chufang - I go to the kitchen)
-- 想 + verb: 我想吃 (wo xiang chi - I want to eat)
-- 可以 + verb: 可以吗？(keyi ma? - May I?)
+- Subject + Verb + Object: 我吃饭 (wǒ chī fàn — I eat)
+- 在 + location: 我在厨房 (wǒ zài chúfáng — I'm in the kitchen)
+- 去 + place: 我去厨房 (wǒ qù chúfáng — I go to the kitchen)
+- 想 + verb: 我想吃 (wǒ xiǎng chī — I want to eat)
+- 可以 + verb: 可以吗？(kěyǐ ma? — May I?)
 
-IMPORTANT RULES:
-- Accept pinyin input (with or without tones)
+INPUT ACCEPTANCE:
+- Accept pinyin input with or without tones
 - Accept simplified Chinese characters
-- Show both characters and pinyin in corrections: 打开 (dakai)
-- Use EXACT object IDs from the lists
-- stepsCompleted: Array of step IDs this action completes
-- needsChanges: Use small increments (-20 to +20). Positive = better.
+- Show both characters and pinyin in all corrections and the mandarinModel field`,
+  npcResponseGuidance: 'simple Mandarin with pinyin in parentheses, appropriate for language learners (1-2 sentences)',
+};
 
-NPC responses should use simple Mandarin with pinyin in parentheses.
+export const MANDARIN_PARSE_PROMPT = buildParsePrompt(mandarinPromptConfig);
+export const MANDARIN_NARRATE_PROMPT = buildNarratePrompt(mandarinPromptConfig);
 
-Be encouraging! Focus on one main correction per turn.`;
+// Legacy export
+export const MANDARIN_SYSTEM_PROMPT = MANDARIN_PARSE_PROMPT;

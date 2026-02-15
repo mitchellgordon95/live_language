@@ -158,14 +158,14 @@ export type Mutation =
   | { type: 'remove'; objectId: string }
   | { type: 'npcMood'; npcId: string; mood: string };
 
-// Pass 1: Parse Spanish input into grammar feedback + mutations
+// Pass 1: Parse target language input into grammar feedback + mutations
 export interface ParseResponse {
   understood: boolean;
   grammar: {
     score: number;
     issues: GrammarIssue[];
   };
-  spanishModel: string;
+  targetModel: string;
   valid: boolean;
   invalidReason?: string;
   mutations: Mutation[];
@@ -179,7 +179,7 @@ export interface NarrateResponse {
   questsCompleted?: string[];
   npcResponse?: {
     npcId: string;
-    spanish?: string;
+    target?: string;
     english: string;
     wantsItem?: string;
     actionText?: string;
@@ -188,7 +188,7 @@ export interface NarrateResponse {
 }
 
 export interface GrammarIssue {
-  type: 'conjugation' | 'gender' | 'article' | 'word_order' | 'contraction' | 'other';
+  type: string;
   original: string;
   corrected: string;
   explanation: string;

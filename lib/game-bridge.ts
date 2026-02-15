@@ -560,10 +560,10 @@ function buildTurnResultView(result: any, state: any): TurnResultView {
       corrected: issue.corrected,
       explanation: issue.explanation,
     })),
-    targetModel: result.spanishModel || '',
+    targetModel: result.targetModel || '',
     npcResponse: result.npcResponse?.npcId ? {
       npcName: result.npcResponse.npcId,
-      target: result.npcResponse.spanish || '',
+      target: result.npcResponse.target || '',
       native: result.npcResponse.english || '',
       actionText: result.npcResponse.actionText,
       voice: npcVoice(result.npcResponse.npcId),

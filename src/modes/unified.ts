@@ -327,7 +327,7 @@ function validateMutations(mutations: Mutation[], state: GameState): Mutation[] 
 // ============================================================================
 
 /**
- * Pass 1: Parse Spanish input into grammar feedback + ordered mutations.
+ * Pass 1: Parse target language input into grammar feedback + ordered mutations.
  */
 async function parseIntent(input: string, state: GameState): Promise<ParseResponse> {
   const contextPrompt = buildPrompt(state);
@@ -352,7 +352,11 @@ async function parseIntent(input: string, state: GameState): Promise<ParseRespon
     const content = response.content[0];
     if (content.type !== 'text') throw new Error('Unexpected response type');
 
-    const parsed = extractJSON(content.text) as unknown as ParseResponse;
+    const raw = extractJSON(content.text) as Record<string, unknown>;
+    // Map language-specific AI field name to generic internal name
+    const targetField = activeLanguage.promptConfig.targetModelField;
+    raw.targetModel = raw[targetField] ?? raw.targetModel ?? '';
+    const parsed = raw as unknown as ParseResponse;
 
     if (process.env.DEBUG_UNIFIED) {
       console.log('\n\x1b[2m[DEBUG Pass 1 - Parse]:\x1b[0m');
@@ -365,7 +369,7 @@ async function parseIntent(input: string, state: GameState): Promise<ParseRespon
     return {
       understood: false,
       grammar: { score: 0, issues: [] },
-      spanishModel: '',
+      targetModel: '',
       valid: false,
       invalidReason: 'Something went wrong. Try again.',
       mutations: [],
@@ -391,8 +395,9 @@ async function narrateTurn(
   const stateContext = buildPrompt(postMutationState);
   const mutationsDesc = JSON.stringify(parseResult.mutations);
 
-  const userMessage = `PLAYER SAID (in Spanish): "${input}"
-CORRECTED SPANISH: "${parseResult.spanishModel}"
+  const langName = activeLanguage.promptConfig.languageName;
+  const userMessage = `PLAYER SAID (in ${langName}): "${input}"
+CORRECTED ${langName.toUpperCase()}: "${parseResult.targetModel}"
 
 APPLIED MUTATIONS: ${mutationsDesc}
 
@@ -413,7 +418,14 @@ Generate the narrative response for these mutations.`;
     const content = response.content[0];
     if (content.type !== 'text') throw new Error('Unexpected response type');
 
-    const parsed = extractJSON(content.text) as unknown as NarrateResponse;
+    const raw = extractJSON(content.text) as Record<string, unknown>;
+    // Map language-specific NPC response field to generic internal name
+    const npcField = activeLanguage.promptConfig.npcTargetField;
+    if (raw.npcResponse && typeof raw.npcResponse === 'object') {
+      const npc = raw.npcResponse as Record<string, unknown>;
+      npc.target = npc[npcField] ?? npc.target ?? '';
+    }
+    const parsed = raw as unknown as NarrateResponse;
 
     if (process.env.DEBUG_UNIFIED) {
       console.log('\n\x1b[2m[DEBUG Pass 2 - Narrate]:\x1b[0m');
@@ -459,7 +471,7 @@ export interface TurnResult {
   // Parse results
   understood: boolean;
   grammar: { score: number; issues: GrammarIssue[] };
-  spanishModel: string;
+  targetModel: string;
   valid: boolean;
   invalidReason?: string;
   mutations: Mutation[];
@@ -497,7 +509,7 @@ export async function processTurn(
 ): Promise<TurnResult> {
   activeLanguage = languageConfig;
 
-  // --- Pass 1: Parse Spanish into mutations ---
+  // --- Pass 1: Parse input into mutations ---
   const parseResult = await parseIntent(input, state);
 
   // If not understood or invalid, return early (no Pass 2)
@@ -506,7 +518,7 @@ export async function processTurn(
       newState: state,
       understood: parseResult.understood,
       grammar: parseResult.grammar,
-      spanishModel: parseResult.spanishModel,
+      targetModel: parseResult.targetModel,
       valid: false,
       invalidReason: parseResult.invalidReason,
       mutations: [],
@@ -612,7 +624,7 @@ export async function processTurn(
         ...newState.npcStates,
         [npcId]: {
           ...currentNpcState,
-          lastResponse: narrateResult.npcResponse.spanish,
+          lastResponse: narrateResult.npcResponse.target,
           wantsItem: narrateResult.npcResponse.wantsItem || currentNpcState.wantsItem,
         },
       },
@@ -624,7 +636,7 @@ export async function processTurn(
     const npcId = narrateResult.npcResponse.npcId;
     const entry: NPCChatEntry = {
       playerInput: input,
-      npcResponse: narrateResult.npcResponse.spanish,
+      npcResponse: narrateResult.npcResponse.target,
       npcAction: narrateResult.npcResponse.actionText,
     };
     const existing = newState.npcChatHistory[npcId] || [];
@@ -770,7 +782,7 @@ export async function processTurn(
     newState,
     understood: parseResult.understood,
     grammar: parseResult.grammar,
-    spanishModel: parseResult.spanishModel,
+    targetModel: parseResult.targetModel,
     valid: true,
     mutations: validatedMutations,
     message: narrateResult.message,
