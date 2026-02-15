@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Language Life Sim",
+  title: "Language Life Sim (Alpha)",
   description: "Learn languages through an interactive life simulation",
 };
 
