@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.74.0",
+    "@google/genai": "^1.40.0",
     "dotenv": "^17.2.4",
     "next": "16.1.6",
     "pg": "^8.18.0",
@@ -20,7 +21,6 @@
     "server-only": "^0.0.1"
   },
   "devDependencies": {
-    "@google/genai": "^1.40.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^22.0.0",
     "@types/pg": "^8.16.0",

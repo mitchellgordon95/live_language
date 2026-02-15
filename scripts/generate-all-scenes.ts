@@ -41,8 +41,8 @@ async function main() {
   dotenv.config({ path: path.join(PROJECT_ROOT, '.env.local') });
 
   const engineRoot = path.join(PROJECT_ROOT, 'src');
-  const registry = await import(path.join(engineRoot, 'data', 'module-registry.js'));
-  const languages = await import(path.join(engineRoot, 'languages', 'index.js'));
+  const registry = await import(path.join(engineRoot, 'data', 'module-registry.ts'));
+  const languages = await import(path.join(engineRoot, 'languages', 'index.ts'));
 
   // Get Spanish modules (primary language for scene generation)
   const spanishConfig = languages.getLanguage('spanish');

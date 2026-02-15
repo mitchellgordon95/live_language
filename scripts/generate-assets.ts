@@ -15,7 +15,7 @@
  *   npx tsx scripts/generate-assets.ts --module home --scenes-only    # only scenes
  *   npx tsx scripts/generate-assets.ts --module home --vignettes-only # only vignettes
  *
- * Requires: npm run build (to compile engine), GEMINI_API_KEY in .env.local
+ * Requires: GEMINI_API_KEY in .env.local
  */
 
 import * as fs from 'fs';
@@ -105,7 +105,7 @@ interface ModuleLocations {
 
 async function loadModuleInfo(moduleName: string): Promise<{ moduleData: ModuleData; locations: ModuleLocations }> {
   const engineRoot = path.join(PROJECT_ROOT, 'src');
-  const languages = await import(path.join(engineRoot, 'languages', 'index.js'));
+  const languages = await import(path.join(engineRoot, 'languages', 'index.ts'));
   const config = languages.getLanguage('spanish');
   if (!config) throw new Error('Spanish language config not found');
 
@@ -123,7 +123,7 @@ async function loadModuleInfo(moduleName: string): Promise<{ moduleData: ModuleD
 
   // Get locations for scene audit
   const locationIds: string[] = mod.locationIds || Object.keys(mod.locations || {});
-  const registry = await import(path.join(engineRoot, 'data', 'module-registry.js'));
+  const registry = await import(path.join(engineRoot, 'data', 'module-registry.ts'));
 
   const locations: ModuleLocations = {
     locations: locationIds.map((id: string) => {

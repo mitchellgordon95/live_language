@@ -43,12 +43,12 @@ function parseArgs() {
   return result as { module: string; location: string; skipCoordinates: boolean; outputDir: string };
 }
 
-// --- Load location data from the compiled game engine ---
+// --- Load location data from the game engine ---
 async function loadLocationData(moduleName: string, locationId: string) {
   const engineRoot = path.join(PROJECT_ROOT, 'src');
 
   // Import the module registry to get location data
-  const registry = await import(path.join(engineRoot, 'data', 'module-registry.js'));
+  const registry = await import(path.join(engineRoot, 'data', 'module-registry.ts'));
   const location = registry.allLocations[locationId];
 
   if (!location) {

@@ -1,15 +1,5 @@
 import { NextResponse } from 'next/server';
-import { join } from 'path';
-
-// Load env from parent project (same pattern as game-bridge.ts)
-let envLoaded = false;
-async function ensureEnv() {
-  if (envLoaded) return;
-  const dotenvPath = join(process.cwd(), '..', '.env.local');
-  const dotenv = await import(/* webpackIgnore: true */ 'dotenv');
-  dotenv.config({ path: dotenvPath });
-  envLoaded = true;
-}
+import { GoogleGenAI } from '@google/genai';
 
 // Build a WAV header for raw PCM data (24kHz, 16-bit, mono)
 function pcmToWav(pcmData: Buffer): Buffer {
@@ -41,8 +31,6 @@ function pcmToWav(pcmData: Buffer): Buffer {
 
 export async function POST(request: Request) {
   try {
-    await ensureEnv();
-
     const body = await request.json();
     const { text, voice } = body;
 
@@ -55,7 +43,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'GEMINI_API_KEY not configured' }, { status: 500 });
     }
 
-    const { GoogleGenAI } = await import(/* webpackIgnore: true */ '@google/genai');
     const ai = new GoogleGenAI({ apiKey });
 
     const response = await ai.models.generateContent({

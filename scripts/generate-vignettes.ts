@@ -10,7 +10,7 @@
  *   npx tsx scripts/generate-vignettes.ts --module home --id player --variant cooking  # single
  *   npx tsx scripts/generate-vignettes.ts --module home --id roommate --all-variants   # base + all variants
  *
- * Requires: npm run build (to compile engine), GEMINI_API_KEY in .env.local
+ * Requires: GEMINI_API_KEY in .env.local
  */
 
 import * as fs from 'fs';
@@ -61,7 +61,7 @@ function parseArgs() {
 
 async function loadModuleData(moduleName: string): Promise<ModuleData> {
   const engineRoot = path.join(PROJECT_ROOT, 'src');
-  const languages = await import(path.join(engineRoot, 'languages', 'index.js'));
+  const languages = await import(path.join(engineRoot, 'languages', 'index.ts'));
   const config = languages.getLanguage('spanish');
   if (!config) throw new Error('Spanish language config not found');
 
