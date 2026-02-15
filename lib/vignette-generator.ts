@@ -53,12 +53,16 @@ export function isGenerationEnabled(): boolean {
 
 let cacheIndex: CacheIndex | null = null;
 
-function loadCacheIndex(): CacheIndex {
-  if (cacheIndex) return cacheIndex;
-
+function ensureCacheDir(): void {
   if (!existsSync(CACHE_DIR)) {
     mkdirSync(CACHE_DIR, { recursive: true });
   }
+}
+
+function loadCacheIndex(): CacheIndex {
+  if (cacheIndex) return cacheIndex;
+
+  ensureCacheDir();
 
   if (existsSync(INDEX_PATH)) {
     try {
@@ -75,9 +79,7 @@ function loadCacheIndex(): CacheIndex {
 
 function saveCacheIndex(): void {
   if (!cacheIndex) return;
-  if (!existsSync(CACHE_DIR)) {
-    mkdirSync(CACHE_DIR, { recursive: true });
-  }
+  ensureCacheDir();
   writeFileSync(INDEX_PATH, JSON.stringify(cacheIndex, null, 2));
 }
 
@@ -114,14 +116,6 @@ export function getCachedVignette(module: string, objectId: string, tags: string
  * Get the placeholder image path for objects without vignettes.
  */
 export function getPlaceholderPath(): string {
-  // Ensure placeholder SVG exists
-  const svgPath = join(CACHE_DIR, 'unknown-object.svg');
-  if (!existsSync(svgPath)) {
-    if (!existsSync(CACHE_DIR)) {
-      mkdirSync(CACHE_DIR, { recursive: true });
-    }
-    writeFileSync(svgPath, PLACEHOLDER_SVG);
-  }
   return PLACEHOLDER_PATH;
 }
 
@@ -214,10 +208,7 @@ async function generateVignette(
         const filename = getFilename(module, objectId, tags);
         const filePath = join(CACHE_DIR, filename);
 
-        if (!existsSync(CACHE_DIR)) {
-          mkdirSync(CACHE_DIR, { recursive: true });
-        }
-
+        ensureCacheDir();
         writeFileSync(filePath, imageData);
 
         // Update cache index
@@ -306,9 +297,3 @@ ${VIGNETTE_STYLE}
 - ${palette}`;
 }
 
-// --- Placeholder SVG ---
-
-const PLACEHOLDER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
-  <rect width="128" height="128" rx="12" fill="#1f2937" stroke="#374151" stroke-width="2"/>
-  <text x="64" y="72" text-anchor="middle" font-size="48" font-family="sans-serif" fill="#6b7280">?</text>
-</svg>`;

@@ -208,7 +208,7 @@ export default function Home() {
           <p className="text-gray-400 text-center mb-6">Learn Spanish through an interactive life simulation</p>
 
           <div className="mb-6">
-            <label className="text-gray-500 text-xs block mb-1">Vocab Profile</label>
+            <label className="text-gray-500 text-xs block mb-1">Profile</label>
             <input
               type="text"
               value={profile}

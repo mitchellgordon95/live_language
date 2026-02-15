@@ -255,7 +255,9 @@ function resolveVignettes(state: any, result: any | null, module: string): Vigne
   const hint: VignetteHint = {};
 
   if (!manifest) {
-    // No pre-generated vignettes — still check cache for object vignettes
+    // No pre-generated vignettes — check cache only when generation is enabled
+    if (!isGenerationEnabled()) return null;
+
     const objectChanges: Array<{ objectId: string; image: string; generating?: boolean }> = [];
     const allObjectsState: Array<{ id: string; name: { native: string }; tags: string[]; location: string }> = state.objects || [];
     const objectsInLocation = allObjectsState.filter(
@@ -273,12 +275,10 @@ function resolveVignettes(state: any, result: any | null, module: string): Vigne
         continue;
       }
 
-      if (isGenerationEnabled()) {
-        if (!isGenerating(module, obj.id, visualTags)) {
-          triggerGeneration(module, obj.id, obj.name.native, visualTags);
-        }
-        objectChanges.push({ objectId: obj.id, image: getPlaceholderPath(), generating: true });
+      if (!isGenerating(module, obj.id, visualTags)) {
+        triggerGeneration(module, obj.id, obj.name.native, visualTags);
       }
+      objectChanges.push({ objectId: obj.id, image: getPlaceholderPath(), generating: true });
     }
 
     if (objectChanges.length > 0) {
@@ -347,25 +347,21 @@ function resolveVignettes(state: any, result: any | null, module: string): Vigne
       if (found) continue;
     }
 
-    // Skip objects with no meaningful visual state tags
-    const visualTags = tags.filter(t => !['takeable', 'consumable', 'container'].includes(t));
-    if (visualTags.length === 0) continue;
-
-    // Check vignette cache
-    const cached = getCachedVignette(module, obj.id, visualTags);
-    if (cached) {
-      objectChanges.push({ objectId: obj.id, image: cached });
-      continue;
-    }
-
-    // Cache miss — trigger generation or show placeholder
+    // Fall back to dynamic vignette cache/generation (dev only)
     if (isGenerationEnabled()) {
-      if (isGenerating(module, obj.id, visualTags)) {
-        objectChanges.push({ objectId: obj.id, image: getPlaceholderPath(), generating: true });
-      } else {
-        triggerGeneration(module, obj.id, obj.name.native, visualTags);
-        objectChanges.push({ objectId: obj.id, image: getPlaceholderPath(), generating: true });
+      const visualTags = tags.filter(t => !['takeable', 'consumable', 'container'].includes(t));
+      if (visualTags.length === 0) continue;
+
+      const cached = getCachedVignette(module, obj.id, visualTags);
+      if (cached) {
+        objectChanges.push({ objectId: obj.id, image: cached });
+        continue;
       }
+
+      if (!isGenerating(module, obj.id, visualTags)) {
+        triggerGeneration(module, obj.id, obj.name.native, visualTags);
+      }
+      objectChanges.push({ objectId: obj.id, image: getPlaceholderPath(), generating: true });
     }
   }
 
