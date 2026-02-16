@@ -1,0 +1,144 @@
+{
+  "player": {
+    "default": "player-player-standing.png",
+    "variants": [
+      {
+        "image": "player-player-standing.png",
+        "match": {
+          "playerPosition": "standing"
+        }
+      },
+      {
+        "image": "player-player-in-bed.png",
+        "match": {
+          "playerPosition": "in_bed"
+        }
+      },
+      {
+        "image": "player-player-brushing-teeth.png",
+        "match": {
+          "lastAction": "brush_teeth"
+        }
+      },
+      {
+        "image": "player-player-showering.png",
+        "match": {
+          "lastAction": "shower"
+        }
+      },
+      {
+        "image": "player-player-cooking.png",
+        "match": {
+          "lastAction": "cook"
+        }
+      },
+      {
+        "image": "player-player-eating.png",
+        "match": {
+          "lastAction": "eat"
+        }
+      }
+    ]
+  },
+  "npcs": {
+    "roommate": {
+      "default": "npc-roommate-default.png"
+    }
+  },
+  "pets": {
+    "cat": {
+      "default": "pet-cat-default.png"
+    },
+    "dog": {
+      "default": "pet-dog-default.png"
+    }
+  },
+  "objects": {
+    "alarm_clock": [
+      {
+        "image": "object-alarm_clock-on.png",
+        "match": {
+          "on": true
+        }
+      },
+      {
+        "image": "object-alarm_clock-off.png",
+        "match": {
+          "off": true
+        }
+      }
+    ],
+    "window": [
+      {
+        "image": "object-window-open.png",
+        "match": {
+          "open": true
+        }
+      }
+    ],
+    "lamp": [
+      {
+        "image": "object-lamp-on.png",
+        "match": {
+          "on": true
+        }
+      }
+    ],
+    "closet": [
+      {
+        "image": "object-closet-open.png",
+        "match": {
+          "open": true
+        }
+      }
+    ],
+    "shower": [
+      {
+        "image": "object-shower-on.png",
+        "match": {
+          "on": true
+        }
+      }
+    ],
+    "refrigerator": [
+      {
+        "image": "object-refrigerator-open.png",
+        "match": {
+          "open": true
+        }
+      }
+    ],
+    "stove": [
+      {
+        "image": "object-stove-on.png",
+        "match": {
+          "on": true
+        }
+      }
+    ],
+    "coffee_maker": [
+      {
+        "image": "object-coffee_maker-on.png",
+        "match": {
+          "on": true
+        }
+      }
+    ],
+    "tv": [
+      {
+        "image": "object-tv-on.png",
+        "match": {
+          "on": true
+        }
+      }
+    ],
+    "streetlamp": [
+      {
+        "image": "object-streetlamp-off.png",
+        "match": {
+          "off": true
+        }
+      }
+    ]
+  }
+}
