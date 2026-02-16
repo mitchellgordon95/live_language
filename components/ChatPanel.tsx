@@ -188,9 +188,9 @@ export default function ChatPanel({ chatHistory, onSpeak }: ChatPanelProps) {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
         {chatHistory.length === 0 && (
-          <div className="text-gray-600 text-sm text-center py-8">
+          <div className="text-gray-600 text-sm text-center py-4 md:py-8">
             Type something in Spanish to begin...
           </div>
         )}

@@ -52,14 +52,16 @@ export default function ScenePanel({ game, onSpeak }: ScenePanelProps) {
   const activeQuests = game.quests.filter(q => q.active);
   const hasQuests = activeQuests.length > 0;
 
+  const [infoExpanded, setInfoExpanded] = useState(false);
+
   return (
-    <div className="flex flex-col h-full overflow-y-auto">
+    <div className="flex flex-col h-full overflow-y-auto md:overflow-y-auto overflow-y-hidden">
       {/* Scene with exits and goals overlaid inside the image */}
       {hasScene && imageSrc && (
-        <div className="flex-shrink-0 pt-4 pb-2 flex justify-center px-2">
+        <div className="flex-shrink-0 pt-2 md:pt-4 pb-1 md:pb-2 flex justify-center px-2">
           {/* Scene image container with overlays */}
-          <div className="flex-shrink-0 relative" style={{ width: 'min(90%, 65vh)' }}>
-            <div className="relative aspect-square overflow-hidden rounded-lg">
+          <div className="flex-shrink-0 relative max-h-[35vh] md:max-h-none" style={{ width: 'min(90%, 65vh)' }}>
+            <div className="relative aspect-square overflow-hidden rounded-lg max-h-[35vh] md:max-h-none">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={imageSrc}
@@ -198,7 +200,7 @@ export default function ScenePanel({ game, onSpeak }: ScenePanelProps) {
 
       {/* Vignette tray — overlaps bottom of scene image */}
       {hasVignettes && hasScene && (
-        <div className="-mt-14 flex justify-center items-end gap-4 z-10 pointer-events-none px-3 mb-1">
+        <div className="-mt-8 md:-mt-14 flex justify-center items-end gap-2 md:gap-4 z-10 pointer-events-none px-2 md:px-3 mb-1">
           {game.vignetteHint?.player && (
             <VignetteAvatar
               src={resolveVignetteUrl(game.vignetteHint.player, sceneBase)}
@@ -238,157 +240,234 @@ export default function ScenePanel({ game, onSpeak }: ScenePanelProps) {
         </div>
       )}
 
-      {/* Below-scene info */}
-      <div className="px-4 pb-4 space-y-2 flex-shrink-0">
-        {/* No-scene fallback: full text layout */}
-        {!hasScene && (
-          <>
+      {/* Below-scene info — collapsible on mobile, always visible on desktop */}
+      {/* Mobile: compact needs bar + expandable drawer */}
+      <div className="md:hidden flex-shrink-0">
+        <button
+          onClick={() => setInfoExpanded(!infoExpanded)}
+          className="w-full flex items-center gap-2 px-3 py-1.5 bg-gray-900/80 border-y border-gray-800"
+        >
+          <NeedDot value={game.needs.energy} label="Energy" />
+          <NeedDot value={game.needs.hunger} label="Hunger" />
+          <NeedDot value={game.needs.hygiene} label="Hygiene" />
+          <NeedDot value={game.needs.bladder} label="Bladder" />
+          {game.inventory.length > 0 && (
+            <span className="text-[10px] text-gray-500 ml-1">{game.inventory.length} item{game.inventory.length !== 1 ? 's' : ''}</span>
+          )}
+          <span className="ml-auto text-gray-600 text-xs">{infoExpanded ? '\u25b2' : '\u25bc'}</span>
+        </button>
+        {infoExpanded && (
+          <InfoContent
+            game={game}
+            hasScene={hasScene}
+            unlabeledObjects={unlabeledObjects}
+            visibleSteps={visibleSteps}
+            completedCount={completedCount}
+            tutorialComplete={tutorialComplete}
+            tutorialExpanded={tutorialExpanded}
+            setTutorialExpanded={setTutorialExpanded}
+            hasQuests={hasQuests}
+            activeQuests={activeQuests}
+            questsExpanded={questsExpanded}
+            setQuestsExpanded={setQuestsExpanded}
+          />
+        )}
+      </div>
+
+      {/* Desktop: always visible */}
+      <div className="hidden md:block">
+        <InfoContent
+          game={game}
+          hasScene={hasScene}
+          unlabeledObjects={unlabeledObjects}
+          visibleSteps={visibleSteps}
+          completedCount={completedCount}
+          tutorialComplete={tutorialComplete}
+          tutorialExpanded={tutorialExpanded}
+          setTutorialExpanded={setTutorialExpanded}
+          hasQuests={hasQuests}
+          activeQuests={activeQuests}
+          questsExpanded={questsExpanded}
+          setQuestsExpanded={setQuestsExpanded}
+        />
+      </div>
+    </div>
+  );
+}
+
+// --- Info Content (shared between mobile drawer and desktop) ---
+
+function InfoContent({ game, hasScene, unlabeledObjects, visibleSteps, completedCount, tutorialComplete, tutorialExpanded, setTutorialExpanded, hasQuests, activeQuests, questsExpanded, setQuestsExpanded }: {
+  game: GameView;
+  hasScene: boolean;
+  unlabeledObjects: GameObjectView[];
+  visibleSteps: { id: string; title: string; hint: string; completed: boolean; suggested: boolean }[];
+  completedCount: number;
+  tutorialComplete: boolean;
+  tutorialExpanded: boolean;
+  setTutorialExpanded: (v: boolean) => void;
+  hasQuests: boolean;
+  activeQuests: { id: string; title: { target: string; native: string }; description: string }[];
+  questsExpanded: boolean;
+  setQuestsExpanded: (v: boolean) => void;
+}) {
+  return (
+    <div className="px-4 pb-3 md:pb-4 space-y-2 flex-shrink-0">
+      {/* No-scene fallback: full text layout */}
+      {!hasScene && (
+        <>
+          <div>
+            <h2 className="text-lg font-bold text-blue-400">{game.locationName.native}</h2>
+            <p className="text-sm text-gray-400">{game.locationName.target}</p>
+          </div>
+          {game.npcs.length > 0 && (
             <div>
-              <h2 className="text-lg font-bold text-blue-400">{game.locationName.native}</h2>
-              <p className="text-sm text-gray-400">{game.locationName.target}</p>
-            </div>
-            {game.npcs.length > 0 && (
-              <div>
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Who&apos;s here</div>
-                <div className="space-y-1">
-                  {game.npcs.map((npc) => (
-                    <div key={npc.id} className="flex items-center gap-2 text-sm">
-                      <div className="w-6 h-6 rounded-full bg-cyan-900/50 border border-cyan-700/50 flex items-center justify-center text-xs text-cyan-400">
-                        {npc.name.native.charAt(0).toUpperCase()}
-                      </div>
-                      <div>
-                        <span className="text-cyan-400">{npc.name.target}</span>
-                        <span className="text-gray-500 ml-1">({npc.name.native})</span>
-                        {npc.mood && <span className="text-gray-600 text-xs ml-1">- {npc.mood}</span>}
-                      </div>
+              <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Who&apos;s here</div>
+              <div className="space-y-1">
+                {game.npcs.map((npc) => (
+                  <div key={npc.id} className="flex items-center gap-2 text-sm">
+                    <div className="w-6 h-6 rounded-full bg-cyan-900/50 border border-cyan-700/50 flex items-center justify-center text-xs text-cyan-400">
+                      {npc.name.native.charAt(0).toUpperCase()}
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            <div>
-              <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Objects</div>
-              <div className="flex flex-wrap gap-1.5">
-                {game.objects.map((obj) => (
-                  <ObjectPill key={obj.id} obj={obj} />
+                    <div>
+                      <span className="text-cyan-400">{npc.name.target}</span>
+                      <span className="text-gray-500 ml-1">({npc.name.native})</span>
+                      {npc.mood && <span className="text-gray-600 text-xs ml-1">- {npc.mood}</span>}
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
-            {/* Tutorial as card when no scene */}
-            {visibleSteps.length > 0 && !tutorialComplete && (
-              <div className="bg-gray-800/50 rounded-lg p-3 border border-purple-900/50">
-                <div
-                  className="flex items-center gap-1.5 text-purple-400 text-xs font-medium uppercase tracking-wide cursor-pointer select-none"
-                  onClick={() => setTutorialExpanded(!tutorialExpanded)}
-                >
-                  <span>{tutorialExpanded ? '\u25bc' : '\u25b6'}</span>
-                  <span>Tutorial {completedCount}/{visibleSteps.length}</span>
-                </div>
-                {tutorialExpanded && (
-                  <div className="space-y-1 mt-2">
-                    {visibleSteps.map((step) => (
-                      <div key={step.id} className={`flex items-start gap-2 text-sm ${
-                        step.completed ? 'text-gray-600' : step.suggested ? 'text-gray-200' : 'text-gray-500'
-                      }`}>
-                        <span className="mt-0.5 flex-shrink-0 text-xs w-3">
-                          {step.completed ? '\u2713' : step.suggested ? '\u25b8' : '\u25cb'}
-                        </span>
-                        <div className="min-w-0">
-                          <div className={step.completed ? 'line-through' : ''}>{step.title}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-            {/* Quest card when no scene */}
-            {hasQuests && (
-              <div className="bg-gray-800/50 rounded-lg p-3 border border-amber-900/50">
-                <div
-                  className="flex items-center gap-1.5 text-amber-400 text-xs font-medium uppercase tracking-wide cursor-pointer select-none"
-                  onClick={() => setQuestsExpanded(!questsExpanded)}
-                >
-                  <span>{questsExpanded ? '\u25bc' : '\u25b6'}</span>
-                  <span>Quests ({activeQuests.length})</span>
-                </div>
-                {questsExpanded && (
-                  <div className="space-y-2 mt-2">
-                    {activeQuests.map((quest) => (
-                      <div key={quest.id} className="text-sm">
-                        <div className="text-amber-200">{quest.title.native}</div>
-                        <div className="text-gray-400 text-xs">{quest.description}</div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-            {/* Exits as text when no scene */}
-            {game.exits.length > 0 && (
-              <div>
-                <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Exits</div>
-                <div className="flex flex-wrap gap-1.5">
-                  {game.exits.map((exit) => (
-                    <span key={exit.to} className="text-xs px-2 py-1 rounded bg-gray-700/30 text-gray-300 border border-gray-600/30 cursor-default">
-                      {exit.name.target} <span className="text-gray-500">({exit.name.native})</span>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* "Also here" objects without coordinates */}
-        {hasScene && unlabeledObjects.length > 0 && (
+          )}
           <div>
-            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Also here</div>
+            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Objects</div>
             <div className="flex flex-wrap gap-1.5">
-              {unlabeledObjects.map((obj) => (
+              {game.objects.map((obj) => (
                 <ObjectPill key={obj.id} obj={obj} />
               ))}
             </div>
           </div>
-        )}
-
-        {/* Inventory */}
-        {game.inventory.length > 0 && (
-          <div>
-            <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Inventory</div>
-            <div className="flex flex-wrap gap-1.5">
-              {game.inventory.map((item) => (
-                <span key={item.id} className={`text-xs px-2 py-1 rounded border ${item.cooked ? 'bg-orange-900/30 text-orange-200 border-orange-600/50' : 'bg-gray-700/50 text-gray-300 border-gray-600/50'}`}>
-                  {item.name.target}{item.cooked ? ' (cocinado)' : ''}
-                </span>
-              ))}
+          {/* Tutorial as card when no scene */}
+          {visibleSteps.length > 0 && !tutorialComplete && (
+            <div className="bg-gray-800/50 rounded-lg p-3 border border-purple-900/50">
+              <div
+                className="flex items-center gap-1.5 text-purple-400 text-xs font-medium uppercase tracking-wide cursor-pointer select-none"
+                onClick={() => setTutorialExpanded(!tutorialExpanded)}
+              >
+                <span>{tutorialExpanded ? '\u25bc' : '\u25b6'}</span>
+                <span>Tutorial {completedCount}/{visibleSteps.length}</span>
+              </div>
+              {tutorialExpanded && (
+                <div className="space-y-1 mt-2">
+                  {visibleSteps.map((step) => (
+                    <div key={step.id} className={`flex items-start gap-2 text-sm ${
+                      step.completed ? 'text-gray-600' : step.suggested ? 'text-gray-200' : 'text-gray-500'
+                    }`}>
+                      <span className="mt-0.5 flex-shrink-0 text-xs w-3">
+                        {step.completed ? '\u2713' : step.suggested ? '\u25b8' : '\u25cb'}
+                      </span>
+                      <div className="min-w-0">
+                        <div className={step.completed ? 'line-through' : ''}>{step.title}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
+          )}
+          {/* Quest card when no scene */}
+          {hasQuests && (
+            <div className="bg-gray-800/50 rounded-lg p-3 border border-amber-900/50">
+              <div
+                className="flex items-center gap-1.5 text-amber-400 text-xs font-medium uppercase tracking-wide cursor-pointer select-none"
+                onClick={() => setQuestsExpanded(!questsExpanded)}
+              >
+                <span>{questsExpanded ? '\u25bc' : '\u25b6'}</span>
+                <span>Quests ({activeQuests.length})</span>
+              </div>
+              {questsExpanded && (
+                <div className="space-y-2 mt-2">
+                  {activeQuests.map((quest) => (
+                    <div key={quest.id} className="text-sm">
+                      <div className="text-amber-200">{quest.title.native}</div>
+                      <div className="text-gray-400 text-xs">{quest.description}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+          {/* Exits as text when no scene */}
+          {game.exits.length > 0 && (
+            <div>
+              <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Exits</div>
+              <div className="flex flex-wrap gap-1.5">
+                {game.exits.map((exit) => (
+                  <span key={exit.to} className="text-xs px-2 py-1 rounded bg-gray-700/30 text-gray-300 border border-gray-600/30 cursor-default">
+                    {exit.name.target} <span className="text-gray-500">({exit.name.native})</span>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* "Also here" objects without coordinates */}
+      {hasScene && unlabeledObjects.length > 0 && (
+        <div>
+          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Also here</div>
+          <div className="flex flex-wrap gap-1.5">
+            {unlabeledObjects.map((obj) => (
+              <ObjectPill key={obj.id} obj={obj} />
+            ))}
           </div>
-        )}
-
-        {/* Compact needs 2x2 */}
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1 max-w-sm mx-auto">
-          <CompactNeed icon={"\u26a1"} value={game.needs.energy} label="Energy" />
-          <CompactNeed icon={"\ud83c\udf54"} value={game.needs.hunger} label="Hunger" />
-          <CompactNeed icon={"\ud83e\uddfc"} value={game.needs.hygiene} label="Hygiene" />
-          <CompactNeed icon={"\ud83d\udebb"} value={game.needs.bladder} label="Bladder" />
         </div>
+      )}
 
-        {/* Verb hints */}
-        {game.verbs.length > 0 && (
-          <div className="text-center text-xs text-gray-600 pt-1">
-            {game.verbs.map((v, i) => (
-              <span key={i}>
-                {i > 0 && <span className="mx-1">&middot;</span>}
-                <span className="text-gray-500">{v.target}</span>
-                <span className="text-gray-700 ml-0.5">({v.native})</span>
+      {/* Inventory */}
+      {game.inventory.length > 0 && (
+        <div>
+          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Inventory</div>
+          <div className="flex flex-wrap gap-1.5">
+            {game.inventory.map((item) => (
+              <span key={item.id} className={`text-xs px-2 py-1 rounded border ${item.cooked ? 'bg-orange-900/30 text-orange-200 border-orange-600/50' : 'bg-gray-700/50 text-gray-300 border-gray-600/50'}`}>
+                {item.name.target}{item.cooked ? ' (cocinado)' : ''}
               </span>
             ))}
           </div>
-        )}
+        </div>
+      )}
+
+      {/* Compact needs 2x2 */}
+      <div className="grid grid-cols-2 gap-x-3 gap-y-1 max-w-sm mx-auto">
+        <CompactNeed icon={"\u26a1"} value={game.needs.energy} label="Energy" />
+        <CompactNeed icon={"\ud83c\udf54"} value={game.needs.hunger} label="Hunger" />
+        <CompactNeed icon={"\ud83e\uddfc"} value={game.needs.hygiene} label="Hygiene" />
+        <CompactNeed icon={"\ud83d\udebb"} value={game.needs.bladder} label="Bladder" />
       </div>
+
+      {/* Verb hints */}
+      {game.verbs.length > 0 && (
+        <div className="text-center text-xs text-gray-600 pt-1">
+          {game.verbs.map((v, i) => (
+            <span key={i}>
+              {i > 0 && <span className="mx-1">&middot;</span>}
+              <span className="text-gray-500">{v.target}</span>
+              <span className="text-gray-700 ml-0.5">({v.native})</span>
+            </span>
+          ))}
+        </div>
+      )}
     </div>
   );
+}
+
+// --- Need Dot (tiny mobile indicator) ---
+
+function NeedDot({ value, label }: { value: number; label: string }) {
+  const color = value > 60 ? 'bg-green-500' : value > 30 ? 'bg-yellow-500' : 'bg-red-500';
+  return <div className={`w-2.5 h-2.5 rounded-full ${color}`} title={`${label}: ${value}%`} />;
 }
 
 // --- Exit Pill (directional, inside image) ---
@@ -525,8 +604,8 @@ interface VignetteAvatarProps {
 
 function VignetteAvatar({ src, alt, label, mood, fallbackLetter, size }: VignetteAvatarProps) {
   const sizeClasses = size === 'lg'
-    ? 'w-40 h-40 border-2 border-gray-600'
-    : 'w-32 h-32 border-2 border-cyan-500/60';
+    ? 'w-20 h-20 md:w-40 md:h-40 border-2 border-gray-600'
+    : 'w-16 h-16 md:w-32 md:h-32 border-2 border-cyan-500/60';
 
   return (
     <div className="flex flex-col items-center gap-0.5">
@@ -538,7 +617,7 @@ function VignetteAvatar({ src, alt, label, mood, fallbackLetter, size }: Vignett
           className={`${sizeClasses} rounded-lg object-cover shadow-lg`}
         />
       ) : (
-        <div className={`${sizeClasses} rounded-lg bg-cyan-900/70 backdrop-blur-sm flex items-center justify-center text-3xl text-cyan-300 font-medium shadow-lg`}>
+        <div className={`${sizeClasses} rounded-lg bg-cyan-900/70 backdrop-blur-sm flex items-center justify-center text-xl md:text-3xl text-cyan-300 font-medium shadow-lg`}>
           {fallbackLetter || alt.charAt(0).toUpperCase()}
         </div>
       )}
@@ -565,12 +644,12 @@ function VignetteWithItems({ src, alt, label, items, generating }: {
 
   return (
     <div className="flex flex-col items-center gap-0.5">
-      <div className="relative w-32 h-32">
+      <div className="relative w-16 h-16 md:w-32 md:h-32">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={src}
           alt={alt}
-          className={`w-32 h-32 border-2 border-cyan-500/60 rounded-lg object-cover shadow-lg ${generating ? 'animate-pulse' : ''}`}
+          className={`w-16 h-16 md:w-32 md:h-32 border-2 border-cyan-500/60 rounded-lg object-cover shadow-lg ${generating ? 'animate-pulse' : ''}`}
         />
         {/* Item dots overlaid on vignette */}
         {items.length > 0 && (

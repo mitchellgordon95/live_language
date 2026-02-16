@@ -53,6 +53,7 @@ export default function Home() {
   const [saves, setSaves] = useState<Array<{ languageId: string; module: string }>>([]);
   const chatIdRef = useRef(0);
   const autoPlayRef = useRef(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { speak, isMuted, toggleMute } = useTTS();
   const { selectedText, position, isVisible, dismiss, popupRef } = useTextSelection();
 
@@ -371,45 +372,78 @@ export default function Home() {
   return (
     <div className="h-screen bg-gray-950 text-white flex flex-col">
       {/* Top bar */}
-      <div className="flex items-center justify-between px-4 py-2 bg-gray-900 border-b border-gray-800">
-        <h1 className="text-sm font-medium text-gray-400">Language Life Sim <span className="text-gray-600">(Alpha)</span></h1>
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-gray-500">
-            Lvl {game.level} &middot; {game.points}/{game.pointsToNextLevel} pts
+      <div className="flex items-center justify-between px-3 md:px-4 py-2 bg-gray-900 border-b border-gray-800 shrink-0">
+        <h1 className="text-sm font-medium text-gray-400 truncate">Language Life Sim <span className="text-gray-600 hidden sm:inline">(Alpha)</span></h1>
+        <div className="flex items-center gap-2 md:gap-3">
+          <span className="text-xs text-gray-500 whitespace-nowrap">
+            Lvl {game.level} &middot; {game.points}/{game.pointsToNextLevel}
           </span>
-          <button
-            onClick={toggleMute}
-            className="text-gray-500 hover:text-gray-300 transition-colors"
-            title={isMuted ? 'Unmute TTS' : 'Mute TTS'}
-          >
-            {isMuted ? <SpeakerOffIcon /> : <SpeakerOnIcon />}
-          </button>
-          <a
-            href="/create"
-            className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
-          >
-            Modules
-          </a>
-          <button
-            onClick={() => { setAppState('menu'); setGame(null); }}
-            className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
-          >
-            Back to Menu
-          </button>
+          {/* Desktop nav */}
+          <div className="hidden md:flex items-center gap-3">
+            <button
+              onClick={toggleMute}
+              className="text-gray-500 hover:text-gray-300 transition-colors"
+              title={isMuted ? 'Unmute TTS' : 'Mute TTS'}
+            >
+              {isMuted ? <SpeakerOffIcon /> : <SpeakerOnIcon />}
+            </button>
+            <a href="/create" className="text-xs text-gray-500 hover:text-gray-300 transition-colors">
+              Modules
+            </a>
+            <button
+              onClick={() => { setAppState('menu'); setGame(null); }}
+              className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+            >
+              Back to Menu
+            </button>
+          </div>
+          {/* Mobile hamburger */}
+          <div className="relative md:hidden">
+            <button
+              onClick={() => setMobileMenuOpen(prev => !prev)}
+              className="text-gray-400 hover:text-gray-200 p-1"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+            {mobileMenuOpen && (
+              <div className="absolute right-0 top-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl py-1 z-50 min-w-[160px]">
+                <button
+                  onClick={() => { toggleMute(); setMobileMenuOpen(false); }}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
+                >
+                  {isMuted ? 'Unmute TTS' : 'Mute TTS'}
+                </button>
+                <a
+                  href="/create"
+                  className="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
+                >
+                  Modules
+                </a>
+                <button
+                  onClick={() => { setAppState('menu'); setGame(null); setMobileMenuOpen(false); }}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
+                >
+                  Back to Menu
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Main content: world (left) + chat+input (right) */}
-      <div className="flex-1 flex overflow-hidden">
+      {/* Main content: stacked on mobile, side-by-side on desktop */}
+      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* World panel */}
-        <div className="w-[55%] border-r border-gray-800">
+        <div className="shrink-0 md:w-[55%] md:border-r border-gray-800">
           <ScenePanel game={game} onSpeak={(text) => speak(prepareTTSText(text, game.languageId), TTS_VOICES[game.languageId] || 'Puck')} />
         </div>
 
         {/* Chat + Input column */}
-        <div className="w-[45%] flex flex-col">
+        <div className="flex-1 min-h-0 md:w-[45%] flex flex-col">
           <ChatPanel chatHistory={chatHistory} onSpeak={speak} />
-          <div className="p-3 border-t border-gray-800">
+          <div className="p-2 md:p-3 border-t border-gray-800 shrink-0">
             {error && (
               <div className="text-red-400 text-xs mb-2">{error}</div>
             )}
