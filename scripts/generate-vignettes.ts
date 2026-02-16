@@ -81,9 +81,9 @@ function getVignetteFilename(vignette: VignetteDef, ext: string = 'png'): string
 }
 
 async function generateBaseVignette(
-  ai: GoogleGenAI, vignette: VignetteDef, moduleName: string, outputDir: string,
+  ai: GoogleGenAI, vignette: VignetteDef, moduleName: string, outputDir: string, languageId?: string,
 ): Promise<string> {
-  const prompt = getVignettePrompt(vignette, moduleName);
+  const prompt = getVignettePrompt(vignette, moduleName, languageId);
   console.log(`  [base] Generating ${vignette.category}/${vignette.id}/${vignette.variant}...`);
 
   const response = await ai.models.generateContent({
@@ -95,9 +95,9 @@ async function generateBaseVignette(
 }
 
 async function generateVariantVignette(
-  ai: GoogleGenAI, vignette: VignetteDef, moduleName: string, outputDir: string, baseImagePath: string,
+  ai: GoogleGenAI, vignette: VignetteDef, moduleName: string, outputDir: string, baseImagePath: string, languageId?: string,
 ): Promise<string> {
-  const variantPromptText = getVariantPrompt(vignette, moduleName);
+  const variantPromptText = getVariantPrompt(vignette, moduleName, languageId);
   console.log(`  [variant] Generating ${vignette.category}/${vignette.id}/${vignette.variant} (with base reference)...`);
 
   const baseImageData = fs.readFileSync(baseImagePath);
@@ -210,13 +210,13 @@ async function main() {
         const baseFilename = generatedFiles.get(vignetteKey(baseDef)) || getVignetteFilename(baseDef);
         const baseImagePath = path.join(outputDir, baseFilename);
         if (fs.existsSync(baseImagePath)) {
-          filename = await generateVariantVignette(ai, vignette, opts.module, outputDir, baseImagePath);
+          filename = await generateVariantVignette(ai, vignette, opts.module, outputDir, baseImagePath, language);
         } else {
           console.log(`    (base not found, generating without reference)`);
-          filename = await generateBaseVignette(ai, vignette, opts.module, outputDir);
+          filename = await generateBaseVignette(ai, vignette, opts.module, outputDir, language);
         }
       } else {
-        filename = await generateBaseVignette(ai, vignette, opts.module, outputDir);
+        filename = await generateBaseVignette(ai, vignette, opts.module, outputDir, language);
       }
       generatedFiles.set(vignetteKey(vignette), filename);
       succeeded++;

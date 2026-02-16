@@ -121,6 +121,7 @@ async function main() {
     locationName: locationData.locationName,
     moduleName: opts.module,
     objectNames: locationData.objects.map((o: { name: string }) => o.name),
+    languageId: language,
   };
 
   let contents: Parameters<typeof ai.models.generateContent>[0]['contents'];

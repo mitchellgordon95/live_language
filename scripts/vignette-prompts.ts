@@ -6,7 +6,7 @@
  * Prompts are built from NPC appearance/personality and object names/tags.
  */
 
-import { PALETTES, VIGNETTE_STYLE, PLAYER_DESC } from './style-guide';
+import { PALETTES, VIGNETTE_STYLE, PLAYER_DESC, LANGUAGE_STYLES } from './style-guide';
 
 // --- Types ---
 
@@ -155,8 +155,9 @@ export function deriveVignetteDefs(module: ModuleData): VignetteDef[] {
 /**
  * Build the full Gemini prompt for a vignette (text-only, no base image reference).
  */
-export function getVignettePrompt(vignette: VignetteDef, moduleName: string): string {
+export function getVignettePrompt(vignette: VignetteDef, moduleName: string, languageId?: string): string {
   const palette = PALETTES[moduleName] || PALETTES.home;
+  const culturalStyle = languageId ? LANGUAGE_STYLES[languageId] : '';
 
   return `Generate a warm, stylized editorial illustration vignette.
 
@@ -164,14 +165,15 @@ ${vignette.prompt}
 
 STYLE:
 ${VIGNETTE_STYLE}
-- ${palette}`;
+- ${palette}${culturalStyle ? `\n- Cultural setting: ${culturalStyle}` : ''}`;
 }
 
 /**
  * Build the variant prompt to use with a base reference image.
  */
-export function getVariantPrompt(vignette: VignetteDef, moduleName: string): string {
+export function getVariantPrompt(vignette: VignetteDef, moduleName: string, languageId?: string): string {
   const palette = PALETTES[moduleName] || PALETTES.home;
+  const culturalStyle = languageId ? LANGUAGE_STYLES[languageId] : '';
 
   return `Generate a variant of this SAME character/object. The subject must look identical to the reference image — same face, same build, same style, same colors. Only change what the prompt specifies (pose, expression, activity, setting).
 
@@ -179,7 +181,7 @@ ${vignette.prompt}
 
 STYLE:
 ${VIGNETTE_STYLE}
-- ${palette}`;
+- ${palette}${culturalStyle ? `\n- Cultural setting: ${culturalStyle}` : ''}`;
 }
 
 // --- Base/variant helpers ---

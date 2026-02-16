@@ -1,0 +1,19 @@
+{
+  "image": "street.png",
+  "width": 1024,
+  "height": 1024,
+  "objects": {
+    "streetlamp": {
+      "x": 27,
+      "y": 58,
+      "w": 6,
+      "h": 68
+    },
+    "bench": {
+      "x": 48,
+      "y": 82,
+      "w": 20,
+      "h": 10
+    }
+  }
+}

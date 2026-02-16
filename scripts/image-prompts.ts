@@ -3,13 +3,14 @@
  * Each location gets a tailored prompt that produces a consistent illustration style.
  */
 
-import { PALETTES, EDITORIAL_STYLE } from './style-guide';
+import { PALETTES, EDITORIAL_STYLE, LANGUAGE_STYLES } from './style-guide';
 
 export interface ScenePromptContext {
   locationId: string;
   locationName: string;       // e.g., "kitchen"
   moduleName: string;         // e.g., "home"
   objectNames: string[];      // e.g., ["refrigerator", "stove", "table"]
+  languageId?: string;        // e.g., "portuguese" — for cultural visual style
 }
 
 // Per-location scene descriptions for richer context (exported for fallback use by generate-assets.ts)
@@ -70,11 +71,12 @@ export const SCENE_DESCRIPTIONS: Record<string, string> = {
 export function getImagePrompt(ctx: ScenePromptContext): string {
   const palette = PALETTES[ctx.moduleName] || PALETTES.home;
   const sceneDesc = SCENE_DESCRIPTIONS[ctx.locationId] || `A ${ctx.locationName} scene.`;
+  const culturalStyle = ctx.languageId ? LANGUAGE_STYLES[ctx.languageId] : '';
 
   return `Generate a warm, stylized editorial illustration of a ${ctx.locationName}, seen from a gentle overhead 3/4 angle (bird's eye view tilted about 30 degrees).
 
 SCENE: ${sceneDesc}
-
+${culturalStyle ? `\nCULTURAL SETTING: ${culturalStyle}\n` : ''}
 OBJECTS THAT MUST BE CLEARLY VISIBLE AND IDENTIFIABLE:
 ${ctx.objectNames.map(name => `- ${name}`).join('\n')}
 
@@ -93,11 +95,12 @@ STYLE:
 export function getReferenceImagePrompt(ctx: ScenePromptContext): string {
   const palette = PALETTES[ctx.moduleName] || PALETTES.home;
   const sceneDesc = SCENE_DESCRIPTIONS[ctx.locationId] || `A ${ctx.locationName} scene.`;
+  const culturalStyle = ctx.languageId ? LANGUAGE_STYLES[ctx.languageId] : '';
 
   return `Here is the current scene image. Generate a new version that keeps the SAME art style, color palette, and general layout, but with the CHANGES listed below. Only include the objects explicitly listed — remove anything else.
 
 SCENE: ${sceneDesc}
-
+${culturalStyle ? `\nCULTURAL SETTING: ${culturalStyle}\n` : ''}
 ONLY THESE OBJECTS SHOULD APPEAR (remove anything not on this list):
 ${ctx.objectNames.map(name => `- ${name}`).join('\n')}
 

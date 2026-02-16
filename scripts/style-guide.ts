@@ -30,5 +30,13 @@ export const PALETTES: Record<string, string> = {
   bank: 'Navy blue, gold accents, marble gray.',
 };
 
+// Language-specific cultural/architectural style — gives each language its own visual identity
+export const LANGUAGE_STYLES: Record<string, string> = {
+  spanish: 'Latin American / Mexican aesthetic. Warm terracotta tiles, colorful painted walls, rustic wooden furniture, woven textiles, clay pottery, iron fixtures.',
+  mandarin: 'Modern Chinese urban apartment aesthetic. Bamboo accents, red and gold decorative touches, compact efficient layout, rice cooker, tea set, calligraphy on the wall.',
+  hindi: 'Modern Indian urban home aesthetic. Bright colors, ornate patterns, brass accents, rangoli-inspired decor, steel utensils, spice jars, cotton curtains.',
+  portuguese: 'Brazilian apartment aesthetic. Tropical wood furniture, colorful azulejo tile accents, lush indoor plants, hammock or woven details, bright airy spaces with natural light.',
+};
+
 // Consistent player character description used in all player vignettes
 export const PLAYER_DESC = 'A gender-neutral young adult in their mid-20s with warm brown skin, short dark hair, and an expressive friendly face. Wearing casual home clothes (t-shirt and comfortable pants).';
