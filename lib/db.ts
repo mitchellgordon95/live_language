@@ -42,6 +42,20 @@ async function ensureSchema(): Promise<void> {
   } catch {
     // Already migrated — composite PK exists
   }
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_modules (
+      id            TEXT PRIMARY KEY,
+      profile       TEXT NOT NULL,
+      language_id   TEXT NOT NULL,
+      title         TEXT NOT NULL,
+      description   TEXT,
+      module_data   JSONB NOT NULL,
+      asset_status  TEXT NOT NULL DEFAULT 'pending',
+      status        TEXT NOT NULL DEFAULT 'draft',
+      created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
   schemaReady = true;
 }
 
@@ -85,4 +99,97 @@ export async function listSaves(profile: string): Promise<Array<{ languageId: st
     [profile],
   );
   return result.rows.map(row => ({ languageId: row.language_id, module: row.module }));
+}
+
+// --- User Modules ---
+
+export interface UserModuleRow {
+  id: string;
+  profile: string;
+  languageId: string;
+  title: string;
+  description: string | null;
+  moduleData: object;
+  assetStatus: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function createModule(
+  id: string,
+  profile: string,
+  languageId: string,
+  title: string,
+  description: string | null,
+  moduleData: object,
+): Promise<void> {
+  await ensureSchema();
+  const pool = getPool();
+  await pool.query(
+    `INSERT INTO user_modules (id, profile, language_id, title, description, module_data)
+     VALUES ($1, $2, $3, $4, $5, $6)`,
+    [id, profile, languageId, title, description, JSON.stringify(moduleData)],
+  );
+}
+
+export async function updateModule(
+  id: string,
+  updates: { title?: string; description?: string; moduleData?: object; assetStatus?: string; status?: string },
+): Promise<void> {
+  await ensureSchema();
+  const pool = getPool();
+  const sets: string[] = ['updated_at = NOW()'];
+  const values: unknown[] = [];
+  let i = 1;
+
+  if (updates.title !== undefined) { sets.push(`title = $${i++}`); values.push(updates.title); }
+  if (updates.description !== undefined) { sets.push(`description = $${i++}`); values.push(updates.description); }
+  if (updates.moduleData !== undefined) { sets.push(`module_data = $${i++}`); values.push(JSON.stringify(updates.moduleData)); }
+  if (updates.assetStatus !== undefined) { sets.push(`asset_status = $${i++}`); values.push(updates.assetStatus); }
+  if (updates.status !== undefined) { sets.push(`status = $${i++}`); values.push(updates.status); }
+
+  values.push(id);
+  await pool.query(`UPDATE user_modules SET ${sets.join(', ')} WHERE id = $${i}`, values);
+}
+
+export async function getModule(id: string): Promise<UserModuleRow | null> {
+  await ensureSchema();
+  const pool = getPool();
+  const result = await pool.query('SELECT * FROM user_modules WHERE id = $1', [id]);
+  if (result.rows.length === 0) return null;
+  const row = result.rows[0];
+  return {
+    id: row.id,
+    profile: row.profile,
+    languageId: row.language_id,
+    title: row.title,
+    description: row.description,
+    moduleData: row.module_data,
+    assetStatus: row.asset_status,
+    status: row.status,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function listModules(profile: string): Promise<UserModuleRow[]> {
+  await ensureSchema();
+  const pool = getPool();
+  const result = await pool.query(
+    'SELECT * FROM user_modules WHERE profile = $1 ORDER BY updated_at DESC',
+    [profile],
+  );
+  return result.rows.map(row => ({
+    id: row.id,
+    profile: row.profile,
+    languageId: row.language_id,
+    title: row.title,
+    description: row.description,
+    moduleData: row.module_data,
+    assetStatus: row.asset_status,
+    status: row.status,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }));
 }

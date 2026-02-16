@@ -38,6 +38,7 @@ export function getBuildingForLocation(locationId: string): string {
       if (locId === locationId) return mod.name;
     }
   }
+  console.warn(`[module-registry] Location "${locationId}" not found in active modules, defaulting to 'home'`);
   return 'home';
 }
 

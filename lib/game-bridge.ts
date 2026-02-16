@@ -7,7 +7,9 @@ import { join } from 'path';
 import { readFileSync, existsSync } from 'fs';
 import type { GameView, TurnResultView, QuestView, ObjectCoords, SceneInfo, ExitView, NPCView, TutorialStepView, VignetteHint } from './types';
 import { getCachedVignette, getPlaceholderPath, isGenerationEnabled, isGenerating, triggerGeneration } from './vignette-generator';
-import { saveGame, loadGame, listSaves } from './db';
+import { saveGame, loadGame, listSaves, getModule } from './db';
+import { hydrateModule } from '../src/engine/serializable-module';
+import type { SerializableModuleDefinition } from '../src/engine/serializable-module';
 
 // Engine imports (compiled by Next.js directly from TypeScript source)
 import { processTurn } from '../src/modes/unified';
@@ -42,6 +44,20 @@ function deserializeState(raw: any): any {
   };
 }
 
+// --- UGC Module Loading ---
+
+async function loadUGCModule(moduleId: string) {
+  const row = await getModule(moduleId);
+  if (!row) throw new Error(`User module not found: ${moduleId}`);
+  const hydrated = hydrateModule(row.moduleData as unknown as SerializableModuleDefinition);
+  // Use the DB ID as the module name so we can find it on subsequent turns
+  hydrated.name = moduleId;
+  // Only register the UGC module — do NOT include built-in modules, which would
+  // leak their tutorials/state into UGC gameplay
+  setActiveModules([hydrated]);
+  return hydrated;
+}
+
 // --- Public API ---
 
 export async function initGame(options: {
@@ -57,6 +73,18 @@ export async function initGame(options: {
   }
   setActiveModules(languageConfig.modules);
 
+  // UGC module: load from DB, hydrate, register
+  if (options.module?.startsWith('ugc_')) {
+    const ugcMod = await loadUGCModule(options.module);
+    const startStep = ugcMod.firstStepId ? getStepById(ugcMod.firstStepId) || null : null;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let state = createInitialState(ugcMod.startLocationId, startStep, ugcMod.objects, ugcMod.npcs) as any;
+    state = { ...state, playerTags: ['standing'], audioEnabled: false };
+    await saveGame(options.profile, options.module, languageId, serializeState(state));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return buildGameView(options.profile, languageId, state, null, undefined, (languageConfig as any).helpText);
+  }
+
   // Check DB for existing save when no specific module requested
   if (!options.module) {
     try {
@@ -65,6 +93,10 @@ export async function initGame(options: {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const savedLangConfig = getLanguage(save.languageId) || languageConfig;
         setActiveModules(savedLangConfig.modules);
+        // Load UGC module if resuming one
+        if (save.module.startsWith('ugc_')) {
+          await loadUGCModule(save.module);
+        }
         const state = deserializeState(save.state);
         const view = buildGameView(options.profile, save.languageId, state, null, undefined, (savedLangConfig as any).helpText);
         return { ...view, resumed: true };
@@ -128,14 +160,21 @@ export async function playTurn(profile: string, languageId: string, input: strin
   if (!languageConfig) {
     throw new Error(`Language config not found: ${save.languageId}`);
   }
-  setActiveModules(languageConfig.modules);
+  // For UGC modules, create a config with only the UGC module so processTurn
+  // (which calls setActiveModules(config.modules)) doesn't load built-in modules
+  let effectiveConfig = languageConfig;
+  if (save.module.startsWith('ugc_')) {
+    const ugcMod = await loadUGCModule(save.module);
+    effectiveConfig = { ...languageConfig, modules: [ugcMod] };
+  } else {
+    setActiveModules(languageConfig.modules);
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const result = await processTurn(input, state, languageConfig) as any;
+  const result = await processTurn(input, state, effectiveConfig) as any;
 
   const newState = result.newState;
-  const module = getModuleForLocation(newState.currentLocation);
-  await saveGame(profile, module, save.languageId, serializeState(newState));
+  await saveGame(profile, save.module, save.languageId, serializeState(newState));
 
   const turnResult = buildTurnResultView(result, newState);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

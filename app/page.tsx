@@ -52,6 +52,7 @@ export default function Home() {
   const [selectedLanguage, setSelectedLanguage] = useState<string>('spanish');
   const [saves, setSaves] = useState<Array<{ languageId: string; module: string }>>([]);
   const chatIdRef = useRef(0);
+  const autoPlayRef = useRef(false);
   const { speak, isMuted, toggleMute } = useTTS();
   const { selectedText, position, isVisible, dismiss, popupRef } = useTextSelection();
 
@@ -76,12 +77,13 @@ export default function Home() {
       .catch(() => setSaves([]));
   }, [profile]);
 
-  const startGame = useCallback(async (module?: string) => {
+  const startGame = useCallback(async (module?: string, overrides?: { language?: string; profile?: string }) => {
     setAppState('loading');
     setError(null);
     setChatHistory([]);
     chatIdRef.current = 0;
-    const activeProfile = profile || ('anon_' + Math.random().toString(36).substring(2, 10));
+    const activeLang = overrides?.language || selectedLanguage;
+    const activeProfile = overrides?.profile || profile || ('anon_' + Math.random().toString(36).substring(2, 10));
     if (!profile) setProfile(activeProfile);
     localStorage.setItem('profile', activeProfile);
 
@@ -89,7 +91,7 @@ export default function Home() {
       const res = await fetch('/api/game/init', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ module, language: selectedLanguage, profile: activeProfile }),
+        body: JSON.stringify({ module, language: activeLang, profile: activeProfile }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -113,6 +115,26 @@ export default function Home() {
       setAppState('error');
     }
   }, [profile, selectedLanguage]);
+
+  // Auto-start game when navigated from module explorer with ?play=ugc_xxx
+  useEffect(() => {
+    if (autoPlayRef.current) return;
+    const params = new URLSearchParams(window.location.search);
+    const playModule = params.get('play');
+    const lang = params.get('language');
+    const prof = params.get('profile');
+    if (playModule && lang) {
+      autoPlayRef.current = true;
+      if (prof) {
+        setProfile(prof);
+        localStorage.setItem('profile', prof);
+      }
+      setSelectedLanguage(lang);
+      // Clean URL without reloading
+      window.history.replaceState({}, '', '/');
+      startGame(playModule, { language: lang, profile: prof || undefined });
+    }
+  }, [startGame]);
 
   const handleInput = useCallback(async (input: string) => {
     // /say command: entirely client-side TTS
@@ -300,6 +322,13 @@ export default function Home() {
           </div>
 
           <div className="mt-6 text-center">
+            <a
+              href="/create"
+              className="text-blue-400 hover:text-blue-300 text-sm transition-colors"
+            >
+              Create a Module
+            </a>
+            <span className="text-gray-700 mx-2">|</span>
             <a
               href="https://discord.gg/gBKykJc4MW"
               target="_blank"
