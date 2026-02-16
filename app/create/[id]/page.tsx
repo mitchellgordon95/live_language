@@ -3,6 +3,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 
+interface LocationAsset {
+  imageUrl: string;
+  coordinates: Record<string, { x: number; y: number; w: number; h: number }>;
+}
+
 interface ModuleRow {
   id: string;
   profile: string;
@@ -11,6 +16,7 @@ interface ModuleRow {
   description: string | null;
   moduleData: Record<string, unknown>;
   assetStatus: string;
+  assets: Record<string, LocationAsset>;
   status: string;
 }
 
@@ -96,6 +102,11 @@ export default function ModuleEditor() {
   const [chatOpen, setChatOpen] = useState(true);
   const chatIdRef = useRef(0);
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Asset generation state
+  type LocStatus = 'pending' | 'generating' | 'done' | 'failed';
+  const [assetProgress, setAssetProgress] = useState<Record<string, LocStatus>>({});
+  const [isGeneratingAssets, setIsGeneratingAssets] = useState(false);
 
   // Load module from DB
   useEffect(() => {
@@ -209,6 +220,57 @@ export default function ModuleEditor() {
     router.push(url);
   }, [mod, router]);
 
+  // Initialize asset progress from loaded module
+  useEffect(() => {
+    if (!mod?.assets) return;
+    const progress: Record<string, LocStatus> = {};
+    for (const locId of Object.keys(mod.assets)) {
+      if (mod.assets[locId]?.imageUrl) progress[locId] = 'done';
+    }
+    if (Object.keys(progress).length > 0) setAssetProgress(progress);
+  }, [mod?.assets]);
+
+  const handleGenerateAssets = useCallback(async () => {
+    if (!moduleData) return;
+    const locs = moduleData.locations as Record<string, unknown> | undefined;
+    if (!locs) return;
+    const locationIds = Object.keys(locs);
+    if (locationIds.length === 0) return;
+
+    setIsGeneratingAssets(true);
+    const progress: Record<string, LocStatus> = {};
+    locationIds.forEach(id => { progress[id] = 'pending'; });
+    setAssetProgress({ ...progress });
+
+    for (const locId of locationIds) {
+      progress[locId] = 'generating';
+      setAssetProgress({ ...progress });
+
+      try {
+        const res = await fetch(`/api/modules/${moduleId}/assets`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ locationId: locId }),
+        });
+        if (!res.ok) throw new Error('Generation failed');
+        progress[locId] = 'done';
+      } catch {
+        progress[locId] = 'failed';
+      }
+      setAssetProgress({ ...progress });
+    }
+
+    const allDone = Object.values(progress).every(s => s === 'done');
+    await fetch(`/api/modules/${moduleId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ assetStatus: allDone ? 'ready' : 'partial' }),
+    });
+    setMod(prev => prev ? { ...prev, assetStatus: allDone ? 'ready' : 'partial' } : prev);
+
+    setIsGeneratingAssets(false);
+  }, [moduleData, moduleId]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center">
@@ -312,6 +374,78 @@ export default function ModuleEditor() {
                   <StatCard label="Objects" value={objects.length} />
                   <StatCard label="NPCs" value={npcs.length} />
                   <StatCard label="Vocabulary" value={vocabulary.length} />
+                </div>
+
+                {/* Scene Images */}
+                <div>
+                  <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Scene Images</h3>
+                  <div className="bg-gray-900 rounded-xl p-4">
+                    {isGeneratingAssets ? (
+                      <div className="space-y-2">
+                        <div className="text-sm text-gray-300 mb-3">
+                          Generating scenes... ({Object.values(assetProgress).filter(s => s === 'done').length}/{Object.keys(assetProgress).length})
+                        </div>
+                        {Object.entries(assetProgress).map(([locId, status]) => (
+                          <div key={locId} className="flex items-center gap-2 text-sm">
+                            {status === 'done' && <span className="text-green-400 w-5 text-center">&#10003;</span>}
+                            {status === 'generating' && <span className="text-blue-400 w-5 text-center animate-spin">&#9696;</span>}
+                            {status === 'pending' && <span className="text-gray-600 w-5 text-center">&#9675;</span>}
+                            {status === 'failed' && <span className="text-red-400 w-5 text-center">&#10007;</span>}
+                            <span className={status === 'done' ? 'text-gray-300' : status === 'generating' ? 'text-blue-300' : 'text-gray-500'}>
+                              {(locations[locId]?.name?.native) || locId}
+                            </span>
+                            {status === 'generating' && <span className="text-gray-600 text-xs ml-auto">generating...</span>}
+                          </div>
+                        ))}
+                      </div>
+                    ) : mod.assetStatus === 'ready' || Object.values(assetProgress).some(s => s === 'done') ? (
+                      <div>
+                        <div className="flex items-center gap-2 mb-3">
+                          <span className="text-green-400">&#10003;</span>
+                          <span className="text-sm text-gray-300">
+                            {Object.values(assetProgress).filter(s => s === 'done').length} of {Object.keys(locations).length} scenes generated
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-2 mb-3">
+                          {Object.entries(assetProgress).filter(([, s]) => s === 'done').map(([locId]) => {
+                            const asset = mod.assets?.[locId];
+                            return (
+                              <div key={locId} className="relative group">
+                                {asset?.imageUrl && (
+                                  <img
+                                    src={asset.imageUrl}
+                                    alt={locations[locId]?.name?.native || locId}
+                                    className="w-20 h-20 object-cover rounded-lg border border-gray-700"
+                                  />
+                                )}
+                                <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-[10px] text-gray-300 text-center py-0.5 rounded-b-lg">
+                                  {locations[locId]?.name?.native || locId}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <button
+                          onClick={handleGenerateAssets}
+                          disabled={isGeneratingAssets}
+                          className="text-sm text-gray-500 hover:text-gray-300 transition-colors"
+                        >
+                          Regenerate All
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-gray-500">No scene images yet</span>
+                        <button
+                          onClick={handleGenerateAssets}
+                          disabled={isGeneratingAssets}
+                          className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors"
+                        >
+                          Generate Scene Images
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Location Graph */}

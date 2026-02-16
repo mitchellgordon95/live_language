@@ -84,6 +84,7 @@ export interface SceneInfo {
   image: string;       // filename, e.g. "kitchen.png"
   module: string;      // e.g. "home"
   languageId: string;  // e.g. "spanish"
+  imageUrl?: string;   // Full blob URL for UGC modules
 }
 
 export interface VignetteHint {

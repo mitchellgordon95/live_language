@@ -7,7 +7,7 @@ import { join } from 'path';
 import { readFileSync, existsSync } from 'fs';
 import type { GameView, TurnResultView, QuestView, ObjectCoords, SceneInfo, ExitView, NPCView, TutorialStepView, VignetteHint } from './types';
 import { getCachedVignette, getPlaceholderPath, isGenerationEnabled, isGenerating, triggerGeneration } from './vignette-generator';
-import { saveGame, loadGame, listSaves, getModule } from './db';
+import { saveGame, loadGame, listSaves, getModule, type LocationAsset } from './db';
 import { hydrateModule } from '../src/engine/serializable-module';
 import type { SerializableModuleDefinition } from '../src/engine/serializable-module';
 
@@ -82,7 +82,7 @@ export async function initGame(options: {
     state = { ...state, playerTags: ['standing'], audioEnabled: false };
     await saveGame(options.profile, options.module, languageId, serializeState(state));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return buildGameView(options.profile, languageId, state, null, undefined, (languageConfig as any).helpText);
+    return await buildGameView(options.profile, languageId, state, null, undefined, (languageConfig as any).helpText);
   }
 
   // Check DB for existing save when no specific module requested
@@ -98,7 +98,7 @@ export async function initGame(options: {
           await loadUGCModule(save.module);
         }
         const state = deserializeState(save.state);
-        const view = buildGameView(options.profile, save.languageId, state, null, undefined, (savedLangConfig as any).helpText);
+        const view = await buildGameView(options.profile, save.languageId, state, null, undefined, (savedLangConfig as any).helpText);
         return { ...view, resumed: true };
       }
     } catch (err) {
@@ -146,7 +146,7 @@ export async function initGame(options: {
   await saveGame(options.profile, moduleName, languageId, serializeState(state));
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return buildGameView(options.profile, languageId, state, null, undefined, (languageConfig as any).helpText);
+  return await buildGameView(options.profile, languageId, state, null, undefined, (languageConfig as any).helpText);
 }
 
 export async function playTurn(profile: string, languageId: string, input: string): Promise<GameView> {
@@ -178,7 +178,7 @@ export async function playTurn(profile: string, languageId: string, input: strin
 
   const turnResult = buildTurnResultView(result, newState);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return buildGameView(profile, save.languageId, newState, turnResult, result, (languageConfig as any).helpText);
+  return await buildGameView(profile, save.languageId, newState, turnResult, result, (languageConfig as any).helpText);
 }
 
 // --- Scene Manifest Loading ---
@@ -190,7 +190,21 @@ interface SceneManifest {
 
 const manifestCache = new Map<string, SceneManifest | null>();
 
-function loadManifest(languageId: string, module: string, locationId: string): SceneManifest | null {
+function loadManifest(
+  languageId: string,
+  module: string,
+  locationId: string,
+  ugcAssets?: Record<string, LocationAsset>,
+): SceneManifest | null {
+  // Check UGC assets first (blob-stored)
+  if (ugcAssets?.[locationId]) {
+    const asset = ugcAssets[locationId];
+    return {
+      image: asset.imageUrl,
+      objects: asset.coordinates || {},
+    };
+  }
+
   const key = `${languageId}/${module}/${locationId}`;
   const isDev = process.env.NODE_ENV !== 'production';
   if (!isDev && manifestCache.has(key)) return manifestCache.get(key)!;
@@ -211,6 +225,18 @@ function loadManifest(languageId: string, module: string, locationId: string): S
     if (!isDev) manifestCache.set(key, null);
     return null;
   }
+}
+
+// --- UGC Asset Loading ---
+
+const ugcAssetCache = new Map<string, Record<string, LocationAsset> | null>();
+
+async function loadUGCAssets(moduleId: string): Promise<Record<string, LocationAsset> | null> {
+  if (ugcAssetCache.has(moduleId)) return ugcAssetCache.get(moduleId)!;
+  const modRow = await getModule(moduleId);
+  const assets = (modRow?.assets && Object.keys(modRow.assets).length > 0) ? modRow.assets : null;
+  ugcAssetCache.set(moduleId, assets);
+  return assets;
 }
 
 // --- Vignette Manifest Loading ---
@@ -431,10 +457,13 @@ function getModuleForLocation(locationId: string): string {
 // --- View Model Builders ---
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function buildGameView(profile: string, langId: string, state: any, turnResult: TurnResultView | null, result?: any, helpText?: string): GameView {
+async function buildGameView(profile: string, langId: string, state: any, turnResult: TurnResultView | null, result?: any, helpText?: string): Promise<GameView> {
   const locationId = state.currentLocation;
   const module = getModuleForLocation(locationId) || 'home';
-  const manifest = loadManifest(langId, module, locationId);
+
+  // Load UGC assets from DB (cached in memory)
+  const ugcAssets = module.startsWith('ugc_') ? await loadUGCAssets(module) : null;
+  const manifest = loadManifest(langId, module, locationId, ugcAssets || undefined);
 
   // Objects in current location from flat list
   const allObjectsState: Array<{ id: string; name: { target: string; native: string }; location: string; tags: string[] }> = state.objects || [];
@@ -461,7 +490,12 @@ function buildGameView(profile: string, langId: string, state: any, turnResult: 
 
   // Scene info
   const scene: SceneInfo | null = manifest
-    ? { image: manifest.image, module, languageId: langId }
+    ? {
+        image: manifest.image,
+        module,
+        languageId: langId,
+        imageUrl: ugcAssets?.[locationId]?.imageUrl,
+      }
     : null;
 
   // Exits from locations lookup

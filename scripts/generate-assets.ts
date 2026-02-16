@@ -26,7 +26,7 @@ import {
   deriveVignetteDefs,
   type VignetteDef,
   type ModuleData,
-} from './vignette-prompts.ts';
+} from './vignette-prompts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PROJECT_ROOT = path.resolve(__dirname, '..');

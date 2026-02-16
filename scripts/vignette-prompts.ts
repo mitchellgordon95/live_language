@@ -6,7 +6,7 @@
  * Prompts are built from NPC appearance/personality and object names/tags.
  */
 
-import { PALETTES, VIGNETTE_STYLE, PLAYER_DESC } from './style-guide.ts';
+import { PALETTES, VIGNETTE_STYLE, PLAYER_DESC } from './style-guide';
 
 // --- Types ---
 

@@ -56,6 +56,12 @@ async function ensureSchema(): Promise<void> {
       updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
+  // Add assets column if missing
+  try {
+    await pool.query(`ALTER TABLE user_modules ADD COLUMN IF NOT EXISTS assets JSONB DEFAULT '{}'::jsonb`);
+  } catch {
+    // Column already exists
+  }
   schemaReady = true;
 }
 
@@ -103,6 +109,18 @@ export async function listSaves(profile: string): Promise<Array<{ languageId: st
 
 // --- User Modules ---
 
+export interface ObjectCoords {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+export interface LocationAsset {
+  imageUrl: string;
+  coordinates: Record<string, ObjectCoords>;
+}
+
 export interface UserModuleRow {
   id: string;
   profile: string;
@@ -111,6 +129,7 @@ export interface UserModuleRow {
   description: string | null;
   moduleData: object;
   assetStatus: string;
+  assets: Record<string, LocationAsset>;
   status: string;
   createdAt: string;
   updatedAt: string;
@@ -167,6 +186,7 @@ export async function getModule(id: string): Promise<UserModuleRow | null> {
     description: row.description,
     moduleData: row.module_data,
     assetStatus: row.asset_status,
+    assets: row.assets || {},
     status: row.status,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -188,8 +208,24 @@ export async function listModules(profile: string): Promise<UserModuleRow[]> {
     description: row.description,
     moduleData: row.module_data,
     assetStatus: row.asset_status,
+    assets: row.assets || {},
     status: row.status,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }));
+}
+
+export async function updateModuleAssets(
+  id: string,
+  locationId: string,
+  imageUrl: string,
+  coordinates: Record<string, ObjectCoords>,
+): Promise<void> {
+  await ensureSchema();
+  const pool = getPool();
+  const assetData = JSON.stringify({ [locationId]: { imageUrl, coordinates } });
+  await pool.query(
+    `UPDATE user_modules SET assets = COALESCE(assets, '{}'::jsonb) || $1::jsonb, updated_at = NOW() WHERE id = $2`,
+    [assetData, id],
+  );
 }

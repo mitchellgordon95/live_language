@@ -3,7 +3,7 @@
  * Each location gets a tailored prompt that produces a consistent illustration style.
  */
 
-import { PALETTES, EDITORIAL_STYLE } from './style-guide.ts';
+import { PALETTES, EDITORIAL_STYLE } from './style-guide';
 
 export interface ScenePromptContext {
   locationId: string;

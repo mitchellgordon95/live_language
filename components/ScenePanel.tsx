@@ -21,7 +21,9 @@ export default function ScenePanel({ game, onSpeak }: ScenePanelProps) {
 
   const hasScene = !!game.scene;
   const sceneBase = hasScene ? `/scenes/${game.scene!.languageId}/${game.scene!.module}` : '';
-  const imageSrc = hasScene ? `${sceneBase}/${game.scene!.image}` : null;
+  const imageSrc = hasScene
+    ? (game.scene!.imageUrl || `${sceneBase}/${game.scene!.image}`)
+    : null;
 
   const labeledObjects = game.objects.filter(
     (obj) => obj.coords && (obj.coords.w > 0 || obj.coords.h > 0)

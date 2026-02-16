@@ -13,7 +13,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 import { GoogleGenAI, Modality } from '@google/genai';
-import { getImagePrompt, getReferenceImagePrompt, getCoordinateExtractionPrompt } from './image-prompts.ts';
+import { getImagePrompt, getReferenceImagePrompt, getCoordinateExtractionPrompt } from './image-prompts';
 
 // Resolve paths relative to the project root (parent of scripts/)
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
