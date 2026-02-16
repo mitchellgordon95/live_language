@@ -7,7 +7,7 @@ import { join } from 'path';
 import { readFileSync, existsSync } from 'fs';
 import type { GameView, TurnResultView, QuestView, ObjectCoords, SceneInfo, ExitView, NPCView, TutorialStepView, VignetteHint } from './types';
 import { getCachedVignette, getPlaceholderPath, isGenerationEnabled, isGenerating, triggerGeneration } from './vignette-generator';
-import { saveGame, loadGame } from './db';
+import { saveGame, loadGame, listSaves } from './db';
 
 // Engine imports (compiled by Next.js directly from TypeScript source)
 import { processTurn } from '../src/modes/unified';
@@ -60,7 +60,7 @@ export async function initGame(options: {
   // Check DB for existing save when no specific module requested
   if (!options.module) {
     try {
-      const save = await loadGame(options.profile);
+      const save = await loadGame(options.profile, languageId);
       if (save) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const savedLangConfig = getLanguage(save.languageId) || languageConfig;
@@ -117,8 +117,8 @@ export async function initGame(options: {
   return buildGameView(options.profile, languageId, state, null, undefined, (languageConfig as any).helpText);
 }
 
-export async function playTurn(profile: string, input: string): Promise<GameView> {
-  const save = await loadGame(profile);
+export async function playTurn(profile: string, languageId: string, input: string): Promise<GameView> {
+  const save = await loadGame(profile, languageId);
   if (!save) {
     throw new Error('No saved game found. Start a new game.');
   }

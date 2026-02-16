@@ -1,19 +1,19 @@
 import { NextResponse } from 'next/server';
-import { hasSave } from '@/lib/db';
+import { listSaves } from '@/lib/db';
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const profile = url.searchParams.get('profile');
 
   if (!profile) {
-    return NextResponse.json({ hasSave: false });
+    return NextResponse.json({ saves: [] });
   }
 
   try {
-    const result = await hasSave(profile);
-    return NextResponse.json({ hasSave: result.exists, module: result.module, languageId: result.languageId });
+    const saves = await listSaves(profile);
+    return NextResponse.json({ saves });
   } catch (error) {
-    console.error('Error checking save:', error);
-    return NextResponse.json({ hasSave: false });
+    console.error('Error checking saves:', error);
+    return NextResponse.json({ saves: [] });
   }
 }

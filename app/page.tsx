@@ -50,40 +50,30 @@ export default function Home() {
   const [chatHistory, setChatHistory] = useState<ChatEntry[]>([]);
   const [profile, setProfile] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState<string>('spanish');
-  const [savedGame, setSavedGame] = useState<{ module: string; languageId: string } | null>(null);
+  const [saves, setSaves] = useState<Array<{ languageId: string; module: string }>>([]);
   const chatIdRef = useRef(0);
   const { speak, isMuted, toggleMute } = useTTS();
   const { selectedText, position, isVisible, dismiss, popupRef } = useTextSelection();
 
-  // Restore profile from localStorage and check for saved game
+  // Restore profile from localStorage and check for saves
   useEffect(() => {
     const saved = localStorage.getItem('profile');
     if (saved) {
       setProfile(saved);
       fetch(`/api/game/check?profile=${encodeURIComponent(saved)}`)
         .then(r => r.json())
-        .then(data => {
-          if (data.hasSave) {
-            setSavedGame({ module: data.module, languageId: data.languageId || 'spanish' });
-          }
-        })
+        .then(data => setSaves(data.saves || []))
         .catch(() => {});
     }
   }, []);
 
-  // Re-check for saved game when profile changes
+  // Re-check for saves when profile changes
   useEffect(() => {
-    if (!profile) { setSavedGame(null); return; }
+    if (!profile) { setSaves([]); return; }
     fetch(`/api/game/check?profile=${encodeURIComponent(profile)}`)
       .then(r => r.json())
-      .then(data => {
-        if (data.hasSave) {
-          setSavedGame({ module: data.module, languageId: data.languageId || 'spanish' });
-        } else {
-          setSavedGame(null);
-        }
-      })
-      .catch(() => setSavedGame(null));
+      .then(data => setSaves(data.saves || []))
+      .catch(() => setSaves([]));
   }, [profile]);
 
   const startGame = useCallback(async (module?: string) => {
@@ -95,15 +85,11 @@ export default function Home() {
     if (!profile) setProfile(activeProfile);
     localStorage.setItem('profile', activeProfile);
 
-    // For continue, don't pass language (server uses saved language)
-    // For new game, pass selected language
-    const language = module ? selectedLanguage : undefined;
-
     try {
       const res = await fetch('/api/game/init', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ module, language, profile: activeProfile }),
+        body: JSON.stringify({ module, language: selectedLanguage, profile: activeProfile }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -185,7 +171,7 @@ export default function Home() {
       const res = await fetch('/api/game', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profile: game.profile, input }),
+        body: JSON.stringify({ profile: game.profile, languageId: game.languageId, input }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -267,7 +253,7 @@ export default function Home() {
             <div className="grid grid-cols-2 gap-3">
               {LANGUAGES.map(lang => {
                 const isSelected = selectedLanguage === lang.id;
-                const isSavedLang = savedGame?.languageId === lang.id;
+                const hasSave = profile && saves.some(s => s.languageId === lang.id);
                 return (
                   <button
                     key={lang.id}
@@ -279,7 +265,7 @@ export default function Home() {
                     }`}
                   >
                     <div className="font-medium">{lang.flag} {lang.name}</div>
-                    {isSavedLang && profile && (
+                    {hasSave && (
                       <div className="text-xs text-green-400 mt-1">Saved game</div>
                     )}
                   </button>
@@ -289,14 +275,14 @@ export default function Home() {
           </div>
 
           <div className="space-y-3">
-            {savedGame && profile && (
+            {profile && saves.some(s => s.languageId === selectedLanguage) && (
               <button
                 onClick={() => startGame()}
                 className="w-full py-3 px-4 bg-green-700 hover:bg-green-600 rounded-lg font-medium transition-colors text-left"
               >
                 <div>Continue</div>
                 <div className="text-green-200 text-sm">
-                  Resume {LANGUAGES.find(l => l.id === savedGame.languageId)?.name || savedGame.languageId} game
+                  Resume {LANGUAGES.find(l => l.id === selectedLanguage)?.name} game
                 </div>
               </button>
             )}
@@ -304,9 +290,11 @@ export default function Home() {
               onClick={() => startGame('home')}
               className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-500 rounded-lg font-medium transition-colors text-left"
             >
-              <div>{savedGame && profile ? 'New Game' : 'Start Game'}</div>
+              <div>{profile && saves.some(s => s.languageId === selectedLanguage) ? 'New Game' : 'Start Game'}</div>
               <div className="text-blue-200 text-sm">
-                Begin learning {LANGUAGES.find(l => l.id === selectedLanguage)?.name}
+                {profile && saves.some(s => s.languageId === selectedLanguage)
+                  ? `Start over in ${LANGUAGES.find(l => l.id === selectedLanguage)?.name}`
+                  : `Begin learning ${LANGUAGES.find(l => l.id === selectedLanguage)?.name}`}
               </div>
             </button>
           </div>

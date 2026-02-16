@@ -24,14 +24,24 @@ async function ensureSchema(): Promise<void> {
   const pool = getPool();
   await pool.query(`
     CREATE TABLE IF NOT EXISTS game_saves (
-      profile      TEXT PRIMARY KEY,
+      profile      TEXT NOT NULL,
       module       TEXT NOT NULL,
       language_id  TEXT NOT NULL DEFAULT 'spanish',
       state        JSONB NOT NULL,
       updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      PRIMARY KEY (profile, language_id)
     )
   `);
+  // Migrate old schema: widen PK from (profile) to (profile, language_id)
+  try {
+    await pool.query(`
+      ALTER TABLE game_saves DROP CONSTRAINT game_saves_pkey;
+      ALTER TABLE game_saves ADD PRIMARY KEY (profile, language_id);
+    `);
+  } catch {
+    // Already migrated — composite PK exists
+  }
   schemaReady = true;
 }
 
@@ -46,33 +56,33 @@ export async function saveGame(
   await pool.query(
     `INSERT INTO game_saves (profile, module, language_id, state, updated_at)
      VALUES ($1, $2, $3, $4, NOW())
-     ON CONFLICT (profile) DO UPDATE
-     SET state = $4, module = $2, language_id = $3, updated_at = NOW()`,
+     ON CONFLICT (profile, language_id) DO UPDATE
+     SET state = $4, module = $2, updated_at = NOW()`,
     [profile, module, languageId, JSON.stringify(state)],
   );
 }
 
 export async function loadGame(
   profile: string,
+  languageId: string,
 ): Promise<{ module: string; languageId: string; state: Record<string, unknown> } | null> {
   await ensureSchema();
   const pool = getPool();
   const result = await pool.query(
-    'SELECT module, language_id, state FROM game_saves WHERE profile = $1',
-    [profile],
+    'SELECT module, language_id, state FROM game_saves WHERE profile = $1 AND language_id = $2',
+    [profile, languageId],
   );
   if (result.rows.length === 0) return null;
   const row = result.rows[0];
   return { module: row.module, languageId: row.language_id, state: row.state };
 }
 
-export async function hasSave(profile: string): Promise<{ exists: boolean; module?: string; languageId?: string }> {
+export async function listSaves(profile: string): Promise<Array<{ languageId: string; module: string }>> {
   await ensureSchema();
   const pool = getPool();
   const result = await pool.query(
-    'SELECT module, language_id FROM game_saves WHERE profile = $1',
+    'SELECT language_id, module FROM game_saves WHERE profile = $1 ORDER BY updated_at DESC',
     [profile],
   );
-  if (result.rows.length === 0) return { exists: false };
-  return { exists: true, module: result.rows[0].module, languageId: result.rows[0].language_id };
+  return result.rows.map(row => ({ languageId: row.language_id, module: row.module }));
 }

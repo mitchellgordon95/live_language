@@ -4,11 +4,11 @@ import { playTurn, handleLearnCommand } from '@/lib/game-bridge';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { profile, input } = body;
+    const { profile, languageId, input } = body;
 
-    if (!profile || !input) {
+    if (!profile || !languageId || !input) {
       return NextResponse.json(
-        { error: 'Missing profile or input' },
+        { error: 'Missing profile, languageId, or input' },
         { status: 400 },
       );
     }
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ learn: result });
     }
 
-    const gameView = await playTurn(profile, input);
+    const gameView = await playTurn(profile, languageId, input);
     return NextResponse.json(gameView);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to process turn';
