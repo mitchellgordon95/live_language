@@ -153,22 +153,23 @@ const manifestCache = new Map<string, SceneManifest | null>();
 
 function loadManifest(languageId: string, module: string, locationId: string): SceneManifest | null {
   const key = `${languageId}/${module}/${locationId}`;
-  if (manifestCache.has(key)) return manifestCache.get(key)!;
+  const isDev = process.env.NODE_ENV !== 'production';
+  if (!isDev && manifestCache.has(key)) return manifestCache.get(key)!;
 
   const scenesDir = join(process.cwd(), 'public', 'scenes', languageId, module);
   const manifestPath = join(scenesDir, `${locationId}.json`);
 
   if (!existsSync(manifestPath)) {
-    manifestCache.set(key, null);
+    if (!isDev) manifestCache.set(key, null);
     return null;
   }
 
   try {
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8')) as SceneManifest;
-    manifestCache.set(key, manifest);
+    if (!isDev) manifestCache.set(key, manifest);
     return manifest;
   } catch {
-    manifestCache.set(key, null);
+    if (!isDev) manifestCache.set(key, null);
     return null;
   }
 }
@@ -189,21 +190,22 @@ const vignetteManifestCache = new Map<string, VignetteManifest | null>();
 
 function loadVignetteManifest(languageId: string, module: string): VignetteManifest | null {
   const key = `${languageId}/${module}`;
-  if (vignetteManifestCache.has(key)) return vignetteManifestCache.get(key)!;
+  const isDev = process.env.NODE_ENV !== 'production';
+  if (!isDev && vignetteManifestCache.has(key)) return vignetteManifestCache.get(key)!;
 
   const manifestPath = join(process.cwd(), 'public', 'scenes', languageId, module, 'vignettes', 'manifest.json');
 
   if (!existsSync(manifestPath)) {
-    vignetteManifestCache.set(key, null);
+    if (!isDev) vignetteManifestCache.set(key, null);
     return null;
   }
 
   try {
     const manifest = JSON.parse(readFileSync(manifestPath, 'utf-8')) as VignetteManifest;
-    vignetteManifestCache.set(key, manifest);
+    if (!isDev) vignetteManifestCache.set(key, manifest);
     return manifest;
   } catch {
-    vignetteManifestCache.set(key, null);
+    if (!isDev) vignetteManifestCache.set(key, null);
     return null;
   }
 }
