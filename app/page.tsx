@@ -13,6 +13,7 @@ import { useTextSelection } from '@/hooks/useTextSelection';
 const TTS_VOICES: Record<string, string> = {
   spanish: 'Aoede',
   mandarin: 'Kore',
+  hindi: 'Aoede',
 };
 
 // Strip parenthetical annotations (pinyin, translations) so TTS gets clean text
@@ -32,11 +33,13 @@ type AppState = 'menu' | 'loading' | 'playing' | 'error';
 const LANGUAGES = [
   { id: 'spanish', name: 'Spanish', flag: '\u{1F1EA}\u{1F1F8}', hint: 'Me levanto', hintDesc: 'to get out of bed' },
   { id: 'mandarin', name: 'Mandarin Chinese', flag: '\u{1F1E8}\u{1F1F3}', hint: '\u6211\u8D77\u5E8A (w\u01D2 q\u01D0chu\u00E1ng)', hintDesc: 'to get out of bed' },
+  { id: 'hindi', name: 'Hindi', flag: '\u{1F1EE}\u{1F1F3}', hint: '\u092E\u0948\u0902 \u0909\u0920\u0924\u093E \u0939\u0942\u0901 (main uthta hoon)', hintDesc: 'to get out of bed' },
 ] as const;
 
 const PLACEHOLDERS: Record<string, string> = {
   spanish: "Type in Spanish... (e.g., 'abro la nevera')",
   mandarin: "Type in Mandarin... (e.g., '\u6253\u5F00\u51B0\u7BB1' or 'dakai bingxiang')",
+  hindi: "Type in Hindi... (e.g., '\u092B\u094D\u0930\u093F\u091C \u0916\u094B\u0932\u094B' or 'fridge kholo')",
 };
 
 export default function Home() {
