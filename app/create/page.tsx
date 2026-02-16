@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
+type View = 'listing' | 'wizard';
 type WizardStep = 'describe' | 'directions' | 'generating';
 
 interface Direction {
@@ -14,14 +15,36 @@ interface Direction {
   npcIdeas: string[];
 }
 
+interface ModuleEntry {
+  id: string;
+  languageId: string;
+  title: string;
+  description: string | null;
+  moduleData: {
+    locations?: Record<string, unknown>;
+    npcs?: unknown[];
+    objects?: unknown[];
+    vocabulary?: unknown[];
+    quests?: unknown[];
+  };
+  updatedAt: string;
+}
+
 const LANGUAGES = [
   { id: 'spanish', name: 'Spanish', flag: '\u{1F1EA}\u{1F1F8}' },
   { id: 'mandarin', name: 'Mandarin Chinese', flag: '\u{1F1E8}\u{1F1F3}' },
   { id: 'hindi', name: 'Hindi', flag: '\u{1F1EE}\u{1F1F3}' },
 ];
 
-export default function CreateModule() {
+export default function ModulesPage() {
   const router = useRouter();
+  const [view, setView] = useState<View>('listing');
+
+  // Listing state
+  const [modules, setModules] = useState<ModuleEntry[]>([]);
+  const [listLoading, setListLoading] = useState(true);
+
+  // Wizard state
   const [step, setStep] = useState<WizardStep>('describe');
   const [languageId, setLanguageId] = useState('spanish');
   const [description, setDescription] = useState('');
@@ -29,6 +52,17 @@ export default function CreateModule() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedDirection, setSelectedDirection] = useState<Direction | null>(null);
+
+  // Load modules on mount
+  useEffect(() => {
+    const profile = localStorage.getItem('profile');
+    if (!profile) { setListLoading(false); return; }
+    fetch(`/api/modules?profile=${encodeURIComponent(profile)}`)
+      .then(r => r.ok ? r.json() : { modules: [] })
+      .then(data => setModules(data.modules || []))
+      .catch(() => {})
+      .finally(() => setListLoading(false));
+  }, []);
 
   const handleBrainstorm = useCallback(async () => {
     if (!description.trim()) return;
@@ -65,7 +99,6 @@ export default function CreateModule() {
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to generate');
       const data = await res.json();
 
-      // Save immediately and redirect to editor
       const profile = localStorage.getItem('profile') || ('anon_' + Math.random().toString(36).substring(2, 10));
       localStorage.setItem('profile', profile);
       const id = 'ugc_' + Math.random().toString(36).substring(2, 12);
@@ -87,16 +120,33 @@ export default function CreateModule() {
     }
   }, [languageId, description, router]);
 
+  const startWizard = useCallback(() => {
+    setView('wizard');
+    setStep('describe');
+    setDescription('');
+    setDirections([]);
+    setError(null);
+    setSelectedDirection(null);
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       {/* Header */}
       <div className="border-b border-gray-800 px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button onClick={() => router.push('/')} className="text-gray-500 hover:text-gray-300 text-sm">
-            ← Back
+          <button onClick={() => view === 'wizard' ? setView('listing') : router.push('/')} className="text-gray-500 hover:text-gray-300 text-sm">
+            ← {view === 'wizard' ? 'Back' : 'Home'}
           </button>
-          <h1 className="text-lg font-semibold">Create Module</h1>
+          <h1 className="text-lg font-semibold">{view === 'wizard' ? 'New Module' : 'Modules'}</h1>
         </div>
+        {view === 'listing' && (
+          <button
+            onClick={startWizard}
+            className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-medium transition-colors"
+          >
+            + New Module
+          </button>
+        )}
       </div>
 
       {error && (
@@ -105,8 +155,58 @@ export default function CreateModule() {
         </div>
       )}
 
-      {/* Step 1: Describe */}
-      {step === 'describe' && (
+      {/* Listing View */}
+      {view === 'listing' && (
+        <div className="max-w-3xl mx-auto px-6 pt-8">
+          {listLoading ? (
+            <div className="text-gray-400 animate-pulse text-center pt-16">Loading modules...</div>
+          ) : modules.length === 0 ? (
+            <div className="text-center pt-16">
+              <div className="text-gray-500 mb-4">No modules yet</div>
+              <button
+                onClick={startWizard}
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-medium transition-colors"
+              >
+                Create your first module
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {modules.map(mod => {
+                const locs = mod.moduleData.locations ? Object.keys(mod.moduleData.locations).length : 0;
+                const npcs = mod.moduleData.npcs ? (mod.moduleData.npcs as unknown[]).length : 0;
+                const vocab = mod.moduleData.vocabulary ? (mod.moduleData.vocabulary as unknown[]).length : 0;
+                const quests = mod.moduleData.quests ? (mod.moduleData.quests as unknown[]).length : 0;
+                const lang = LANGUAGES.find(l => l.id === mod.languageId);
+                return (
+                  <button
+                    key={mod.id}
+                    onClick={() => router.push(`/create/${mod.id}`)}
+                    className="w-full text-left p-4 bg-gray-900 border border-gray-800 hover:border-gray-600 rounded-xl transition-colors"
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <h3 className="font-semibold text-white">{mod.title}</h3>
+                      {lang && <span className="text-xs text-gray-500 bg-gray-800 px-2 py-0.5 rounded">{lang.flag} {lang.name}</span>}
+                    </div>
+                    {mod.description && (
+                      <p className="text-gray-500 text-sm mb-2 line-clamp-1">{mod.description}</p>
+                    )}
+                    <div className="flex gap-3 text-xs text-gray-600">
+                      <span>{locs} locations</span>
+                      <span>{npcs} NPCs</span>
+                      <span>{quests} quests</span>
+                      <span>{vocab} vocab</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Wizard: Describe */}
+      {view === 'wizard' && step === 'describe' && (
         <div className="max-w-lg mx-auto px-6 pt-16">
           <h2 className="text-2xl font-bold mb-2">What do you want to learn?</h2>
           <p className="text-gray-400 mb-6">Describe the vocabulary, grammar, or situations you want to practice.</p>
@@ -147,8 +247,8 @@ export default function CreateModule() {
         </div>
       )}
 
-      {/* Step 2: Directions */}
-      {step === 'directions' && (
+      {/* Wizard: Directions */}
+      {view === 'wizard' && step === 'directions' && (
         <div className="max-w-2xl mx-auto px-6 pt-8">
           <h2 className="text-xl font-bold mb-1">Pick a direction</h2>
           <p className="text-gray-400 text-sm mb-6">Choose which module concept to build out.</p>
@@ -183,8 +283,8 @@ export default function CreateModule() {
         </div>
       )}
 
-      {/* Step 3: Generating */}
-      {step === 'generating' && (
+      {/* Wizard: Generating */}
+      {view === 'wizard' && step === 'generating' && (
         <div className="flex items-center justify-center pt-32">
           <div className="text-center">
             <div className="text-gray-400 animate-pulse text-lg mb-2">Building module...</div>

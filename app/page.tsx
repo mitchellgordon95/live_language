@@ -323,13 +323,6 @@ export default function Home() {
 
           <div className="mt-6 text-center">
             <a
-              href="/create"
-              className="text-blue-400 hover:text-blue-300 text-sm transition-colors"
-            >
-              Create a Module
-            </a>
-            <span className="text-gray-700 mx-2">|</span>
-            <a
               href="https://discord.gg/gBKykJc4MW"
               target="_blank"
               rel="noopener noreferrer"
@@ -391,6 +384,12 @@ export default function Home() {
           >
             {isMuted ? <SpeakerOffIcon /> : <SpeakerOnIcon />}
           </button>
+          <a
+            href="/create"
+            className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
+          >
+            Modules
+          </a>
           <button
             onClick={() => { setAppState('menu'); setGame(null); }}
             className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
