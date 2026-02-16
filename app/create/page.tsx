@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 
-type WizardStep = 'describe' | 'directions' | 'generating' | 'refine';
+type WizardStep = 'describe' | 'directions' | 'generating';
 
 interface Direction {
   title: string;
@@ -12,12 +12,6 @@ interface Direction {
   locationCount: number;
   locations: string[];
   npcIdeas: string[];
-}
-
-interface ChatEntry {
-  id: number;
-  role: 'user' | 'assistant';
-  content: string;
 }
 
 const LANGUAGES = [
@@ -32,18 +26,9 @@ export default function CreateModule() {
   const [languageId, setLanguageId] = useState('spanish');
   const [description, setDescription] = useState('');
   const [directions, setDirections] = useState<Direction[]>([]);
-  const [moduleData, setModuleData] = useState<Record<string, unknown> | null>(null);
-  const [chatHistory, setChatHistory] = useState<ChatEntry[]>([]);
-  const [chatInput, setChatInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedDirection, setSelectedDirection] = useState<Direction | null>(null);
-  const chatIdRef = useRef(0);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [chatHistory]);
 
   const handleBrainstorm = useCallback(async () => {
     if (!description.trim()) return;
@@ -79,185 +64,28 @@ export default function CreateModule() {
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to generate');
       const data = await res.json();
-      setModuleData(data.moduleData);
-      setStep('refine');
+
+      // Save immediately and redirect to editor
+      const profile = localStorage.getItem('profile') || ('anon_' + Math.random().toString(36).substring(2, 10));
+      localStorage.setItem('profile', profile);
+      const id = 'ugc_' + Math.random().toString(36).substring(2, 12);
+      const mod = data.moduleData as Record<string, unknown>;
+      const title = (mod.displayName as string) || (mod.name as string) || 'Untitled Module';
+
+      const saveRes = await fetch('/api/modules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id, profile, languageId, title, description, moduleData: data.moduleData }),
+      });
+      if (!saveRes.ok) throw new Error((await saveRes.json()).error || 'Failed to save');
+      router.push(`/create/${id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate module');
       setStep('directions');
     } finally {
       setIsLoading(false);
     }
-  }, [languageId, description]);
-
-  const handleRefine = useCallback(async () => {
-    if (!chatInput.trim() || !moduleData) return;
-    const userMessage = chatInput.trim();
-    setChatInput('');
-    chatIdRef.current += 1;
-    const userEntry: ChatEntry = { id: chatIdRef.current, role: 'user', content: userMessage };
-    setChatHistory(prev => [...prev, userEntry]);
-    setIsLoading(true);
-
-    try {
-      const res = await fetch('/api/modules/refine', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          moduleData,
-          message: userMessage,
-          languageId,
-          chatHistory: chatHistory.map(e => ({ role: e.role, content: e.content })),
-        }),
-      });
-      if (!res.ok) throw new Error((await res.json()).error || 'Failed to refine');
-      const data = await res.json();
-      setModuleData(data.moduleData);
-      chatIdRef.current += 1;
-      setChatHistory(prev => [...prev, {
-        id: chatIdRef.current,
-        role: 'assistant',
-        content: data.explanation || 'Module updated.',
-      }]);
-    } catch (err) {
-      chatIdRef.current += 1;
-      setChatHistory(prev => [...prev, {
-        id: chatIdRef.current,
-        role: 'assistant',
-        content: `Error: ${err instanceof Error ? err.message : 'Failed to refine'}`,
-      }]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [chatInput, moduleData, languageId, chatHistory]);
-
-  const handleSave = useCallback(async () => {
-    if (!moduleData) return;
-    setIsLoading(true);
-    setError(null);
-    const profile = localStorage.getItem('profile') || ('anon_' + Math.random().toString(36).substring(2, 10));
-    localStorage.setItem('profile', profile);
-    const id = 'ugc_' + Math.random().toString(36).substring(2, 12);
-    const mod = moduleData as Record<string, unknown>;
-    const title = (mod.displayName as string) || (mod.name as string) || 'Untitled Module';
-
-    try {
-      const res = await fetch('/api/modules', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id,
-          profile,
-          languageId,
-          title,
-          description,
-          moduleData,
-        }),
-      });
-      if (!res.ok) throw new Error((await res.json()).error || 'Failed to save');
-      router.push(`/create/${id}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save module');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [moduleData, languageId, description, router]);
-
-  // --- Module Preview (left panel in refine step) ---
-  const renderModulePreview = () => {
-    if (!moduleData) return null;
-    const mod = moduleData as Record<string, unknown>;
-    const locations = mod.locations as Record<string, { id: string; name: { target: string; native: string }; exits: Array<{ to: string; name: { target: string; native: string } }> }> | undefined;
-    const objects = mod.objects as Array<{ id: string; name: { target: string; native: string }; location: string; tags: string[] }> | undefined;
-    const npcs = mod.npcs as Array<{ id: string; name: { target: string; native: string }; personality: string; isPet?: boolean }> | undefined;
-    const quests = mod.quests as Array<{ id: string; title: { target: string; native: string }; description: string }> | undefined;
-    const vocabulary = mod.vocabulary as Array<{ target: string; native: string; category: string }> | undefined;
-
-    return (
-      <div className="space-y-4 text-sm overflow-y-auto max-h-[calc(100vh-120px)] pr-2">
-        <h3 className="text-lg font-bold text-white">{(mod.displayName as string) || (mod.name as string)}</h3>
-
-        {/* Locations */}
-        {locations && (
-          <div>
-            <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Locations ({Object.keys(locations).length})</h4>
-            <div className="space-y-1.5">
-              {Object.values(locations).map(loc => (
-                <div key={loc.id} className="bg-gray-800/50 rounded px-2.5 py-1.5">
-                  <span className="text-cyan-400">{loc.name.target}</span>
-                  <span className="text-gray-500 ml-1.5">({loc.name.native})</span>
-                  <span className="text-gray-600 ml-2 text-xs">
-                    → {loc.exits.map(e => e.name.native).join(', ')}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* NPCs */}
-        {npcs && npcs.length > 0 && (
-          <div>
-            <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">NPCs ({npcs.length})</h4>
-            <div className="space-y-1.5">
-              {npcs.map(npc => (
-                <div key={npc.id} className="bg-gray-800/50 rounded px-2.5 py-1.5">
-                  <span className="text-yellow-400">{npc.name.target}</span>
-                  <span className="text-gray-500 ml-1.5">({npc.name.native})</span>
-                  {npc.isPet && <span className="text-xs text-purple-400 ml-1.5">pet</span>}
-                  <div className="text-gray-500 text-xs mt-0.5 line-clamp-1">{npc.personality}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Objects */}
-        {objects && (
-          <div>
-            <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Objects ({objects.length})</h4>
-            <div className="flex flex-wrap gap-1">
-              {objects.map(obj => (
-                <span key={obj.id} className="bg-gray-800/50 rounded px-2 py-0.5 text-xs">
-                  <span className="text-gray-300">{obj.name.native}</span>
-                  {obj.tags.length > 0 && (
-                    <span className="text-gray-600 ml-1">[{obj.tags.join(',')}]</span>
-                  )}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Quests */}
-        {quests && quests.length > 0 && (
-          <div>
-            <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Quests ({quests.length})</h4>
-            <div className="space-y-1">
-              {quests.map(q => (
-                <div key={q.id} className="bg-gray-800/50 rounded px-2.5 py-1.5 text-xs">
-                  <span className="text-green-400">{q.title.native}</span>
-                  <div className="text-gray-500 mt-0.5 line-clamp-1">{q.description}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Vocabulary count */}
-        {vocabulary && (
-          <div>
-            <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Vocabulary ({vocabulary.length} words)</h4>
-            <div className="text-xs text-gray-500">
-              {vocabulary.filter(v => v.category === 'noun').length} nouns,{' '}
-              {vocabulary.filter(v => v.category === 'verb').length} verbs,{' '}
-              {vocabulary.filter(v => v.category === 'adjective').length} adjectives,{' '}
-              {vocabulary.filter(v => v.category === 'other').length} other
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
+  }, [languageId, description, router]);
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
@@ -269,15 +97,6 @@ export default function CreateModule() {
           </button>
           <h1 className="text-lg font-semibold">Create Module</h1>
         </div>
-        {step === 'refine' && moduleData && (
-          <button
-            onClick={handleSave}
-            disabled={isLoading}
-            className="px-4 py-1.5 bg-green-600 hover:bg-green-500 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors"
-          >
-            Save & Explore
-          </button>
-        )}
       </div>
 
       {error && (
@@ -372,65 +191,6 @@ export default function CreateModule() {
             {selectedDirection && (
               <div className="text-gray-600 text-sm">{selectedDirection.title}</div>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* Step 4: Refine */}
-      {step === 'refine' && moduleData && (
-        <div className="flex h-[calc(100vh-57px)]">
-          {/* Left: Module Preview */}
-          <div className="w-[45%] border-r border-gray-800 p-4 overflow-hidden">
-            {renderModulePreview()}
-          </div>
-
-          {/* Right: Chat */}
-          <div className="w-[55%] flex flex-col">
-            <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              <div className="text-gray-500 text-sm mb-4">
-                Module generated! Review the preview on the left. Ask me to make changes, or click &quot;Save &amp; Explore&quot; when you&apos;re happy.
-              </div>
-              {chatHistory.map(entry => (
-                <div key={entry.id} className={`flex ${entry.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                  <div className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
-                    entry.role === 'user'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-800 text-gray-300'
-                  }`}>
-                    {entry.content}
-                  </div>
-                </div>
-              ))}
-              {isLoading && (
-                <div className="flex justify-start">
-                  <div className="bg-gray-800 rounded-lg px-3 py-2 text-sm text-gray-500 animate-pulse">
-                    Thinking...
-                  </div>
-                </div>
-              )}
-              <div ref={chatEndRef} />
-            </div>
-
-            <div className="border-t border-gray-800 p-3">
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={e => setChatInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleRefine(); } }}
-                  placeholder="Ask for changes... e.g., 'Add a quest about ordering dessert'"
-                  className="flex-1 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-blue-500"
-                  disabled={isLoading}
-                />
-                <button
-                  onClick={handleRefine}
-                  disabled={isLoading || !chatInput.trim()}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-lg text-sm transition-colors"
-                >
-                  Send
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       )}
