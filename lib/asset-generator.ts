@@ -5,8 +5,13 @@ import {
   getCoordinateExtractionPrompt,
   type ScenePromptContext,
 } from '../scripts/image-prompts';
+import {
+  getVignettePrompt,
+  type VignetteDef,
+} from '../scripts/vignette-prompts';
+import { PALETTES } from '../scripts/style-guide';
 
-export type { ScenePromptContext };
+export type { ScenePromptContext, VignetteDef };
 
 function getClient(): GoogleGenAI {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -40,6 +45,35 @@ export async function generateSceneImage(
   }
 
   throw new Error('No image data in Gemini response');
+}
+
+export async function generateVignetteImage(
+  vignetteDef: VignetteDef,
+  moduleName: string,
+): Promise<{ buffer: Buffer; mimeType: string }> {
+  const ai = getClient();
+  const prompt = getVignettePrompt(vignetteDef, moduleName);
+
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash-image',
+    contents: prompt,
+    config: {
+      responseModalities: [Modality.IMAGE, Modality.TEXT],
+    },
+  });
+
+  if (response.candidates?.[0]?.content?.parts) {
+    for (const part of response.candidates[0].content.parts) {
+      if (part.inlineData?.data) {
+        return {
+          buffer: Buffer.from(part.inlineData.data, 'base64'),
+          mimeType: part.inlineData.mimeType || 'image/webp',
+        };
+      }
+    }
+  }
+
+  throw new Error('No image data in Gemini vignette response');
 }
 
 export async function extractCoordinates(
@@ -106,5 +140,20 @@ export function buildPromptContextForUGC(
     locationName: location.name.native,
     moduleName,
     objectNames: objectsHere.map(o => o.name.native),
+  };
+}
+
+export function buildNpcVignetteDef(
+  npc: { id: string; name: { native: string }; appearance?: string; personality?: string },
+  moduleName: string,
+): VignetteDef {
+  const palette = PALETTES[moduleName] || PALETTES.home;
+  const desc = npc.appearance || npc.personality || '';
+  return {
+    category: 'npc',
+    id: npc.id,
+    variant: 'default',
+    isBase: true,
+    prompt: `${npc.name.native}, ${desc} ${palette}`,
   };
 }

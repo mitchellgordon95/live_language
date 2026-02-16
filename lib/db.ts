@@ -229,3 +229,30 @@ export async function updateModuleAssets(
     [assetData, id],
   );
 }
+
+export async function updateModuleVignette(
+  id: string,
+  npcId: string,
+  imageUrl: string,
+): Promise<void> {
+  await ensureSchema();
+  const pool = getPool();
+  // Ensure _vignettes.npcs structure exists, then set the NPC URL
+  await pool.query(
+    `UPDATE user_modules SET
+       assets = jsonb_set(
+         jsonb_set(
+           COALESCE(assets, '{}'::jsonb),
+           '{_vignettes}',
+           COALESCE(assets->'_vignettes', '{"npcs":{}}'::jsonb),
+           true
+         ),
+         ARRAY['_vignettes', 'npcs', $1],
+         $2::jsonb,
+         true
+       ),
+       updated_at = NOW()
+     WHERE id = $3`,
+    [npcId, JSON.stringify(imageUrl), id],
+  );
+}

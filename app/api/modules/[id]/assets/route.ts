@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
 import { writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
-import { getModule, updateModuleAssets } from '@/lib/db';
+import { getModule, updateModuleAssets, updateModuleVignette } from '@/lib/db';
 import {
   generateSceneImage,
+  generateVignetteImage,
   extractCoordinates,
   buildPromptContextForUGC,
+  buildNpcVignetteDef,
 } from '@/lib/asset-generator';
 
 export const maxDuration = 300;
@@ -21,10 +23,18 @@ interface ModuleObject {
   location: string;
 }
 
+interface ModuleNPC {
+  id: string;
+  name: { target: string; native: string };
+  appearance?: string;
+  personality?: string;
+}
+
 interface ModuleData {
   name: string;
   locations: Record<string, ModuleLocation>;
   objects: ModuleObject[];
+  npcs: ModuleNPC[];
 }
 
 async function uploadImage(
@@ -46,9 +56,8 @@ async function uploadImage(
   }
 
   // Local fallback: write to public/scenes/{moduleId}/{locationId}.{ext}
-  const dir = join(process.cwd(), 'public', 'scenes', moduleId);
-  mkdirSync(dir, { recursive: true });
-  const filePath = join(dir, `${locationId}.${ext}`);
+  const filePath = join(process.cwd(), 'public', 'scenes', moduleId, `${locationId}.${ext}`);
+  mkdirSync(join(filePath, '..'), { recursive: true });
   writeFileSync(filePath, buffer);
   return `/scenes/${moduleId}/${locationId}.${ext}`;
 }
@@ -57,11 +66,6 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   try {
     const { id } = await params;
     const body = await request.json();
-    const { locationId } = body;
-
-    if (!locationId) {
-      return NextResponse.json({ error: 'locationId is required' }, { status: 400 });
-    }
 
     const mod = await getModule(id);
     if (!mod) {
@@ -69,6 +73,26 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
 
     const moduleData = mod.moduleData as ModuleData;
+
+    // Vignette generation: { type: 'vignette', npcId }
+    if (body.type === 'vignette') {
+      const npc = (moduleData.npcs || []).find(n => n.id === body.npcId);
+      if (!npc) {
+        return NextResponse.json({ error: `NPC "${body.npcId}" not found` }, { status: 400 });
+      }
+      const vignetteDef = buildNpcVignetteDef(npc, moduleData.name);
+      const { buffer, mimeType } = await generateVignetteImage(vignetteDef, moduleData.name);
+      const imageUrl = await uploadImage(buffer, mimeType, id, `vignettes/npc-${npc.id}-default`);
+      await updateModuleVignette(id, npc.id, imageUrl);
+      return NextResponse.json({ npcId: npc.id, imageUrl });
+    }
+
+    // Scene generation: { locationId }
+    const { locationId } = body;
+    if (!locationId) {
+      return NextResponse.json({ error: 'locationId is required' }, { status: 400 });
+    }
+
     const location = moduleData.locations?.[locationId];
     if (!location) {
       return NextResponse.json({ error: `Location "${locationId}" not found in module` }, { status: 400 });

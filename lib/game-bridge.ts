@@ -194,11 +194,12 @@ function loadManifest(
   languageId: string,
   module: string,
   locationId: string,
-  ugcAssets?: Record<string, LocationAsset>,
+  ugcAssets?: UGCAssets,
 ): SceneManifest | null {
   // Check UGC assets first (blob-stored)
-  if (ugcAssets?.[locationId]) {
-    const asset = ugcAssets[locationId];
+  const ugcLocation = ugcAssets?.[locationId];
+  if (ugcLocation && 'imageUrl' in ugcLocation) {
+    const asset = ugcLocation as LocationAsset;
     return {
       image: asset.imageUrl,
       objects: asset.coordinates || {},
@@ -229,13 +230,19 @@ function loadManifest(
 
 // --- UGC Asset Loading ---
 
-const ugcAssetCache = new Map<string, Record<string, LocationAsset> | null>();
+interface UGCAssets extends Record<string, LocationAsset | { npcs: Record<string, string> } | undefined> {
+  _vignettes?: { npcs: Record<string, string> };
+}
 
-async function loadUGCAssets(moduleId: string): Promise<Record<string, LocationAsset> | null> {
-  if (ugcAssetCache.has(moduleId)) return ugcAssetCache.get(moduleId)!;
+const ugcAssetCache = new Map<string, UGCAssets | null>();
+
+async function loadUGCAssets(moduleId: string): Promise<UGCAssets | null> {
+  const isDev = process.env.NODE_ENV !== 'production';
+  if (!isDev && ugcAssetCache.has(moduleId)) return ugcAssetCache.get(moduleId)!;
   const modRow = await getModule(moduleId);
-  const assets = (modRow?.assets && Object.keys(modRow.assets).length > 0) ? modRow.assets : null;
-  ugcAssetCache.set(moduleId, assets);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const assets = (modRow?.assets && Object.keys(modRow.assets).length > 0) ? modRow.assets as any as UGCAssets : null;
+  if (!isDev) ugcAssetCache.set(moduleId, assets);
   return assets;
 }
 
@@ -321,13 +328,21 @@ function deriveLastAction(result: any): string | null {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function resolveVignettes(state: any, result: any | null, languageId: string, module: string): VignetteHint | null {
+function resolveVignettes(state: any, result: any | null, languageId: string, module: string, ugcVignettes?: Record<string, string>): VignetteHint | null {
   const manifest = loadVignetteManifest(languageId, module);
 
   // Even without a manifest, we may have cached/generated vignettes
   const hint: VignetteHint = {};
 
   if (!manifest) {
+    // UGC modules: resolve NPC vignettes from DB assets
+    if (ugcVignettes && result?.npcResponse?.npcId) {
+      const npcId = result.npcResponse.npcId;
+      const url = ugcVignettes[npcId];
+      if (url) hint.activeNpc = url;
+    }
+    if (ugcVignettes && Object.keys(hint).length > 0) return hint;
+
     // No pre-generated vignettes — check cache only when generation is enabled
     if (!isGenerationEnabled()) return null;
 
@@ -494,7 +509,7 @@ async function buildGameView(profile: string, langId: string, state: any, turnRe
         image: manifest.image,
         module,
         languageId: langId,
-        imageUrl: ugcAssets?.[locationId]?.imageUrl,
+        imageUrl: (ugcAssets?.[locationId] as LocationAsset | undefined)?.imageUrl,
       }
     : null;
 
@@ -521,7 +536,10 @@ async function buildGameView(profile: string, langId: string, state: any, turnRe
     id: npc.id,
     name: npc.name,
     mood: state.npcStates?.[npc.id]?.mood || '',
-    portrait: vignetteManifest?.npcs[npc.id]?.default || vignetteManifest?.pets?.[npc.id]?.default || undefined,
+    portrait: ugcAssets?._vignettes?.npcs?.[npc.id]
+      || vignetteManifest?.npcs[npc.id]?.default
+      || vignetteManifest?.pets?.[npc.id]?.default
+      || undefined,
   }));
 
   // Inventory from flat object list
@@ -537,11 +555,16 @@ async function buildGameView(profile: string, langId: string, state: any, turnRe
   const pointsToNextLevel = 150 * state.level;
 
   // Resolve vignettes for this turn
-  const vignetteHint = resolveVignettes(state, result || null, langId, module);
+  const ugcVignettes = ugcAssets?._vignettes?.npcs;
+  const vignetteHint = resolveVignettes(state, result || null, langId, module, ugcVignettes || undefined);
 
   // Attach NPC portrait to turn result if applicable
   if (turnResult?.npcResponse && vignetteHint?.activeNpc) {
-    turnResult.npcResponse.portrait = `/scenes/${langId}/${module}/vignettes/${vignetteHint.activeNpc}`;
+    // UGC vignettes are full URLs; built-in are filenames needing path prefix
+    const npcVignette = vignetteHint.activeNpc;
+    turnResult.npcResponse.portrait = npcVignette.startsWith('/') || npcVignette.startsWith('http')
+      ? npcVignette
+      : `/scenes/${langId}/${module}/vignettes/${npcVignette}`;
   }
 
   // Location name from allLocations

@@ -15,6 +15,11 @@ function distributeExits(exits: ExitView[]): { west: ExitView[]; east: ExitView[
   return { west: [exits[0]], east: [exits[1]], north: exits.slice(2) };
 }
 
+function resolveVignetteUrl(path: string, sceneBase: string): string {
+  if (path.startsWith('/') || path.startsWith('http')) return path;
+  return `${sceneBase}/vignettes/${path}`;
+}
+
 export default function ScenePanel({ game, onSpeak }: ScenePanelProps) {
   const [hoveredObjId, setHoveredObjId] = useState<string | null>(null);
   const [tutorialExpanded, setTutorialExpanded] = useState(false);
@@ -196,7 +201,7 @@ export default function ScenePanel({ game, onSpeak }: ScenePanelProps) {
         <div className="-mt-14 flex justify-center items-end gap-4 z-10 pointer-events-none px-3 mb-1">
           {game.vignetteHint?.player && (
             <VignetteAvatar
-              src={`${sceneBase}/vignettes/${game.vignetteHint.player}`}
+              src={resolveVignetteUrl(game.vignetteHint.player, sceneBase)}
               alt="You"
               size="lg"
             />
@@ -204,7 +209,7 @@ export default function ScenePanel({ game, onSpeak }: ScenePanelProps) {
           {game.npcs.map((npc) => (
             <VignetteAvatar
               key={npc.id}
-              src={npc.portrait ? `${sceneBase}/vignettes/${npc.portrait}` : undefined}
+              src={npc.portrait ? resolveVignetteUrl(npc.portrait, sceneBase) : undefined}
               alt={npc.name.native}
               label={npc.name.target}
               mood={npc.mood}

@@ -16,7 +16,7 @@ interface ModuleRow {
   description: string | null;
   moduleData: Record<string, unknown>;
   assetStatus: string;
-  assets: Record<string, LocationAsset>;
+  assets: Record<string, LocationAsset | { npcs: Record<string, string> }>;
   status: string;
 }
 
@@ -106,6 +106,7 @@ export default function ModuleEditor() {
   // Asset generation state
   type LocStatus = 'pending' | 'generating' | 'done' | 'failed';
   const [assetProgress, setAssetProgress] = useState<Record<string, LocStatus>>({});
+  const [npcProgress, setNpcProgress] = useState<Record<string, LocStatus>>({});
   const [isGeneratingAssets, setIsGeneratingAssets] = useState(false);
 
   // Load module from DB
@@ -225,9 +226,19 @@ export default function ModuleEditor() {
     if (!mod?.assets) return;
     const progress: Record<string, LocStatus> = {};
     for (const locId of Object.keys(mod.assets)) {
-      if (mod.assets[locId]?.imageUrl) progress[locId] = 'done';
+      if (locId === '_vignettes') continue;
+      if ((mod.assets[locId] as { imageUrl?: string })?.imageUrl) progress[locId] = 'done';
     }
     if (Object.keys(progress).length > 0) setAssetProgress(progress);
+    // NPC vignette progress
+    const vignettes = (mod.assets as Record<string, unknown>)?._vignettes as { npcs?: Record<string, string> } | undefined;
+    if (vignettes?.npcs) {
+      const np: Record<string, LocStatus> = {};
+      for (const npcId of Object.keys(vignettes.npcs)) {
+        np[npcId] = 'done';
+      }
+      setNpcProgress(np);
+    }
   }, [mod?.assets]);
 
   const handleGenerateAssets = useCallback(async () => {
@@ -238,6 +249,7 @@ export default function ModuleEditor() {
     if (locationIds.length === 0) return;
 
     setIsGeneratingAssets(true);
+    setNpcProgress({});
     const progress: Record<string, LocStatus> = {};
     locationIds.forEach(id => { progress[id] = 'pending'; });
     setAssetProgress({ ...progress });
@@ -266,7 +278,40 @@ export default function ModuleEditor() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ assetStatus: allDone ? 'ready' : 'partial' }),
     });
-    setMod(prev => prev ? { ...prev, assetStatus: allDone ? 'ready' : 'partial' } : prev);
+
+    // Generate NPC vignettes
+    const npcs = (moduleData.npcs || []) as Array<{ id: string; name: { native: string } }>;
+    if (npcs.length > 0) {
+      const np: Record<string, LocStatus> = {};
+      npcs.forEach(npc => { np[npc.id] = 'pending'; });
+      setNpcProgress({ ...np });
+
+      for (const npc of npcs) {
+        np[npc.id] = 'generating';
+        setNpcProgress({ ...np });
+        try {
+          const res = await fetch(`/api/modules/${moduleId}/assets`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'vignette', npcId: npc.id }),
+          });
+          if (!res.ok) throw new Error('Vignette generation failed');
+          np[npc.id] = 'done';
+        } catch {
+          np[npc.id] = 'failed';
+        }
+        setNpcProgress({ ...np });
+      }
+    }
+
+    // Re-fetch module to get updated assets (fixes stale thumbnails)
+    const updatedRes = await fetch(`/api/modules/${moduleId}`);
+    if (updatedRes.ok) {
+      const updatedMod = await updatedRes.json();
+      setMod(updatedMod);
+    } else {
+      setMod(prev => prev ? { ...prev, assetStatus: allDone ? 'ready' : 'partial' } : prev);
+    }
 
     setIsGeneratingAssets(false);
   }, [moduleData, moduleId]);
@@ -382,6 +427,7 @@ export default function ModuleEditor() {
                   <div className="bg-gray-900 rounded-xl p-4">
                     {isGeneratingAssets ? (
                       <div className="space-y-2">
+                        {/* Scene progress */}
                         <div className="text-sm text-gray-300 mb-3">
                           Generating scenes... ({Object.values(assetProgress).filter(s => s === 'done').length}/{Object.keys(assetProgress).length})
                         </div>
@@ -397,6 +443,29 @@ export default function ModuleEditor() {
                             {status === 'generating' && <span className="text-gray-600 text-xs ml-auto">generating...</span>}
                           </div>
                         ))}
+                        {/* NPC portrait progress */}
+                        {Object.keys(npcProgress).length > 0 && (
+                          <>
+                            <div className="text-sm text-gray-300 mt-4 mb-3">
+                              Generating portraits... ({Object.values(npcProgress).filter(s => s === 'done').length}/{Object.keys(npcProgress).length})
+                            </div>
+                            {Object.entries(npcProgress).map(([npcId, status]) => {
+                              const npc = npcs.find(n => n.id === npcId);
+                              return (
+                                <div key={npcId} className="flex items-center gap-2 text-sm">
+                                  {status === 'done' && <span className="text-green-400 w-5 text-center">&#10003;</span>}
+                                  {status === 'generating' && <span className="text-blue-400 w-5 text-center animate-spin">&#9696;</span>}
+                                  {status === 'pending' && <span className="text-gray-600 w-5 text-center">&#9675;</span>}
+                                  {status === 'failed' && <span className="text-red-400 w-5 text-center">&#10007;</span>}
+                                  <span className={status === 'done' ? 'text-gray-300' : status === 'generating' ? 'text-blue-300' : 'text-gray-500'}>
+                                    {npc?.name?.native || npcId}
+                                  </span>
+                                  {status === 'generating' && <span className="text-gray-600 text-xs ml-auto">generating...</span>}
+                                </div>
+                              );
+                            })}
+                          </>
+                        )}
                       </div>
                     ) : mod.assetStatus === 'ready' || Object.values(assetProgress).some(s => s === 'done') ? (
                       <div>
@@ -408,7 +477,7 @@ export default function ModuleEditor() {
                         </div>
                         <div className="flex flex-wrap gap-2 mb-3">
                           {Object.entries(assetProgress).filter(([, s]) => s === 'done').map(([locId]) => {
-                            const asset = mod.assets?.[locId];
+                            const asset = mod.assets?.[locId] as { imageUrl?: string } | undefined;
                             return (
                               <div key={locId} className="relative group">
                                 {asset?.imageUrl && (
@@ -425,6 +494,37 @@ export default function ModuleEditor() {
                             );
                           })}
                         </div>
+                        {/* NPC portrait thumbnails */}
+                        {Object.values(npcProgress).some(s => s === 'done') && (
+                          <div className="mb-3">
+                            <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Portraits</div>
+                            <div className="flex flex-wrap gap-2">
+                              {Object.entries(npcProgress).filter(([, s]) => s === 'done').map(([npcId]) => {
+                                const vignettes = (mod.assets as Record<string, unknown>)?._vignettes as { npcs?: Record<string, string> } | undefined;
+                                const url = vignettes?.npcs?.[npcId];
+                                const npc = npcs.find(n => n.id === npcId);
+                                return (
+                                  <div key={npcId} className="relative group">
+                                    {url ? (
+                                      <img
+                                        src={url}
+                                        alt={npc?.name?.native || npcId}
+                                        className="w-16 h-16 object-cover rounded-full border border-gray-700"
+                                      />
+                                    ) : (
+                                      <div className="w-16 h-16 rounded-full bg-cyan-900/50 border border-gray-700 flex items-center justify-center text-lg text-cyan-400">
+                                        {(npc?.name?.native || npcId).charAt(0).toUpperCase()}
+                                      </div>
+                                    )}
+                                    <div className="absolute -bottom-1 left-0 right-0 text-[10px] text-gray-300 text-center">
+                                      {npc?.name?.native || npcId}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
                         <button
                           onClick={handleGenerateAssets}
                           disabled={isGeneratingAssets}
@@ -435,13 +535,13 @@ export default function ModuleEditor() {
                       </div>
                     ) : (
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-500">No scene images yet</span>
+                        <span className="text-sm text-gray-500">No scene images or portraits yet</span>
                         <button
                           onClick={handleGenerateAssets}
                           disabled={isGeneratingAssets}
                           className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors"
                         >
-                          Generate Scene Images
+                          Generate Assets
                         </button>
                       </div>
                     )}
