@@ -230,8 +230,14 @@ function loadManifest(
 
 // --- UGC Asset Loading ---
 
-interface UGCAssets extends Record<string, LocationAsset | { npcs: Record<string, string> } | undefined> {
-  _vignettes?: { npcs: Record<string, string> };
+// UGC object vignettes stored as flat map: { objectId: { variant: imageUrl } }
+type UGCObjectVignettes = Record<string, Record<string, string>>;
+
+interface UGCAssets extends Record<string, LocationAsset | { npcs: Record<string, string>; objects?: UGCObjectVignettes } | undefined> {
+  _vignettes?: {
+    npcs: Record<string, string>;
+    objects?: UGCObjectVignettes;
+  };
 }
 
 const ugcAssetCache = new Map<string, UGCAssets | null>();
@@ -328,7 +334,7 @@ function deriveLastAction(result: any): string | null {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function resolveVignettes(state: any, result: any | null, languageId: string, module: string, ugcVignettes?: Record<string, string>): VignetteHint | null {
+function resolveVignettes(state: any, result: any | null, languageId: string, module: string, ugcVignettes?: { npcs: Record<string, string>; objects?: UGCObjectVignettes }): VignetteHint | null {
   const manifest = loadVignetteManifest(languageId, module);
 
   // Even without a manifest, we may have cached/generated vignettes
@@ -338,9 +344,32 @@ function resolveVignettes(state: any, result: any | null, languageId: string, mo
     // UGC modules: resolve NPC vignettes from DB assets
     if (ugcVignettes && result?.npcResponse?.npcId) {
       const npcId = result.npcResponse.npcId;
-      const url = ugcVignettes[npcId];
+      const url = ugcVignettes.npcs[npcId];
       if (url) hint.activeNpc = url;
     }
+
+    // UGC modules: resolve object vignettes from DB assets (flat map: { objId: { variant: url } })
+    if (ugcVignettes?.objects) {
+      const objectChanges: Array<{ objectId: string; image: string }> = [];
+      const allObjectsState: Array<{ id: string; tags: string[]; location: string }> = state.objects || [];
+      const objectsInLocation = allObjectsState.filter(
+        (o: { location: string }) => o.location === state.currentLocation
+      );
+      for (const obj of objectsInLocation) {
+        const variantMap = ugcVignettes.objects[obj.id];
+        if (!variantMap) continue;
+        const tags = obj.tags || [];
+        // Find the first matching variant: tag present in both object tags and vignette map
+        for (const tag of tags) {
+          if (variantMap[tag]) {
+            objectChanges.push({ objectId: obj.id, image: variantMap[tag] });
+            break;
+          }
+        }
+      }
+      if (objectChanges.length > 0) hint.objectChanges = objectChanges;
+    }
+
     if (ugcVignettes && Object.keys(hint).length > 0) return hint;
 
     // No pre-generated vignettes — check cache only when generation is enabled
@@ -555,7 +584,7 @@ async function buildGameView(profile: string, langId: string, state: any, turnRe
   const pointsToNextLevel = 150 * state.level;
 
   // Resolve vignettes for this turn
-  const ugcVignettes = ugcAssets?._vignettes?.npcs;
+  const ugcVignettes = ugcAssets?._vignettes;
   const vignetteHint = resolveVignettes(state, result || null, langId, module, ugcVignettes || undefined);
 
   // Attach NPC portrait to turn result if applicable

@@ -256,3 +256,43 @@ export async function updateModuleVignette(
     [npcId, JSON.stringify(imageUrl), id],
   );
 }
+
+export async function updateModuleObjectVignette(
+  id: string,
+  objectId: string,
+  variant: string,
+  imageUrl: string,
+): Promise<void> {
+  await ensureSchema();
+  const pool = getPool();
+  // Store as flat map: objects.{objectId}.{variant} = imageUrl
+  // This makes regeneration idempotent (no duplicate entries)
+  // Ensure intermediate keys exist: _vignettes → objects → {objectId} → {variant}
+  await pool.query(
+    `UPDATE user_modules SET
+       assets = jsonb_set(
+         jsonb_set(
+           jsonb_set(
+             jsonb_set(
+               COALESCE(assets, '{}'::jsonb),
+               '{_vignettes}',
+               COALESCE(assets->'_vignettes', '{"npcs":{},"objects":{}}'::jsonb),
+               true
+             ),
+             '{_vignettes,objects}',
+             COALESCE(assets->'_vignettes'->'objects', '{}'::jsonb),
+             true
+           ),
+           ARRAY['_vignettes', 'objects', $1],
+           COALESCE(assets->'_vignettes'->'objects'->$1, '{}'::jsonb),
+           true
+         ),
+         ARRAY['_vignettes', 'objects', $1, $2],
+         $3::jsonb,
+         true
+       ),
+       updated_at = NOW()
+     WHERE id = $4`,
+    [objectId, variant, JSON.stringify(imageUrl), id],
+  );
+}

@@ -157,3 +157,73 @@ export function buildNpcVignetteDef(
     prompt: `${npc.name.native}, ${desc} ${palette}`,
   };
 }
+
+const VISUAL_TAGS = new Set([
+  'open', 'closed', 'on', 'off', 'ringing', 'cooked',
+  'lit', 'empty', 'full', 'broken',
+]);
+
+const TAG_COMPLEMENTS: Record<string, string> = {
+  open: 'closed',
+  closed: 'open',
+  on: 'off',
+  off: 'on',
+};
+
+export interface ObjectVignetteDef {
+  objectId: string;
+  variant: string;
+  def: VignetteDef;
+}
+
+export function buildObjectVignetteDefs(
+  objects: Array<{ id: string; name: { native: string }; tags: string[] }>,
+  moduleName: string,
+): ObjectVignetteDef[] {
+  const palette = PALETTES[moduleName] || PALETTES.home;
+  const results: ObjectVignetteDef[] = [];
+  const seen = new Set<string>();
+
+  for (const obj of objects) {
+    const visualTags = obj.tags.filter(t => VISUAL_TAGS.has(t));
+    if (visualTags.length === 0) continue;
+
+    for (const tag of visualTags) {
+      const key = `${obj.id}:${tag}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+
+      results.push({
+        objectId: obj.id,
+        variant: tag,
+        def: {
+          category: 'object',
+          id: obj.id,
+          variant: tag,
+          isBase: !results.some(r => r.objectId === obj.id),
+          prompt: `Close-up vignette of a ${obj.name.native} that is ${tag}. ${palette}`,
+        },
+      });
+
+      const complement = TAG_COMPLEMENTS[tag];
+      if (complement && !visualTags.includes(complement)) {
+        const compKey = `${obj.id}:${complement}`;
+        if (!seen.has(compKey)) {
+          seen.add(compKey);
+          results.push({
+            objectId: obj.id,
+            variant: complement,
+            def: {
+              category: 'object',
+              id: obj.id,
+              variant: complement,
+              prompt: `Close-up vignette of a ${obj.name.native} that is ${complement}. ${palette}`,
+            },
+          });
+        }
+      }
+    }
+  }
+
+  return results;
+}

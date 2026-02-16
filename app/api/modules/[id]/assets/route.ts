@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
-import { getModule, updateModuleAssets, updateModuleVignette } from '@/lib/db';
+import { getModule, updateModuleAssets, updateModuleVignette, updateModuleObjectVignette } from '@/lib/db';
 import {
   generateSceneImage,
   generateVignetteImage,
@@ -21,6 +21,7 @@ interface ModuleObject {
   id: string;
   name: { target: string; native: string };
   location: string;
+  tags: string[];
 }
 
 interface ModuleNPC {
@@ -85,6 +86,24 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       const imageUrl = await uploadImage(buffer, mimeType, id, `vignettes/npc-${npc.id}-default`);
       await updateModuleVignette(id, npc.id, imageUrl);
       return NextResponse.json({ npcId: npc.id, imageUrl });
+    }
+
+    // Object vignette generation: { type: 'object_vignette', objectId, variant, prompt }
+    if (body.type === 'object_vignette') {
+      const obj = (moduleData.objects || []).find((o: ModuleObject) => o.id === body.objectId);
+      if (!obj) {
+        return NextResponse.json({ error: `Object "${body.objectId}" not found` }, { status: 400 });
+      }
+      const def = {
+        category: 'object' as const,
+        id: obj.id,
+        variant: body.variant,
+        prompt: body.prompt,
+      };
+      const { buffer, mimeType } = await generateVignetteImage(def, moduleData.name);
+      const imageUrl = await uploadImage(buffer, mimeType, id, `vignettes/object-${obj.id}-${body.variant}`);
+      await updateModuleObjectVignette(id, obj.id, body.variant, imageUrl);
+      return NextResponse.json({ objectId: obj.id, variant: body.variant, imageUrl });
     }
 
     // Scene generation: { locationId }

@@ -107,6 +107,7 @@ export default function ModuleEditor() {
   type LocStatus = 'pending' | 'generating' | 'done' | 'failed';
   const [assetProgress, setAssetProgress] = useState<Record<string, LocStatus>>({});
   const [npcProgress, setNpcProgress] = useState<Record<string, LocStatus>>({});
+  const [objVigProgress, setObjVigProgress] = useState<Record<string, LocStatus>>({});
   const [isGeneratingAssets, setIsGeneratingAssets] = useState(false);
 
   // Load module from DB
@@ -231,13 +232,23 @@ export default function ModuleEditor() {
     }
     if (Object.keys(progress).length > 0) setAssetProgress(progress);
     // NPC vignette progress
-    const vignettes = (mod.assets as Record<string, unknown>)?._vignettes as { npcs?: Record<string, string> } | undefined;
+    const vignettes = (mod.assets as Record<string, unknown>)?._vignettes as { npcs?: Record<string, string>; objects?: Record<string, Record<string, string>> } | undefined;
     if (vignettes?.npcs) {
       const np: Record<string, LocStatus> = {};
       for (const npcId of Object.keys(vignettes.npcs)) {
         np[npcId] = 'done';
       }
       setNpcProgress(np);
+    }
+    // Object vignette progress (flat map: { objId: { variant: url } })
+    if (vignettes?.objects) {
+      const op: Record<string, LocStatus> = {};
+      for (const [objId, variantMap] of Object.entries(vignettes.objects)) {
+        for (const variant of Object.keys(variantMap as Record<string, string>)) {
+          op[`${objId}:${variant}`] = 'done';
+        }
+      }
+      if (Object.keys(op).length > 0) setObjVigProgress(op);
     }
   }, [mod?.assets]);
 
@@ -250,6 +261,7 @@ export default function ModuleEditor() {
 
     setIsGeneratingAssets(true);
     setNpcProgress({});
+    setObjVigProgress({});
     const progress: Record<string, LocStatus> = {};
     locationIds.forEach(id => { progress[id] = 'pending'; });
     setAssetProgress({ ...progress });
@@ -280,13 +292,13 @@ export default function ModuleEditor() {
     });
 
     // Generate NPC vignettes
-    const npcs = (moduleData.npcs || []) as Array<{ id: string; name: { native: string } }>;
-    if (npcs.length > 0) {
+    const npcsForGen = (moduleData.npcs || []) as Array<{ id: string; name: { native: string } }>;
+    if (npcsForGen.length > 0) {
       const np: Record<string, LocStatus> = {};
-      npcs.forEach(npc => { np[npc.id] = 'pending'; });
+      npcsForGen.forEach(npc => { np[npc.id] = 'pending'; });
       setNpcProgress({ ...np });
 
-      for (const npc of npcs) {
+      for (const npc of npcsForGen) {
         np[npc.id] = 'generating';
         setNpcProgress({ ...np });
         try {
@@ -301,6 +313,55 @@ export default function ModuleEditor() {
           np[npc.id] = 'failed';
         }
         setNpcProgress({ ...np });
+      }
+    }
+
+    // Generate object state vignettes
+    const VISUAL_TAGS = new Set(['open', 'closed', 'on', 'off', 'ringing', 'cooked', 'lit', 'empty', 'full', 'broken']);
+    const TAG_COMPLEMENTS: Record<string, string> = { open: 'closed', closed: 'open', on: 'off', off: 'on' };
+    const objectsForVig = (moduleData.objects || []) as Array<{ id: string; name: { native: string }; tags: string[] }>;
+    const objVigDefs: Array<{ objectId: string; variant: string; prompt: string }> = [];
+    const seenObjVig = new Set<string>();
+    for (const obj of objectsForVig) {
+      const visualTags = (obj.tags || []).filter(t => VISUAL_TAGS.has(t));
+      if (visualTags.length === 0) continue;
+      for (const tag of visualTags) {
+        const key = `${obj.id}:${tag}`;
+        if (seenObjVig.has(key)) continue;
+        seenObjVig.add(key);
+        objVigDefs.push({ objectId: obj.id, variant: tag, prompt: `Close-up vignette of a ${obj.name.native} that is ${tag}.` });
+        const complement = TAG_COMPLEMENTS[tag];
+        if (complement && !visualTags.includes(complement)) {
+          const compKey = `${obj.id}:${complement}`;
+          if (!seenObjVig.has(compKey)) {
+            seenObjVig.add(compKey);
+            objVigDefs.push({ objectId: obj.id, variant: complement, prompt: `Close-up vignette of a ${obj.name.native} that is ${complement}.` });
+          }
+        }
+      }
+    }
+
+    if (objVigDefs.length > 0) {
+      const op: Record<string, LocStatus> = {};
+      objVigDefs.forEach(d => { op[`${d.objectId}:${d.variant}`] = 'pending'; });
+      setObjVigProgress({ ...op });
+
+      for (const d of objVigDefs) {
+        const opKey = `${d.objectId}:${d.variant}`;
+        op[opKey] = 'generating';
+        setObjVigProgress({ ...op });
+        try {
+          const res = await fetch(`/api/modules/${moduleId}/assets`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ type: 'object_vignette', objectId: d.objectId, variant: d.variant, prompt: d.prompt }),
+          });
+          if (!res.ok) throw new Error('Object vignette generation failed');
+          op[opKey] = 'done';
+        } catch {
+          op[opKey] = 'failed';
+        }
+        setObjVigProgress({ ...op });
       }
     }
 
@@ -466,6 +527,29 @@ export default function ModuleEditor() {
                             })}
                           </>
                         )}
+                        {Object.keys(objVigProgress).length > 0 && (
+                          <>
+                            <div className="text-sm text-gray-300 mt-4 mb-3">
+                              Generating object vignettes... ({Object.values(objVigProgress).filter(s => s === 'done').length}/{Object.keys(objVigProgress).length})
+                            </div>
+                            {Object.entries(objVigProgress).map(([key, status]) => {
+                              const [objId, variant] = key.split(':');
+                              const obj = objects.find(o => o.id === objId);
+                              return (
+                                <div key={key} className="flex items-center gap-2 text-sm">
+                                  {status === 'done' && <span className="text-green-400 w-5 text-center">&#10003;</span>}
+                                  {status === 'generating' && <span className="text-blue-400 w-5 text-center animate-spin">&#9696;</span>}
+                                  {status === 'pending' && <span className="text-gray-600 w-5 text-center">&#9675;</span>}
+                                  {status === 'failed' && <span className="text-red-400 w-5 text-center">&#10007;</span>}
+                                  <span className={status === 'done' ? 'text-gray-300' : status === 'generating' ? 'text-blue-300' : 'text-gray-500'}>
+                                    {obj?.name?.native || objId} ({variant})
+                                  </span>
+                                  {status === 'generating' && <span className="text-gray-600 text-xs ml-auto">generating...</span>}
+                                </div>
+                              );
+                            })}
+                          </>
+                        )}
                       </div>
                     ) : mod.assetStatus === 'ready' || Object.values(assetProgress).some(s => s === 'done') ? (
                       <div>
@@ -518,6 +602,38 @@ export default function ModuleEditor() {
                                     )}
                                     <div className="absolute -bottom-1 left-0 right-0 text-[10px] text-gray-300 text-center">
                                       {npc?.name?.native || npcId}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                        {/* Object vignette thumbnails */}
+                        {Object.values(objVigProgress).some(s => s === 'done') && (
+                          <div className="mb-3">
+                            <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Object Vignettes</div>
+                            <div className="flex flex-wrap gap-2">
+                              {Object.entries(objVigProgress).filter(([, s]) => s === 'done').map(([key]) => {
+                                const [objId, variant] = key.split(':');
+                                const vigData = (mod.assets as Record<string, unknown>)?._vignettes as { objects?: Record<string, Record<string, string>> } | undefined;
+                                const url = vigData?.objects?.[objId]?.[variant];
+                                const obj = objects.find(o => o.id === objId);
+                                return (
+                                  <div key={key} className="relative group">
+                                    {url ? (
+                                      <img
+                                        src={url}
+                                        alt={`${obj?.name?.native || objId} (${variant})`}
+                                        className="w-14 h-14 object-cover rounded-lg border border-gray-700"
+                                      />
+                                    ) : (
+                                      <div className="w-14 h-14 rounded-lg bg-orange-900/30 border border-gray-700 flex items-center justify-center text-xs text-orange-400">
+                                        {variant}
+                                      </div>
+                                    )}
+                                    <div className="absolute -bottom-1 left-0 right-0 text-[9px] text-gray-400 text-center truncate">
+                                      {obj?.name?.native || objId}
                                     </div>
                                   </div>
                                 );
