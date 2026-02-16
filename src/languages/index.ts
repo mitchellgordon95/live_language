@@ -2,6 +2,7 @@ import type { LanguageConfig } from './types';
 import { spanishConfig } from './spanish/index';
 import { mandarinConfig } from './mandarin/index';
 import { hindiConfig } from './hindi/index';
+import { portugueseConfig } from './portuguese/index';
 
 const languages: Record<string, LanguageConfig> = {};
 
@@ -9,6 +10,7 @@ const languages: Record<string, LanguageConfig> = {};
 registerLanguage(spanishConfig);
 registerLanguage(mandarinConfig);
 registerLanguage(hindiConfig);
+registerLanguage(portugueseConfig);
 
 export function registerLanguage(config: LanguageConfig): void {
   languages[config.id] = config;
