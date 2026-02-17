@@ -9,7 +9,7 @@ export const portugueseConfig: LanguageConfig = {
   nativeLanguage: 'english',
   coreSystemPrompt: PORTUGUESE_SYSTEM_PROMPT,
   narrateSystemPrompt: PORTUGUESE_NARRATE_PROMPT,
-  ttsVoice: 'Aoede',
+  ttsVoice: 'nova',
   promptConfig: portuguesePromptConfig,
   stripArticles,
   findObjectByName,

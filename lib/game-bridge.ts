@@ -676,9 +676,9 @@ function getVocabStageForObject(vocabulary: { words: Record<string, { stage: str
 function npcVoice(npcId: string): string {
   const allNPCsDef = getAllNPCs() as Array<{ id: string; gender?: string; isPet?: boolean }>;
   const npc = allNPCsDef.find(n => n.id === npcId);
-  if (npc?.gender === 'female') return 'Leda';
-  if (npc?.gender === 'male') return 'Charon';
-  return 'Puck'; // default for pets, unknown
+  if (npc?.gender === 'female') return 'shimmer';
+  if (npc?.gender === 'male') return 'onyx';
+  return 'alloy'; // default for pets, unknown
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any

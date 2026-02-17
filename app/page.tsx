@@ -11,10 +11,10 @@ import { useTTS } from '@/hooks/useTTS';
 import { useTextSelection } from '@/hooks/useTextSelection';
 
 const TTS_VOICES: Record<string, string> = {
-  spanish: 'Aoede',
-  mandarin: 'Kore',
-  hindi: 'Aoede',
-  portuguese: 'Aoede',
+  spanish: 'nova',
+  mandarin: 'echo',
+  hindi: 'nova',
+  portuguese: 'nova',
 };
 
 // Strip parenthetical annotations (pinyin, translations) so TTS gets clean text
@@ -234,6 +234,15 @@ export default function Home() {
         if (gameView.turnResult.npcResponse?.target) {
           speak(gameView.turnResult.npcResponse.target, gameView.turnResult.npcResponse.voice);
         }
+        if (gameView.turnResult.valid && !chatHistory.some(e => e.turnResult?.valid)) {
+          chatIdRef.current += 1;
+          const tipId = chatIdRef.current;
+          setChatHistory(prev => [...prev, {
+            id: tipId,
+            playerInput: '',
+            systemHint: '**Tip:** Highlight any text and click the 🔊 icon to hear it pronounced!',
+          }]);
+        }
       } else {
         setChatHistory(prev => prev.map(e => e.id === entryId ? { ...e, pending: false } : e));
       }
@@ -336,9 +345,6 @@ export default function Home() {
               Join our Discord
             </a>
           </div>
-          <div className="mt-4 text-center text-xs text-yellow-400/80 bg-yellow-400/10 border border-yellow-400/20 rounded-lg px-3 py-2">
-            AI TTS is intermittently down due to rate limiting
-          </div>
         </div>
       </div>
     );
@@ -440,7 +446,7 @@ export default function Home() {
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* World panel */}
         <div className="shrink-0 md:w-[55%] md:border-r border-gray-800">
-          <ScenePanel game={game} onSpeak={(text) => speak(prepareTTSText(text, game.languageId), TTS_VOICES[game.languageId] || 'Puck')} />
+          <ScenePanel game={game} onSpeak={(text) => speak(prepareTTSText(text, game.languageId), TTS_VOICES[game.languageId] || 'alloy')} />
         </div>
 
         {/* Chat + Input column */}
@@ -466,7 +472,7 @@ export default function Home() {
           ref={popupRef}
           text={selectedText}
           position={position}
-          onSpeak={(text) => speak(prepareTTSText(text, game.languageId), TTS_VOICES[game.languageId] || 'Puck')}
+          onSpeak={(text) => speak(prepareTTSText(text, game.languageId), TTS_VOICES[game.languageId] || 'alloy')}
           onDismiss={dismiss}
         />
       )}

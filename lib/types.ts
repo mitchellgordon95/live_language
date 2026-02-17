@@ -71,7 +71,7 @@ export interface NPCResponseView {
   native: string;
   actionText?: string;
   portrait?: string;  // full src path, e.g. "/scenes/home/vignettes/npc-roommate-default.png"
-  voice?: string;     // Gemini TTS voice name, e.g. "Charon"
+  voice?: string;     // OpenAI TTS voice name, e.g. "onyx"
 }
 
 export interface ItemView {

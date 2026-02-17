@@ -9,7 +9,7 @@ export const hindiConfig: LanguageConfig = {
   nativeLanguage: 'english',
   coreSystemPrompt: HINDI_PARSE_PROMPT,
   narrateSystemPrompt: HINDI_NARRATE_PROMPT,
-  ttsVoice: 'Aoede',
+  ttsVoice: 'nova',
   promptConfig: hindiPromptConfig,
   stripArticles,
   findObjectByName,
