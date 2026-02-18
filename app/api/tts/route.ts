@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+const ttsCache = new Map<string, Buffer>();
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
@@ -7,6 +9,14 @@ export async function POST(request: Request) {
 
     if (!text) {
       return NextResponse.json({ error: 'Missing text' }, { status: 400 });
+    }
+
+    const cacheKey = `${voice || 'alloy'}:${text}`;
+    const cached = ttsCache.get(cacheKey);
+    if (cached) {
+      return new Response(new Uint8Array(cached), {
+        headers: { 'Content-Type': 'audio/mpeg', 'Content-Length': String(cached.byteLength) },
+      });
     }
 
     const apiKey = process.env.OPENAI_API_KEY;
@@ -38,8 +48,10 @@ export async function POST(request: Request) {
     }
 
     const audioBuffer = await res.arrayBuffer();
+    const buffer = Buffer.from(audioBuffer);
+    ttsCache.set(cacheKey, buffer);
 
-    return new Response(new Uint8Array(audioBuffer), {
+    return new Response(new Uint8Array(buffer), {
       headers: {
         'Content-Type': 'audio/mpeg',
         'Content-Length': String(audioBuffer.byteLength),
