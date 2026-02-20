@@ -66,7 +66,67 @@ let activeLanguage: LanguageConfig;
 function extractJSON(text: string): Record<string, unknown> {
   const jsonMatch = text.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error('No JSON found in response');
-  return JSON.parse(jsonMatch[0]);
+  let raw = jsonMatch[0];
+
+  // Try parsing as-is first
+  try {
+    return JSON.parse(raw);
+  } catch {
+    // LLM sometimes outputs unescaped double quotes inside JSON string values
+    // (e.g. when echoing player input containing quotes, or using quotes in
+    // Mandarin text like "洗澡"). Fix by replacing unescaped quotes inside
+    // string values with escaped versions.
+    //
+    // Walk through character by character to find quotes that are inside a
+    // JSON string value and aren't the string delimiters.
+    const chars = [...raw];
+    const fixed: string[] = [];
+    let inString = false;
+    let escaped = false;
+
+    for (let i = 0; i < chars.length; i++) {
+      const ch = chars[i];
+
+      if (escaped) {
+        fixed.push(ch);
+        escaped = false;
+        continue;
+      }
+
+      if (ch === '\\' && inString) {
+        fixed.push(ch);
+        escaped = true;
+        continue;
+      }
+
+      if (ch === '"') {
+        if (!inString) {
+          inString = true;
+          fixed.push(ch);
+        } else {
+          // Is this the end of the string or an unescaped quote inside it?
+          // Look ahead: if end-of-string, next non-whitespace should be , or } or ] or :
+          const rest = raw.substring(i + 1).trimStart();
+          if (rest.length === 0 || ',}]:'.includes(rest[0])) {
+            // This is the closing quote
+            inString = false;
+            fixed.push(ch);
+          } else {
+            // Unescaped quote inside string — escape it
+            fixed.push('\\', '"');
+          }
+        }
+      } else {
+        fixed.push(ch);
+      }
+    }
+
+    try {
+      return JSON.parse(fixed.join(''));
+    } catch (e) {
+      throw new Error(`Failed to parse AI JSON: ${(e as Error).message}`);
+    }
+  }
 }
 
 // ============================================================================
