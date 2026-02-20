@@ -145,6 +145,7 @@ export function createInitialState(
         chainComplete: false,
       },
     },
+    turnHistory: [],
     audioEnabled: true,
   };
 }

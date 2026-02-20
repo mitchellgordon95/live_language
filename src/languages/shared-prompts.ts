@@ -67,10 +67,10 @@ COMMON PATTERNS:
 - Look at decorative items: no mutations needed (valid=true, empty mutations array)
 
 ORDER MATTERS! Put mutations in the sequence they should execute:
-- "me levanto y apago el despertador" → playerTag first, then tag alarm_clock
-- "voy a la cocina y abro la nevera" → go first, then tag refrigerator
-- "abro la nevera y tomo la leche" → tag refrigerator first (so milk is accessible), then move milk
-- "voy a la sala y salgo a la calle" → go to living_room first, then go to street
+- "I get up and turn off the alarm" → playerTag first, then tag alarm_clock
+- "I go to the kitchen and open the fridge" → go first, then tag refrigerator
+- "I open the fridge and take the milk" → tag refrigerator first (so milk is accessible), then move milk
+- "I go to the living room and go to the street" → go to living_room first, then go to street
 
 IMPORTANT RULES:
 - Use EXACT object IDs from the context lists (e.g., "refrigerator" not "fridge", "alarm_clock" not "alarm")
@@ -102,7 +102,11 @@ ADDRESSING NPCs: Players can address NPCs by name, title, or role. If multiple N
 
 LANGUAGE: ${config.languageRules}
 
-Be encouraging! Focus grammar corrections on one main issue, not every small error.${langSpecific}`;
+GRAMMAR FEEDBACK RULES:
+- Be encouraging and supportive
+- Only flag ONE grammar issue per turn — pick the most important one
+- If their input is understandable, give a high score (85-100) even if imperfect
+- Skip grammar feedback entirely if the input is natural and correct${langSpecific}`;
 }
 
 export function buildNarratePrompt(config: PromptConfig): string {

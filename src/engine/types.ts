@@ -30,8 +30,17 @@ export interface GameState {
   vocabulary: VocabularyProgress;
   learnedWords: string[];
 
+  // Turn history (for grammar context)
+  turnHistory: TurnHistoryEntry[];
+
   profile?: string;
   audioEnabled: boolean;
+}
+
+export interface TurnHistoryEntry {
+  input: string;
+  narration: string;
+  grammarTip?: string;
 }
 
 export interface LocationProgress {

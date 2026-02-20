@@ -249,6 +249,19 @@ AVAILABLE QUESTS (start these via questsStarted when the NPC naturally offers th
 ${descs.join('\n')}`;
   }
 
+  // Turn history — recent player actions and feedback
+  if (state.turnHistory?.length > 0) {
+    const historyLines = state.turnHistory.slice(-5).map(entry => {
+      let line = `- Player: "${entry.input}" → ${entry.narration}`;
+      if (entry.grammarTip) line += ` | Tip: ${entry.grammarTip}`;
+      return line;
+    });
+    prompt += `
+
+Recent turns:
+${historyLines.join('\n')}`;
+  }
+
   return prompt;
 }
 
@@ -781,6 +794,14 @@ export async function processTurn(
       : null;
   }
   newState = { ...newState, currentStep: suggestedStep };
+
+  // Save turn history for grammar context
+  const grammarTip = parseResult.grammar.issues.length > 0
+    ? parseResult.grammar.issues[0].explanation
+    : undefined;
+  const historyEntry = { input, narration: narrateResult.message, grammarTip };
+  const turnHistory = [...(newState.turnHistory || []), historyEntry].slice(-5);
+  newState = { ...newState, turnHistory };
 
   return {
     newState,

@@ -38,33 +38,7 @@ export const mandarinPromptConfig: PromptConfig = {
     'Doctor writes prescription → actionText: "医生给你开了药方 (Yisheng gei ni kai le yaofang)"',
   ],
   languageRules: 'All grammar explanations and invalidReason messages MUST be in English. Only "corrected" and "mandarinModel" fields should be in Mandarin. Always show both characters and pinyin: 打开 (dakai).',
-  languageSpecificInstructions: `MANDARIN-SPECIFIC TEACHING:
-
-TONES: Always note tone errors. The four tones change meaning:
-- mā (妈 mother), má (麻 hemp), mǎ (马 horse), mà (骂 scold)
-- When correcting, show pinyin with tone marks or numbers
-
-MEASURE WORDS (量词): Correct missing or wrong measure words:
-- 一个人 (yī gè rén) — general measure word 个
-- 一杯水 (yī bēi shuǐ) — cup measure word 杯
-- 一张床 (yī zhāng chuáng) — flat things 张
-- 一把椅子 (yī bǎ yǐzi) — things with handles 把
-- 一件衣服 (yī jiàn yīfu) — clothing 件
-
-SENTENCE PARTICLES:
-- 了 (le) — completed action or change of state
-- 吗 (ma) — yes/no question
-- 吧 (ba) — suggestion or assumption
-- 呢 (ne) — follow-up question or "what about...?"
-
-COMMON PATTERNS TO TEACH:
-- Subject + Verb + Object: 我吃饭 (wǒ chī fàn — I eat)
-- 在 + location: 我在厨房 (wǒ zài chúfáng — I'm in the kitchen)
-- 去 + place: 我去厨房 (wǒ qù chúfáng — I go to the kitchen)
-- 想 + verb: 我想吃 (wǒ xiǎng chī — I want to eat)
-- 可以 + verb: 可以吗？(kěyǐ ma? — May I?)
-
-INPUT ACCEPTANCE:
+  languageSpecificInstructions: `INPUT ACCEPTANCE:
 - Accept pinyin input with or without tones
 - Accept simplified Chinese characters
 - Show both characters and pinyin in all corrections and the mandarinModel field`,
