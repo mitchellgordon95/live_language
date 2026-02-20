@@ -63,69 +63,31 @@ let activeLanguage: LanguageConfig;
 // HELPERS
 // ============================================================================
 
-function extractJSON(text: string): Record<string, unknown> {
-  const jsonMatch = text.match(/\{[\s\S]*\}/);
+async function extractJSON(text: string): Promise<Record<string, unknown>> {
+  // Strip markdown code fences if present
+  const cleaned = text.replace(/```(?:json)?\s*/g, '').replace(/```\s*/g, '');
+  const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
   if (!jsonMatch) throw new Error('No JSON found in response');
-  let raw = jsonMatch[0];
 
-  // Try parsing as-is first
   try {
-    return JSON.parse(raw);
+    return JSON.parse(jsonMatch[0]);
   } catch {
-    // LLM sometimes outputs unescaped double quotes inside JSON string values
-    // (e.g. when echoing player input containing quotes, or using quotes in
-    // Mandarin text like "洗澡"). Fix by replacing unescaped quotes inside
-    // string values with escaped versions.
-    //
-    // Walk through character by character to find quotes that are inside a
-    // JSON string value and aren't the string delimiters.
-    const chars = [...raw];
-    const fixed: string[] = [];
-    let inString = false;
-    let escaped = false;
-
-    for (let i = 0; i < chars.length; i++) {
-      const ch = chars[i];
-
-      if (escaped) {
-        fixed.push(ch);
-        escaped = false;
-        continue;
-      }
-
-      if (ch === '\\' && inString) {
-        fixed.push(ch);
-        escaped = true;
-        continue;
-      }
-
-      if (ch === '"') {
-        if (!inString) {
-          inString = true;
-          fixed.push(ch);
-        } else {
-          // Is this the end of the string or an unescaped quote inside it?
-          // Look ahead: if end-of-string, next non-whitespace should be , or } or ] or :
-          const rest = raw.substring(i + 1).trimStart();
-          if (rest.length === 0 || ',}]:'.includes(rest[0])) {
-            // This is the closing quote
-            inString = false;
-            fixed.push(ch);
-          } else {
-            // Unescaped quote inside string — escape it
-            fixed.push('\\', '"');
-          }
-        }
-      } else {
-        fixed.push(ch);
-      }
-    }
-
-    try {
-      return JSON.parse(fixed.join(''));
-    } catch (e) {
-      throw new Error(`Failed to parse AI JSON: ${(e as Error).message}`);
-    }
+    // LLM sometimes outputs unescaped quotes inside JSON string values.
+    // Ask a fast model to fix the escaping rather than fragile regex heuristics.
+    console.warn('JSON parse failed, attempting AI repair...');
+    const repair = await getClient().messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 2048,
+      messages: [{
+        role: 'user',
+        content: `Fix this malformed JSON by properly escaping any unescaped double quotes inside string values. Return ONLY the fixed JSON, nothing else.\n\n${jsonMatch[0]}`,
+      }],
+    });
+    const repaired = repair.content[0];
+    if (repaired.type !== 'text') throw new Error('Unexpected repair response');
+    const repairedMatch = repaired.text.match(/\{[\s\S]*\}/);
+    if (!repairedMatch) throw new Error('No JSON in repair response');
+    return JSON.parse(repairedMatch[0]);
   }
 }
 
@@ -428,7 +390,7 @@ async function parseIntent(input: string, state: GameState): Promise<ParseRespon
     const content = response.content[0];
     if (content.type !== 'text') throw new Error('Unexpected response type');
 
-    const raw = extractJSON(content.text) as Record<string, unknown>;
+    const raw = await extractJSON(content.text) as Record<string, unknown>;
     // Map language-specific AI field name to generic internal name
     const targetField = activeLanguage.promptConfig.targetModelField;
     raw.targetModel = raw[targetField] ?? raw.targetModel ?? '';
@@ -494,7 +456,7 @@ Generate the narrative response for these mutations.`;
     const content = response.content[0];
     if (content.type !== 'text') throw new Error('Unexpected response type');
 
-    const raw = extractJSON(content.text) as Record<string, unknown>;
+    const raw = await extractJSON(content.text) as Record<string, unknown>;
     // Map language-specific NPC response field to generic internal name
     const npcField = activeLanguage.promptConfig.npcTargetField;
     if (raw.npcResponse && typeof raw.npcResponse === 'object') {
