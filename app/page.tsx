@@ -462,7 +462,7 @@ export default function Home() {
 
         {/* Chat + Input column */}
         <div className="flex-1 min-h-0 md:w-[45%] flex flex-col">
-          <ChatPanel chatHistory={chatHistory} onSpeak={speak} />
+          <ChatPanel chatHistory={chatHistory} onSpeak={speak} languageName={LANGUAGES.find(l => l.id === game.languageId)?.name} />
           <div className="p-2 md:p-3 border-t border-gray-800 shrink-0">
             {error && (
               <div className="text-red-400 text-xs mb-2">{error}</div>

@@ -21,6 +21,7 @@ export interface ChatEntry {
 interface ChatPanelProps {
   chatHistory: ChatEntry[];
   onSpeak?: (text: string, voice?: string) => void;
+  languageName?: string;
 }
 
 function LearnFeedback({ result }: { result: LearnResult }) {
@@ -177,7 +178,7 @@ function TurnFeedback({ result, onSpeak }: { result: TurnResultView; onSpeak?: (
   );
 }
 
-export default function ChatPanel({ chatHistory, onSpeak }: ChatPanelProps) {
+export default function ChatPanel({ chatHistory, onSpeak, languageName }: ChatPanelProps) {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Scroll when new entries are added or when pending entries resolve
@@ -191,7 +192,7 @@ export default function ChatPanel({ chatHistory, onSpeak }: ChatPanelProps) {
       <div className="flex-1 overflow-y-auto p-3 md:p-4 space-y-3">
         {chatHistory.length === 0 && (
           <div className="text-gray-600 text-sm text-center py-4 md:py-8">
-            Type something in Spanish to begin...
+            Type something in {languageName || 'the target language'} to begin...
           </div>
         )}
         {chatHistory.map((entry) => (
