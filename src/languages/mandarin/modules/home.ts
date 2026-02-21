@@ -270,7 +270,6 @@ const quests: Quest[] = [
     triggerCondition: (state: GameState) =>
       state.completedSteps.includes('talk_to_xiao_ming'),
     reward: { points: 100 },
-    autoStart: true,
   },
   {
     id: 'xiao_ming_breakfast',

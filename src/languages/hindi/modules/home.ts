@@ -270,7 +270,6 @@ const quests: Quest[] = [
     triggerCondition: (state: GameState) =>
       state.completedSteps.includes('talk_to_raj'),
     reward: { points: 100 },
-    autoStart: true,
   },
   {
     id: 'raj_breakfast',

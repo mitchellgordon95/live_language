@@ -155,9 +155,18 @@ function TurnFeedback({ result, onSpeak }: { result: TurnResultView; onSpeak?: (
 
       {/* Quests started */}
       {result.questsStarted.length > 0 && (
-        <div className="text-amber-300 text-sm">
+        <div className="text-green-400/80 text-sm">
           {result.questsStarted.map((q, i) => (
             <div key={i}>New quest: {q.title.native} &mdash; {q.description}</div>
+          ))}
+        </div>
+      )}
+
+      {/* Quests cancelled */}
+      {result.questsCancelled.length > 0 && (
+        <div className="text-gray-400 text-sm italic">
+          {result.questsCancelled.map((q, i) => (
+            <div key={i}>Quest abandoned: {q.title.native}</div>
           ))}
         </div>
       )}

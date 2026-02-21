@@ -123,6 +123,7 @@ RESPOND WITH ONLY VALID JSON:
   "stepsCompleted": ["step_id"],
   "questsStarted": ["quest_id"],
   "questsCompleted": ["quest_id"],
+  "questsCancelled": ["quest_id"],
   "npcResponse": {
     "npcId": "roommate",
     "${config.npcTargetField}": "${config.npcExample.target}",
@@ -140,6 +141,7 @@ FIELD RULES:
 - "stepsCompleted": Array of step IDs completed by this turn. ONLY use IDs from the "Available step IDs" list in the context. Omit if no steps completed.
 - "questsStarted": Array of quest IDs to activate this turn. ONLY use IDs from "AVAILABLE QUESTS" in the context. Start a quest when an NPC naturally brings it up in conversation (e.g., Carlos mentions he's hungry → start "carlos_breakfast"). The NPC's dialog should introduce the quest. Omit if no quests started.
 - "questsCompleted": Array of quest IDs completed this turn. ONLY use IDs from "ACTIVE QUESTS" in the context. Mark a quest complete when its COMPLETE WHEN condition is clearly met (be lax, same as steps). Omit if no quests completed or no active quests.
+- "questsCancelled": Array of quest IDs the player refused or cancelled this turn. ONLY use IDs from "ACTIVE QUESTS". Use when the player explicitly tells an NPC they don't want to do the task or declines a quest. Do NOT cancel just because the player ignores or changes topic. Omit if none.
 - "npcResponse": Include if the player interacted with an NPC or pet
   - For NPCs: include "${config.npcTargetField}" (NPC's response in ${config.npcResponseGuidance}) and "english" (translation)
   - For pets (isPet NPCs): omit "${config.npcTargetField}", include only "english" (pet reaction in English)

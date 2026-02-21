@@ -130,7 +130,6 @@ export function createInitialState(
     completedSteps: [],
     activeQuests: [],
     completedQuests: [],
-    abandonedQuests: [],
     badges: [],
     learnedWords: [],
     vocabulary: existingVocabulary || createInitialVocabulary(),

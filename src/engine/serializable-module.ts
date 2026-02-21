@@ -52,7 +52,6 @@ export interface SerializableQuest {
   triggerRule: CheckRule;
   reward: QuestReward;
   prereqs?: string[];
-  autoStart?: boolean;
 }
 
 export interface SerializableModuleDefinition {
@@ -122,7 +121,6 @@ export function hydrateModule(serialized: SerializableModuleDefinition): ModuleD
     triggerCondition: (state: GameState) => evaluateRule(quest.triggerRule, state),
     reward: quest.reward,
     prereqs: quest.prereqs,
-    autoStart: quest.autoStart,
   }));
 
   return {
