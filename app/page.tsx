@@ -172,7 +172,7 @@ export default function Home() {
     if (input.trim().toLowerCase().startsWith('/say ')) {
       const textToSpeak = input.trim().slice(5).trim();
       if (textToSpeak) {
-        speak(textToSpeak);
+        speak(textToSpeak, undefined, game?.languageId);
         chatIdRef.current += 1;
         setChatHistory(prev => [...prev, {
           id: chatIdRef.current,
@@ -270,7 +270,7 @@ export default function Home() {
           turnResult: gameView.turnResult!,
         } : e));
         if (gameView.turnResult.npcResponse?.target) {
-          speak(gameView.turnResult.npcResponse.target, gameView.turnResult.npcResponse.voice);
+          speak(gameView.turnResult.npcResponse.target, gameView.turnResult.npcResponse.voice, game?.languageId);
         }
         if (gameView.turnResult.valid && !chatHistory.some(e => e.turnResult?.valid)) {
           chatIdRef.current += 1;
@@ -588,12 +588,12 @@ export default function Home() {
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* World panel */}
         <div className="shrink-0 md:w-[55%] md:border-r border-gray-800">
-          <ScenePanel game={game} onSpeak={(text) => speak(prepareTTSText(text, game.languageId), TTS_VOICES[game.languageId] || 'alloy')} />
+          <ScenePanel game={game} onSpeak={(text) => speak(prepareTTSText(text, game.languageId), TTS_VOICES[game.languageId] || 'alloy', game.languageId)} />
         </div>
 
         {/* Chat + Input column */}
         <div className="flex-1 min-h-0 md:w-[45%] flex flex-col">
-          <ChatPanel chatHistory={chatHistory} onSpeak={speak} languageName={LANGUAGES.find(l => l.id === game.languageId)?.name} />
+          <ChatPanel chatHistory={chatHistory} onSpeak={(text, voice) => speak(text, voice, game.languageId)} languageName={LANGUAGES.find(l => l.id === game.languageId)?.name} />
           <div
             className={`p-2 md:p-3 border-t shrink-0 ${showInputGlow ? 'rounded-lg border-blue-500/60' : 'border-gray-800'}`}
             style={showInputGlow ? { animation: 'onboarding-glow 2s ease-in-out infinite', '--glow-color': 'rgba(59, 130, 246, 0.5)' } as React.CSSProperties : undefined}
@@ -629,7 +629,7 @@ export default function Home() {
           ref={popupRef}
           text={selectedText}
           position={position}
-          onSpeak={(text) => speak(prepareTTSText(text, game.languageId), TTS_VOICES[game.languageId] || 'alloy')}
+          onSpeak={(text) => speak(prepareTTSText(text, game.languageId), TTS_VOICES[game.languageId] || 'alloy', game.languageId)}
           onDismiss={dismiss}
         />
       )}

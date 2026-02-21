@@ -7,7 +7,7 @@ export function useTTS() {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  const speak = useCallback(async (text: string, voice?: string) => {
+  const speak = useCallback(async (text: string, voice?: string, language?: string) => {
     if (isMuted || !text) return;
 
     // Stop current audio
@@ -20,7 +20,7 @@ export function useTTS() {
       const res = await fetch('/api/tts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text, voice: voice || 'alloy' }),
+        body: JSON.stringify({ text, voice: voice || 'alloy', language }),
       });
       if (!res.ok) return;
 
