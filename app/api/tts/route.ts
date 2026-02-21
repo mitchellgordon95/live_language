@@ -1,22 +1,12 @@
 import { NextResponse } from 'next/server';
 
-const ttsCache = new Map<string, Buffer>();
-
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { text, voice } = body;
+    const { text, voice, language } = body;
 
     if (!text) {
       return NextResponse.json({ error: 'Missing text' }, { status: 400 });
-    }
-
-    const cacheKey = `${voice || 'alloy'}:${text}`;
-    const cached = ttsCache.get(cacheKey);
-    if (cached) {
-      return new Response(new Uint8Array(cached), {
-        headers: { 'Content-Type': 'audio/mpeg', 'Content-Length': String(cached.byteLength) },
-      });
     }
 
     const apiKey = process.env.OPENAI_API_KEY;
@@ -24,17 +14,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'OPENAI_API_KEY not configured' }, { status: 500 });
     }
 
+    const langName = language || 'Spanish';
+    const payload: Record<string, string> = {
+      model: 'gpt-4o-mini-tts',
+      voice: voice || 'alloy',
+      input: text,
+      response_format: 'wav',
+      instructions: `Speak in ${langName}. Pronounce naturally as a native ${langName} speaker.`,
+    };
+    console.log('[TTS] Request:', JSON.stringify(payload));
+
     const res = await fetch('https://api.openai.com/v1/audio/speech', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        model: 'tts-1',
-        voice: voice || 'alloy',
-        input: text,
-      }),
+      body: JSON.stringify(payload),
     });
 
     if (!res.ok) {
@@ -48,12 +44,11 @@ export async function POST(request: Request) {
     }
 
     const audioBuffer = await res.arrayBuffer();
-    const buffer = Buffer.from(audioBuffer);
-    ttsCache.set(cacheKey, buffer);
+    console.log('[TTS] Response: %d bytes, status %d', audioBuffer.byteLength, res.status);
 
-    return new Response(new Uint8Array(buffer), {
+    return new Response(new Uint8Array(audioBuffer), {
       headers: {
-        'Content-Type': 'audio/mpeg',
+        'Content-Type': 'audio/wav',
         'Content-Length': String(audioBuffer.byteLength),
       },
     });
@@ -65,37 +60,7 @@ export async function POST(request: Request) {
 }
 
 // --- Gemini TTS (backup) ---
-// To switch back, replace the POST handler above with the Gemini implementation below.
-//
 // import { GoogleGenAI } from '@google/genai';
-//
-// function pcmToWav(pcmData: Buffer): Buffer {
-//   const sampleRate = 24000;
-//   const numChannels = 1;
-//   const bitsPerSample = 16;
-//   const byteRate = sampleRate * numChannels * (bitsPerSample / 8);
-//   const blockAlign = numChannels * (bitsPerSample / 8);
-//   const dataSize = pcmData.length;
-//   const headerSize = 44;
-//   const header = Buffer.alloc(headerSize);
-//   header.write('RIFF', 0);
-//   header.writeUInt32LE(dataSize + headerSize - 8, 4);
-//   header.write('WAVE', 8);
-//   header.write('fmt ', 12);
-//   header.writeUInt32LE(16, 16);
-//   header.writeUInt16LE(1, 20);
-//   header.writeUInt16LE(numChannels, 22);
-//   header.writeUInt32LE(sampleRate, 24);
-//   header.writeUInt32LE(byteRate, 28);
-//   header.writeUInt16LE(blockAlign, 32);
-//   header.writeUInt16LE(bitsPerSample, 34);
-//   header.write('data', 36);
-//   header.writeUInt32LE(dataSize, 40);
-//   return Buffer.concat([header, pcmData]);
-// }
-//
-// Gemini POST handler:
-//   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-//   Retry up to 3 times, model: 'gemini-2.5-flash-preview-tts'
-//   Voice names: Aoede (default), Kore (Mandarin), Charon (male NPC), Leda (female NPC), Puck (pets)
-//   Returns PCM → needs pcmToWav() → audio/wav
+// Model: 'gemini-2.5-flash-preview-tts', returns PCM → pcmToWav() → audio/wav
+// Voice names: Aoede (default), Kore (Mandarin), Charon (male), Leda (female), Puck (pets)
+// Better quality but harsh rate limits. See git history (793e634^) for full implementation.
