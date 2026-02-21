@@ -8,6 +8,7 @@ import ScenePanel from '@/components/ScenePanel';
 import InputBar from '@/components/InputBar';
 import { SpeakerPopup } from '@/components/SpeakerPopup';
 import { useTTS } from '@/hooks/useTTS';
+import { useSTT } from '@/hooks/useSTT';
 import { useTextSelection } from '@/hooks/useTextSelection';
 
 const TTS_VOICES: Record<string, string> = {
@@ -15,6 +16,13 @@ const TTS_VOICES: Record<string, string> = {
   mandarin: 'echo',
   hindi: 'nova',
   portuguese: 'nova',
+};
+
+const STT_LANGUAGES: Record<string, string> = {
+  spanish: 'es',
+  mandarin: 'zh',
+  hindi: 'hi',
+  portuguese: 'pt',
 };
 
 // Strip parenthetical annotations (pinyin, translations) so TTS gets clean text
@@ -58,6 +66,8 @@ export default function Home() {
   const autoPlayRef = useRef(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { speak, isMuted, toggleMute } = useTTS();
+  const { isRecording, isTranscribing, startRecording, stopRecording } = useSTT();
+  const [sttResult, setSttResult] = useState('');
   const { selectedText, position, isVisible, dismiss, popupRef } = useTextSelection();
 
   // Restore profile from localStorage and check for saves
@@ -472,6 +482,18 @@ export default function Home() {
               onHelp={handleHelp}
               disabled={isProcessing}
               placeholder={placeholder}
+              isRecording={isRecording}
+              isTranscribing={isTranscribing}
+              onMicToggle={() => {
+                if (isRecording) {
+                  stopRecording();
+                } else {
+                  setSttResult('');
+                  const lang = STT_LANGUAGES[game.languageId] || 'es';
+                  startRecording(lang, (text) => setSttResult(text));
+                }
+              }}
+              sttResult={sttResult}
             />
           </div>
         </div>
