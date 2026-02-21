@@ -116,6 +116,11 @@ function ModulesPage() {
   const [step, setStep] = useState<WizardStep>('describe');
   const initialLang = searchParams.get('language') || 'spanish';
   const [languageId, setLanguageId] = useState(initialLang);
+  const returnModule = searchParams.get('module');
+  const returnProfile = searchParams.get('profile');
+  const backUrl = returnModule && initialLang && returnProfile
+    ? `/?play=${encodeURIComponent(returnModule)}&language=${encodeURIComponent(initialLang)}&profile=${encodeURIComponent(returnProfile)}`
+    : '/';
   const [description, setDescription] = useState('');
   const [directions, setDirections] = useState<Direction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -140,16 +145,17 @@ function ModulesPage() {
   const assetGen = useAssetGeneration(createdModuleId, createdModuleData);
   const assetStartedRef = useRef(false);
 
-  // Load modules on mount
+  // Load modules on mount and when language changes
   useEffect(() => {
     const profile = localStorage.getItem('profile');
     if (!profile) { setListLoading(false); return; }
-    fetch(`/api/modules?profile=${encodeURIComponent(profile)}`)
+    setListLoading(true);
+    fetch(`/api/modules?profile=${encodeURIComponent(profile)}&language=${encodeURIComponent(languageId)}`)
       .then(r => r.ok ? r.json() : { modules: [] })
       .then(data => setModules(data.modules || []))
       .catch(() => {})
       .finally(() => setListLoading(false));
-  }, []);
+  }, [languageId]);
 
   // Auto-start asset generation when module design is done
   useEffect(() => {
@@ -294,8 +300,8 @@ function ModulesPage() {
       {/* Header */}
       <div className="border-b border-gray-800 px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button onClick={() => view === 'wizard' ? setView('listing') : router.push('/')} className="text-gray-500 hover:text-gray-300 text-sm">
-            &larr; {view === 'wizard' ? 'Back' : 'Home'}
+          <button onClick={() => view === 'wizard' ? setView('listing') : router.push(backUrl)} className="text-gray-500 hover:text-gray-300 text-sm">
+            &larr; {view === 'wizard' ? 'Back' : backUrl === '/' ? 'Home' : 'Back to Game'}
           </button>
           <h1 className="text-lg font-semibold">{view === 'wizard' ? 'New Module' : 'Modules'}</h1>
         </div>
@@ -370,26 +376,43 @@ function ModulesPage() {
                 const vocab = mod.moduleData.vocabulary ? (mod.moduleData.vocabulary as unknown[]).length : 0;
                 const quests = mod.moduleData.quests ? (mod.moduleData.quests as unknown[]).length : 0;
                 const lang = LANGUAGES.find(l => l.id === mod.languageId);
+                const profile = typeof window !== 'undefined' ? localStorage.getItem('profile') || '' : '';
                 return (
-                  <button
+                  <div
                     key={mod.id}
-                    onClick={() => router.push(`/create/${mod.id}`)}
-                    className="w-full text-left p-4 bg-gray-900 border border-gray-800 hover:border-gray-600 rounded-xl transition-colors"
+                    className="flex items-center gap-2"
                   >
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-white">{mod.title}</h3>
-                      {lang && <span className="text-xs text-gray-500 bg-gray-800 px-2 py-0.5 rounded">{lang.flag} {lang.name}</span>}
-                    </div>
-                    {mod.description && (
-                      <p className="text-gray-500 text-sm mb-2 line-clamp-1">{mod.description}</p>
-                    )}
-                    <div className="flex gap-3 text-xs text-gray-600">
-                      <span>{locs} locations</span>
-                      <span>{npcs} NPCs</span>
-                      <span>{quests} quests</span>
-                      <span>{vocab} vocab</span>
-                    </div>
-                  </button>
+                    <button
+                      onClick={() => {
+                        const url = `/?play=${mod.id}&language=${encodeURIComponent(mod.languageId)}${profile ? `&profile=${encodeURIComponent(profile)}` : ''}`;
+                        window.location.href = url;
+                      }}
+                      className="flex-1 text-left p-4 bg-gray-900 border border-gray-800 hover:border-gray-600 rounded-xl transition-colors"
+                    >
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="font-semibold text-white">{mod.title}</h3>
+                        {lang && <span className="text-xs text-gray-500 bg-gray-800 px-2 py-0.5 rounded">{lang.flag} {lang.name}</span>}
+                      </div>
+                      {mod.description && (
+                        <p className="text-gray-500 text-sm mb-2 line-clamp-1">{mod.description}</p>
+                      )}
+                      <div className="flex gap-3 text-xs text-gray-600">
+                        <span>{locs} locations</span>
+                        <span>{npcs} NPCs</span>
+                        <span>{quests} quests</span>
+                        <span>{vocab} vocab</span>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => router.push(`/create/${mod.id}`)}
+                      className="shrink-0 p-3 bg-gray-900 border border-gray-800 hover:border-gray-600 rounded-xl transition-colors text-gray-400 hover:text-blue-400"
+                      title="Edit module"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                      </svg>
+                    </button>
+                  </div>
                 );
               })}
             </div>

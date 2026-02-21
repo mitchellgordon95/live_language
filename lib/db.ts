@@ -193,13 +193,18 @@ export async function getModule(id: string): Promise<UserModuleRow | null> {
   };
 }
 
-export async function listModules(profile: string): Promise<UserModuleRow[]> {
+export async function listModules(profile: string, languageId?: string): Promise<UserModuleRow[]> {
   await ensureSchema();
   const pool = getPool();
-  const result = await pool.query(
-    'SELECT * FROM user_modules WHERE profile = $1 ORDER BY updated_at DESC',
-    [profile],
-  );
+  const result = languageId
+    ? await pool.query(
+        'SELECT * FROM user_modules WHERE profile = $1 AND language_id = $2 ORDER BY updated_at DESC',
+        [profile, languageId],
+      )
+    : await pool.query(
+        'SELECT * FROM user_modules WHERE profile = $1 ORDER BY updated_at DESC',
+        [profile],
+      );
   return result.rows.map(row => ({
     id: row.id,
     profile: row.profile,
