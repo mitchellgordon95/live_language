@@ -38,6 +38,10 @@ function serializeState(state: any): object {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function deserializeState(raw: any): any {
+  // Migrate old saves: street and restaurant locations no longer exist
+  if (raw.currentLocation === 'street') raw.currentLocation = 'living_room';
+  if (raw.currentLocation?.startsWith('restaurant_')) raw.currentLocation = 'living_room';
+
   return {
     ...raw,
     currentStep: raw.currentStep ? getStepById(raw.currentStep) ?? null : null,
@@ -173,7 +177,22 @@ export async function playTurn(profile: string, languageId: string, input: strin
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const result = await processTurn(input, state, effectiveConfig) as any;
 
-  const newState = result.newState;
+  let newState = result.newState;
+
+  // Detect module exit — revert location and signal frontend to redirect
+  if (newState.currentLocation === 'module_exit') {
+    newState = {
+      ...newState,
+      currentLocation: state.currentLocation,
+      visitedLocations: newState.visitedLocations.filter((id: string) => id !== 'module_exit'),
+    };
+    await saveGame(profile, save.module, save.languageId, serializeState(newState));
+    const turnResult = buildTurnResultView(result, newState);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const view = await buildGameView(profile, save.languageId, newState, turnResult, result, (languageConfig as any).helpText);
+    return { ...view, redirectToModules: true };
+  }
+
   await saveGame(profile, save.module, save.languageId, serializeState(newState));
 
   const turnResult = buildTurnResultView(result, newState);
@@ -753,7 +772,7 @@ function buildTurnResultView(result: any, state: any): TurnResultView {
 }
 
 export function getAvailableModules(): string[] {
-  return ['home', 'restaurant'];
+  return ['home'];
 }
 
 // --- /learn Command ---

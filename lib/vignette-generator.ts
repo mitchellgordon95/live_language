@@ -38,7 +38,6 @@ const VIGNETTE_STYLE = `Editorial illustration style, like a New Yorker or Monoc
 
 const PALETTES: Record<string, string> = {
   home: 'Warm yellows, soft oranges, cozy earth tones. Morning light.',
-  restaurant: 'Rich warm reds, dark wood browns, candlelight amber.',
   market: 'Vibrant greens, fresh produce colors, rustic wood tones.',
   gym: 'Cool grays, energetic orange accents.',
   park: 'Natural greens, sky blues, dappled sunlight.',

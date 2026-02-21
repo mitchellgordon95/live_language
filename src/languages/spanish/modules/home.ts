@@ -55,7 +55,7 @@ const locations: Record<string, Location> = {
       { to: 'bedroom', name: { target: 'el dormitorio', native: 'bedroom' } },
       { to: 'bathroom', name: { target: 'el baño', native: 'bathroom' } },
       { to: 'kitchen', name: { target: 'la cocina', native: 'kitchen' } },
-      { to: 'street', name: { target: 'la calle', native: 'street' } },
+      { to: 'module_exit', name: { target: 'la salida', native: 'exit' } },
     ],
     verbs: [
       { target: 'hablo con', native: 'I talk to' },
@@ -64,18 +64,11 @@ const locations: Record<string, Location> = {
       { target: 'miro', native: 'I look at' },
     ],
   },
-  street: {
-    id: 'street',
-    name: { target: 'la calle', native: 'street' },
-    exits: [
-      { to: 'living_room', name: { target: 'la casa', native: 'home' } },
-      { to: 'restaurant_entrance', name: { target: 'el restaurante', native: 'restaurant' } },
-    ],
-    verbs: [
-      { target: 'voy a', native: 'I go to' },
-      { target: 'camino', native: 'I walk' },
-      { target: 'miro', native: 'I look at' },
-    ],
+  module_exit: {
+    id: 'module_exit',
+    name: { target: 'la salida', native: 'exit' },
+    exits: [],
+    verbs: [],
   },
 };
 
@@ -130,9 +123,6 @@ const objects: WorldObject[] = [
   { id: 'bookshelf', name: { target: 'la estantería', native: 'bookshelf' }, location: 'living_room', tags: [] },
   { id: 'remote', name: { target: 'el control remoto', native: 'remote control' }, location: 'living_room', tags: ['takeable'] },
 
-  // Street
-  { id: 'streetlamp', name: { target: 'la farola', native: 'streetlamp' }, location: 'street', tags: ['on'] },
-  { id: 'bench', name: { target: 'el banco', native: 'bench' }, location: 'street', tags: [] },
 ];
 
 // ============================================================================
@@ -405,7 +395,7 @@ export const homeModule: ModuleDefinition = {
   vocabulary,
   startLocationId: 'bedroom',
   firstStepId: 'wake_up',
-  locationIds: Object.keys(locations).filter(id => id !== 'street'),
+  locationIds: Object.keys(locations).filter(id => id !== 'module_exit'),
   unlockLevel: 1,
 
   guidance: `HOME ENVIRONMENT:

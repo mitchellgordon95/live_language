@@ -70,7 +70,7 @@ ORDER MATTERS! Put mutations in the sequence they should execute:
 - "I get up and turn off the alarm" → playerTag first, then tag alarm_clock
 - "I go to the kitchen and open the fridge" → go first, then tag refrigerator
 - "I open the fridge and take the milk" → tag refrigerator first (so milk is accessible), then move milk
-- "I go to the living room and go to the street" → go to living_room first, then go to street
+- "I go to the living room and go to the exit" → go to living_room first, then go to module_exit
 
 IMPORTANT RULES:
 - Use EXACT object IDs from the context lists (e.g., "refrigerator" not "fridge", "alarm_clock" not "alarm")
@@ -131,7 +131,7 @@ RESPOND WITH ONLY VALID JSON:
     "actionText": "${config.npcExample.actionText}"
   },
   "mutations": [
-    { "type": "create", "object": { "id": "my_sopa", "name": { "target": "la sopa", "native": "soup" }, "location": "restaurant_table", "tags": ["consumable"], "needsEffect": { "hunger": 30 } } }
+    { "type": "create", "object": { "id": "my_sopa", "name": { "target": "la sopa", "native": "soup" }, "location": "kitchen", "tags": ["consumable"], "needsEffect": { "hunger": 30 } } }
   ]
 }
 
@@ -148,7 +148,7 @@ FIELD RULES:
 - "mutations": NPC-initiated state changes. Use when NPCs affect the world:
   - NPC brings food: { "type": "create", "object": { ... } }
   - NPC clears plates: { "type": "remove", "objectId": "my_sopa" }
-  - NPC seats player: { "type": "go", "locationId": "restaurant_table" }
+  - NPC seats player: { "type": "go", "locationId": "kitchen" }
   - NPC mood change: { "type": "npcMood", "npcId": "roommate", "mood": "happy" }
 
 NPC ACTION TEXT examples:

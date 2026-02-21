@@ -21,22 +21,5 @@ export const hindiConfig: LanguageConfig = {
 4. **Ask a question in English** — "How do I open the fridge?" and the AI will guide you in Hindi.
 5. **/learn [topic]** — Get a quick Hindi lesson. Try: /learn greetings, /learn postpositions, /learn food vocabulary
 6. **/help** — See your current location, goal, and nearby objects.`,
-  modules: [
-    homeModule,
-    {
-      name: 'street',
-      displayName: 'Street',
-      locations: { street: homeModule.locations.street },
-      objects: [],
-      npcs: [],
-      tutorial: [],
-      quests: [],
-      vocabulary: [],
-      startLocationId: 'street',
-      firstStepId: '',
-      locationIds: ['street'],
-      unlockLevel: 1,
-      guidance: '',
-    },
-  ],
+  modules: [homeModule],
 };

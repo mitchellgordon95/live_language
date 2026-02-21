@@ -55,7 +55,7 @@ const locations: Record<string, Location> = {
       { to: 'bedroom', name: { target: '卧室 (wòshì)', native: 'bedroom' } },
       { to: 'bathroom', name: { target: '浴室 (yùshì)', native: 'bathroom' } },
       { to: 'kitchen', name: { target: '厨房 (chúfáng)', native: 'kitchen' } },
-      { to: 'street', name: { target: '街道 (jiēdào)', native: 'street' } },
+      { to: 'module_exit', name: { target: '出口 (chūkǒu)', native: 'exit' } },
     ],
     verbs: [
       { target: '跟...说话 (gēn...shuōhuà)', native: 'I talk to' },
@@ -64,17 +64,11 @@ const locations: Record<string, Location> = {
       { target: '看 (kàn)', native: 'I look at' },
     ],
   },
-  street: {
-    id: 'street',
-    name: { target: '街道 (jiēdào)', native: 'street' },
-    exits: [
-      { to: 'living_room', name: { target: '家 (jiā)', native: 'home' } },
-    ],
-    verbs: [
-      { target: '去 (qù)', native: 'I go to' },
-      { target: '走 (zǒu)', native: 'I walk' },
-      { target: '看 (kàn)', native: 'I look at' },
-    ],
+  module_exit: {
+    id: 'module_exit',
+    name: { target: '出口 (chūkǒu)', native: 'exit' },
+    exits: [],
+    verbs: [],
   },
 };
 
@@ -130,8 +124,6 @@ const objects: WorldObject[] = [
   { id: 'remote', name: { target: '遥控器 (yáokòngqì)', native: 'remote control' }, location: 'living_room', tags: ['takeable'] },
 
   // Street
-  { id: 'streetlamp', name: { target: '路灯 (lùdēng)', native: 'streetlamp' }, location: 'street', tags: ['on'] },
-  { id: 'bench', name: { target: '长椅 (chángyǐ)', native: 'bench' }, location: 'street', tags: [] },
 ];
 
 // ============================================================================
@@ -309,7 +301,6 @@ const vocabulary: VocabWord[] = [
   { target: '浴室', native: 'bathroom', category: 'noun', pinyin: 'yùshì', tones: [4, 4] },
   { target: '厨房', native: 'kitchen', category: 'noun', pinyin: 'chúfáng', tones: [2, 2] },
   { target: '客厅', native: 'living room', category: 'noun', pinyin: 'kètīng', tones: [4, 1] },
-  { target: '街道', native: 'street', category: 'noun', pinyin: 'jiēdào', tones: [1, 4] },
 
   // Bedroom objects
   { target: '床', native: 'bed', category: 'noun', pinyin: 'chuáng', tones: [2] },
@@ -372,7 +363,6 @@ const vocabulary: VocabWord[] = [
   { target: '遥控器', native: 'remote control', category: 'noun', pinyin: 'yáokòngqì', tones: [2, 4, 4] },
 
   // Street
-  { target: '路灯', native: 'streetlamp', category: 'noun', pinyin: 'lùdēng', tones: [4, 1] },
   { target: '长椅', native: 'bench', category: 'noun', pinyin: 'chángyǐ', tones: [2, 3] },
 
   // Pets
@@ -419,7 +409,7 @@ export const homeModule: ModuleDefinition = {
   vocabulary,
   startLocationId: 'bedroom',
   firstStepId: 'wake_up',
-  locationIds: Object.keys(locations).filter(id => id !== 'street'),
+  locationIds: Object.keys(locations).filter(id => id !== 'module_exit'),
   unlockLevel: 1,
 
   guidance: `HOME ENVIRONMENT:

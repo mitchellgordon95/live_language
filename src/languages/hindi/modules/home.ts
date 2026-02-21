@@ -55,7 +55,7 @@ const locations: Record<string, Location> = {
       { to: 'bedroom', name: { target: 'शयनकक्ष (shayanakaksh)', native: 'bedroom' } },
       { to: 'bathroom', name: { target: 'बाथरूम (bathroom)', native: 'bathroom' } },
       { to: 'kitchen', name: { target: 'रसोई (rasoi)', native: 'kitchen' } },
-      { to: 'street', name: { target: 'सड़क (sadak)', native: 'street' } },
+      { to: 'module_exit', name: { target: 'बाहर (baahar)', native: 'exit' } },
     ],
     verbs: [
       { target: '...से बात करना (...se baat karna)', native: 'I talk to' },
@@ -64,17 +64,11 @@ const locations: Record<string, Location> = {
       { target: 'देखना (dekhna)', native: 'I look at' },
     ],
   },
-  street: {
-    id: 'street',
-    name: { target: 'सड़क (sadak)', native: 'street' },
-    exits: [
-      { to: 'living_room', name: { target: 'घर (ghar)', native: 'home' } },
-    ],
-    verbs: [
-      { target: 'जाना (jaana)', native: 'I go to' },
-      { target: 'चलना (chalna)', native: 'I walk' },
-      { target: 'देखना (dekhna)', native: 'I look at' },
-    ],
+  module_exit: {
+    id: 'module_exit',
+    name: { target: 'बाहर (baahar)', native: 'exit' },
+    exits: [],
+    verbs: [],
   },
 };
 
@@ -130,8 +124,6 @@ const objects: WorldObject[] = [
   { id: 'remote', name: { target: 'रिमोट (remote)', native: 'remote control' }, location: 'living_room', tags: ['takeable'] },
 
   // Street
-  { id: 'streetlamp', name: { target: 'सड़क का लैम्प (sadak ka lamp)', native: 'streetlamp' }, location: 'street', tags: ['on'] },
-  { id: 'bench', name: { target: 'बेंच (bench)', native: 'bench' }, location: 'street', tags: [] },
 ];
 
 // ============================================================================
@@ -309,7 +301,6 @@ const vocabulary: VocabWord[] = [
   { target: 'बाथरूम', native: 'bathroom', category: 'noun' },
   { target: 'रसोई', native: 'kitchen', category: 'noun' },
   { target: 'बैठक', native: 'living room', category: 'noun' },
-  { target: 'सड़क', native: 'street', category: 'noun' },
 
   // Bedroom objects
   { target: 'बिस्तर', native: 'bed', category: 'noun' },
@@ -371,7 +362,6 @@ const vocabulary: VocabWord[] = [
   { target: 'रिमोट', native: 'remote control', category: 'noun' },
 
   // Street
-  { target: 'सड़क का लैम्प', native: 'streetlamp', category: 'noun' },
   { target: 'बेंच', native: 'bench', category: 'noun' },
 
   // Pets
@@ -417,7 +407,7 @@ export const homeModule: ModuleDefinition = {
   vocabulary,
   startLocationId: 'bedroom',
   firstStepId: 'wake_up',
-  locationIds: Object.keys(locations).filter(id => id !== 'street'),
+  locationIds: Object.keys(locations).filter(id => id !== 'module_exit'),
   unlockLevel: 1,
 
   guidance: `HOME ENVIRONMENT:

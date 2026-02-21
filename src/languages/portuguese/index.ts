@@ -20,22 +20,5 @@ export const portugueseConfig: LanguageConfig = {
 3. **Ask a question in English** — "How do I order food?" and the AI will guide you in Portuguese.
 4. **/learn [topic]** — Get a quick Portuguese lesson. Try: /learn greetings, /learn past tense, /learn food vocabulary
 5. **/help** — See your current location, goal, and nearby objects.`,
-  modules: [
-    homeModule,
-    {
-      name: 'street',
-      displayName: 'Street',
-      locations: { street: homeModule.locations.street },
-      objects: [],
-      npcs: [],
-      tutorial: [],
-      quests: [],
-      vocabulary: [],
-      startLocationId: 'street',
-      firstStepId: '',
-      locationIds: ['street'],
-      unlockLevel: 1,
-      guidance: '',
-    },
-  ],
+  modules: [homeModule],
 };

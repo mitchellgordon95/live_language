@@ -55,7 +55,7 @@ const locations: Record<string, Location> = {
       { to: 'bedroom', name: { target: 'o quarto', native: 'bedroom' } },
       { to: 'bathroom', name: { target: 'o banheiro', native: 'bathroom' } },
       { to: 'kitchen', name: { target: 'a cozinha', native: 'kitchen' } },
-      { to: 'street', name: { target: 'a rua', native: 'street' } },
+      { to: 'module_exit', name: { target: 'a saída', native: 'exit' } },
     ],
     verbs: [
       { target: 'falo com', native: 'I talk to' },
@@ -64,18 +64,11 @@ const locations: Record<string, Location> = {
       { target: 'olho', native: 'I look at' },
     ],
   },
-  street: {
-    id: 'street',
-    name: { target: 'a rua', native: 'street' },
-    exits: [
-      { to: 'living_room', name: { target: 'a casa', native: 'home' } },
-      { to: 'restaurant_entrance', name: { target: 'o restaurante', native: 'restaurant' } },
-    ],
-    verbs: [
-      { target: 'vou para', native: 'I go to' },
-      { target: 'caminho', native: 'I walk' },
-      { target: 'olho', native: 'I look at' },
-    ],
+  module_exit: {
+    id: 'module_exit',
+    name: { target: 'a saída', native: 'exit' },
+    exits: [],
+    verbs: [],
   },
 };
 
@@ -131,8 +124,6 @@ const objects: WorldObject[] = [
   { id: 'remote', name: { target: 'o controle remoto', native: 'remote control' }, location: 'living_room', tags: ['takeable'] },
 
   // Street
-  { id: 'streetlamp', name: { target: 'o poste de luz', native: 'streetlamp' }, location: 'street', tags: ['on'] },
-  { id: 'bench', name: { target: 'o banco', native: 'bench' }, location: 'street', tags: [] },
 ];
 
 // ============================================================================
@@ -405,7 +396,7 @@ export const homeModule: ModuleDefinition = {
   vocabulary,
   startLocationId: 'bedroom',
   firstStepId: 'wake_up',
-  locationIds: Object.keys(locations).filter(id => id !== 'street'),
+  locationIds: Object.keys(locations).filter(id => id !== 'module_exit'),
   unlockLevel: 1,
 
   guidance: `HOME ENVIRONMENT:
