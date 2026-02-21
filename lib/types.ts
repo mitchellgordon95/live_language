@@ -93,6 +93,16 @@ export interface VignetteHint {
   objectChanges?: Array<{ objectId: string; image: string; generating?: boolean }>;
 }
 
+export interface TrophyData {
+  vocabCounts: { new: number; learning: number; known: number };
+  questsCompleted: number;
+  badges: string[];
+  level: number;
+  totalPoints: number;
+  locationsVisited: number;
+  buildingsCompleted: string[];
+}
+
 export interface GameView {
   profile: string;
   languageId: string;
@@ -116,6 +126,8 @@ export interface GameView {
   tutorialComplete: boolean;
   helpText: string;
   verbs: BilingualText[];
+
+  trophies: TrophyData;
 
   // Last turn results (null on init)
   turnResult: TurnResultView | null;
