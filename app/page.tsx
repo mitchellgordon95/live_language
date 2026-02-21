@@ -67,6 +67,7 @@ export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [langPickerOpen, setLangPickerOpen] = useState(false);
   const [showTrophies, setShowTrophies] = useState(false);
+  const [hasSentMessage, setHasSentMessage] = useState(false);
   const { speak, isMuted, toggleMute } = useTTS();
   const { isRecording, isTranscribing, startRecording, stopRecording } = useSTT();
   const [sttResult, setSttResult] = useState('');
@@ -97,6 +98,7 @@ export default function Home() {
     setAppState('loading');
     setError(null);
     setChatHistory([]);
+    setHasSentMessage(false);
     chatIdRef.current = 0;
     const activeLang = overrides?.language || selectedLanguage;
     const activeProfile = overrides?.profile || profile || ('anon_' + Math.random().toString(36).substring(2, 10));
@@ -210,6 +212,7 @@ export default function Home() {
     }
 
     if (!game || isProcessing) return;
+    setHasSentMessage(true);
     setIsProcessing(true);
     setError(null);
 
@@ -420,6 +423,8 @@ export default function Home() {
   if (!game) return null;
 
   const placeholder = PLACEHOLDERS[game.languageId] || PLACEHOLDERS.spanish;
+  const showInputGlow = !hasSentMessage && game.module === 'home' && !(game as any).resumed;
+  const showModulesGlow = game.tutorialComplete === true;
 
   return (
     <div className="h-screen bg-gray-950 text-white flex flex-col">
@@ -474,7 +479,10 @@ export default function Home() {
             >
               {isMuted ? <SpeakerOffIcon /> : <SpeakerOnIcon />}
             </button>
-            <a href="/create" className="text-xs text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1">
+            <a href="/create"
+              className={`text-xs text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1 ${showModulesGlow ? 'rounded px-1.5 py-0.5 -mx-1.5 -my-0.5' : ''}`}
+              style={showModulesGlow ? { animation: 'onboarding-glow 2s ease-in-out infinite', '--glow-color': 'rgba(52, 211, 153, 0.5)' } as React.CSSProperties : undefined}
+            >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
               </svg>
@@ -539,7 +547,8 @@ export default function Home() {
                 </button>
                 <a
                   href="/create"
-                  className="flex items-center gap-2 px-4 py-2 text-sm text-emerald-400 hover:bg-gray-700"
+                  className={`flex items-center gap-2 px-4 py-2 text-sm text-emerald-400 hover:bg-gray-700 ${showModulesGlow ? 'rounded' : ''}`}
+                  style={showModulesGlow ? { animation: 'onboarding-glow 2s ease-in-out infinite', '--glow-color': 'rgba(52, 211, 153, 0.5)' } as React.CSSProperties : undefined}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z" />
@@ -586,7 +595,10 @@ export default function Home() {
         {/* Chat + Input column */}
         <div className="flex-1 min-h-0 md:w-[45%] flex flex-col">
           <ChatPanel chatHistory={chatHistory} onSpeak={speak} languageName={LANGUAGES.find(l => l.id === game.languageId)?.name} />
-          <div className="p-2 md:p-3 border-t border-gray-800 shrink-0">
+          <div
+            className={`p-2 md:p-3 border-t shrink-0 ${showInputGlow ? 'rounded-lg border-blue-500/60' : 'border-gray-800'}`}
+            style={showInputGlow ? { animation: 'onboarding-glow 2s ease-in-out infinite', '--glow-color': 'rgba(59, 130, 246, 0.5)' } as React.CSSProperties : undefined}
+          >
             {error && (
               <div className="text-red-400 text-xs mb-2">{error}</div>
             )}
