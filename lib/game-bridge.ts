@@ -5,7 +5,7 @@
 import 'server-only';
 import { join } from 'path';
 import { readFileSync, existsSync } from 'fs';
-import type { GameView, TurnResultView, QuestView, ObjectCoords, SceneInfo, ExitView, NPCView, TutorialStepView, VignetteHint } from './types';
+import type { GameView, TurnResultView, TrophyData, QuestView, ObjectCoords, SceneInfo, ExitView, NPCView, TutorialStepView, VignetteHint } from './types';
 import { getCachedVignette, getPlaceholderPath, isGenerationEnabled, isGenerating, triggerGeneration } from './vignette-generator';
 import { saveGame, loadGame, listSaves, getModule, type LocationAsset } from './db';
 import { hydrateModule } from '../src/engine/serializable-module';
@@ -622,6 +622,29 @@ async function buildGameView(profile: string, langId: string, state: any, turnRe
   const tutorialSteps = buildTutorialChecklist(state);
   const tutorialComplete = tutorialSteps.length > 0 && tutorialSteps.every(s => s.completed);
 
+  // Trophy data
+  const vocabWords = state.vocabulary?.words || {};
+  const vocabCounts = { new: 0, learning: 0, known: 0 };
+  for (const w of Object.values(vocabWords) as Array<{ stage: string }>) {
+    if (w.stage === 'known') vocabCounts.known++;
+    else if (w.stage === 'learning') vocabCounts.learning++;
+    else vocabCounts.new++;
+  }
+  const locationProgress: Record<string, { chainComplete?: boolean }> = state.locationProgress || {};
+  const buildingsCompleted = Object.entries(locationProgress)
+    .filter(([, p]) => p.chainComplete)
+    .map(([name]) => name);
+
+  const trophies: TrophyData = {
+    vocabCounts,
+    questsCompleted: (state.completedQuests || []).length,
+    badges: state.badges || [],
+    level: state.level,
+    totalPoints: state.totalPointsEarned || 0,
+    locationsVisited: (state.visitedLocations || []).length,
+    buildingsCompleted,
+  };
+
   return {
     profile,
     languageId: langId,
@@ -640,6 +663,7 @@ async function buildGameView(profile: string, langId: string, state: any, turnRe
     pointsToNextLevel,
     completedSteps: state.completedSteps,
     badges: state.badges || [],
+    trophies,
     scene,
     vignetteHint,
     tutorialComplete,

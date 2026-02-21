@@ -66,6 +66,7 @@ export default function Home() {
   const autoPlayRef = useRef(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [langPickerOpen, setLangPickerOpen] = useState(false);
+  const [showTrophies, setShowTrophies] = useState(false);
   const { speak, isMuted, toggleMute } = useTTS();
   const { isRecording, isTranscribing, startRecording, stopRecording } = useSTT();
   const [sttResult, setSttResult] = useState('');
@@ -484,6 +485,15 @@ export default function Home() {
               Discord
             </a>
             <button
+              onClick={() => setShowTrophies(true)}
+              className="text-xs text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-1"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-4.5A3.375 3.375 0 0019.875 10.875 3.375 3.375 0 0016.5 7.5h0V3.75m-9 15v-4.5A3.375 3.375 0 014.125 10.875 3.375 3.375 0 017.5 7.5h0V3.75m0 0h9" />
+              </svg>
+              Trophies
+            </button>
+            <button
               onClick={() => { setAppState('menu'); setGame(null); }}
               className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
             >
@@ -546,6 +556,15 @@ export default function Home() {
                   Discord
                 </a>
                 <button
+                  onClick={() => { setShowTrophies(true); setMobileMenuOpen(false); }}
+                  className="w-full text-left px-4 py-2 text-sm text-amber-400 hover:bg-gray-700 flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-4.5A3.375 3.375 0 0019.875 10.875 3.375 3.375 0 0016.5 7.5h0V3.75m-9 15v-4.5A3.375 3.375 0 014.125 10.875 3.375 3.375 0 017.5 7.5h0V3.75m0 0h9" />
+                  </svg>
+                  Trophies
+                </button>
+                <button
                   onClick={() => { setAppState('menu'); setGame(null); setMobileMenuOpen(false); }}
                   className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
                 >
@@ -602,6 +621,111 @@ export default function Home() {
           onSpeak={(text) => speak(prepareTTSText(text, game.languageId), TTS_VOICES[game.languageId] || 'alloy')}
           onDismiss={dismiss}
         />
+      )}
+
+      {/* Trophies overlay */}
+      {showTrophies && (
+        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setShowTrophies(false)}>
+          <div className="bg-gray-900 border border-gray-700 rounded-xl max-w-lg w-full max-h-[80vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold text-amber-400">Trophies</h2>
+              <button onClick={() => setShowTrophies(false)} className="text-gray-500 hover:text-gray-300">&times;</button>
+            </div>
+
+            {/* Vocabulary */}
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-gray-400 mb-3 uppercase tracking-wide">Vocabulary</h3>
+              <div className="grid grid-cols-3 gap-3 mb-3">
+                <div className="bg-gray-800 rounded-lg p-3 text-center">
+                  <div className="text-2xl font-bold text-blue-400">{game.trophies.vocabCounts.new}</div>
+                  <div className="text-xs text-gray-500">New</div>
+                </div>
+                <div className="bg-gray-800 rounded-lg p-3 text-center">
+                  <div className="text-2xl font-bold text-yellow-400">{game.trophies.vocabCounts.learning}</div>
+                  <div className="text-xs text-gray-500">Learning</div>
+                </div>
+                <div className="bg-gray-800 rounded-lg p-3 text-center">
+                  <div className="text-2xl font-bold text-green-400">{game.trophies.vocabCounts.known}</div>
+                  <div className="text-xs text-gray-500">Known</div>
+                </div>
+              </div>
+              <div className="space-y-2">
+                {[
+                  { n: 5, label: 'First Words', desc: 'Learn 5 words' },
+                  { n: 10, label: 'Getting There', desc: 'Learn 10 words' },
+                  { n: 25, label: 'Word Collector', desc: 'Learn 25 words' },
+                  { n: 50, label: 'Vocabulary Builder', desc: 'Learn 50 words' },
+                ].map(t => {
+                  const total = game.trophies.vocabCounts.learning + game.trophies.vocabCounts.known;
+                  const unlocked = total >= t.n;
+                  return (
+                    <div key={t.n} className={`flex items-center gap-3 p-2 rounded-lg ${unlocked ? 'bg-amber-500/10' : 'bg-gray-800/50'}`}>
+                      <span className="text-lg">{unlocked ? '\u{1F3C6}' : '\u{1F512}'}</span>
+                      <div>
+                        <div className={`text-sm font-medium ${unlocked ? 'text-amber-300' : 'text-gray-600'}`}>{t.label}</div>
+                        <div className="text-xs text-gray-500">{t.desc} ({Math.min(total, t.n)}/{t.n})</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Quests & Badges */}
+            <div className="mb-6">
+              <h3 className="text-sm font-medium text-gray-400 mb-3 uppercase tracking-wide">Quests</h3>
+              <div className="flex gap-3 mb-3">
+                <div className="bg-gray-800 rounded-lg p-3 text-center flex-1">
+                  <div className="text-2xl font-bold text-purple-400">{game.trophies.questsCompleted}</div>
+                  <div className="text-xs text-gray-500">Completed</div>
+                </div>
+                <div className="bg-gray-800 rounded-lg p-3 text-center flex-1">
+                  <div className="text-2xl font-bold text-pink-400">{game.trophies.badges.length}</div>
+                  <div className="text-xs text-gray-500">Badges</div>
+                </div>
+              </div>
+              {game.trophies.badges.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {game.trophies.badges.map(b => (
+                    <span key={b} className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded-full text-xs">{b}</span>
+                  ))}
+                </div>
+              )}
+              {game.trophies.badges.length === 0 && (
+                <div className="text-xs text-gray-600">Complete quests to earn badges</div>
+              )}
+            </div>
+
+            {/* Progress */}
+            <div>
+              <h3 className="text-sm font-medium text-gray-400 mb-3 uppercase tracking-wide">Progress</h3>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="bg-gray-800 rounded-lg p-3 text-center">
+                  <div className="text-2xl font-bold text-cyan-400">{game.trophies.level}</div>
+                  <div className="text-xs text-gray-500">Level</div>
+                </div>
+                <div className="bg-gray-800 rounded-lg p-3 text-center">
+                  <div className="text-2xl font-bold text-orange-400">{game.trophies.totalPoints}</div>
+                  <div className="text-xs text-gray-500">Total Points</div>
+                </div>
+                <div className="bg-gray-800 rounded-lg p-3 text-center">
+                  <div className="text-2xl font-bold text-teal-400">{game.trophies.locationsVisited}</div>
+                  <div className="text-xs text-gray-500">Places Visited</div>
+                </div>
+              </div>
+              {game.trophies.buildingsCompleted.length > 0 && (
+                <div className="mt-3">
+                  <div className="text-xs text-gray-500 mb-1">Completed modules:</div>
+                  <div className="flex flex-wrap gap-2">
+                    {game.trophies.buildingsCompleted.map(b => (
+                      <span key={b} className="px-2 py-1 bg-green-500/20 text-green-300 rounded-full text-xs">{b}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
