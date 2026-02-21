@@ -182,10 +182,7 @@ export default function Home() {
     }
 
     const lower = input.trim().toLowerCase();
-    if (lower.startsWith('/help ')) {
-      input = '/learn' + input.trim().slice(5);
-    }
-    if (lower === 'help' || lower === 'ayuda' || lower === '/help') {
+    if (lower === 'help' || lower === 'ayuda' || lower === '/help' || lower.startsWith('/help ')) {
       if (!game) return;
       const suggestedStep = game.tutorial.find(g => g.suggested) || game.tutorial.find(g => !g.completed);
       const lines: string[] = [];
@@ -206,7 +203,9 @@ export default function Home() {
         playerInput: input,
         systemHint: lines.join('\n'),
       }]);
-      return;
+      // Plain /help stops here; /help [topic] strips prefix and continues as normal input
+      if (!lower.startsWith('/help ')) return;
+      input = input.trim().slice(6);
     }
 
     if (!game || isProcessing) return;
