@@ -334,6 +334,13 @@ export default function Home() {
                 );
               })}
             </div>
+            <div className="mt-4 rounded-lg overflow-hidden border border-gray-700">
+              <img
+                src={`/scenes/${selectedLanguage}/home/living_room.png`}
+                alt="Living room preview"
+                className="w-full"
+              />
+            </div>
           </div>
 
           <div className="space-y-3">

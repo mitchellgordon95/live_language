@@ -77,6 +77,7 @@ IMPORTANT RULES:
 - locationId must be a valid exit from the player's location at that point in the mutation sequence
 - Can only interact with objects in current location, open containers, inventory, or adjacent NPCs
 - Player must be standing to leave bedroom
+- Tutorial steps are SUGGESTIONS, not gates. If the player wants to leave a room, go somewhere, or do something out of order, ALLOW IT. Never block a valid movement or action just because a prior tutorial step is incomplete.
 - Can't access items in closed containers — fridge must have "open" tag first
 - When consuming food with needsEffect, include BOTH a "remove" mutation AND a "needs" mutation
 - Needs values are deltas: positive = better (hunger +25 means less hungry)
