@@ -150,5 +150,6 @@ export interface TurnResultView {
   stepsCompleted: string[];
   questsStarted: { title: BilingualText; description: string }[];
   questsCompleted: { title: BilingualText; points: number; badge?: string }[];
+  questsCancelled: { title: BilingualText }[];
   hint?: string;
 }

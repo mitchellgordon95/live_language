@@ -130,7 +130,6 @@ export function createInitialState(
     completedSteps: [],
     activeQuests: [],
     completedQuests: [],
-    abandonedQuests: [],
     badges: [],
     learnedWords: [],
     vocabulary: existingVocabulary || createInitialVocabulary(),
@@ -145,6 +144,7 @@ export function createInitialState(
         chainComplete: false,
       },
     },
+    grammarStats: {},
     turnHistory: [],
     audioEnabled: true,
   };

@@ -17,7 +17,6 @@ export interface GameState {
   // Quests
   activeQuests: string[];
   completedQuests: string[];
-  abandonedQuests: string[];
   badges: string[];
 
   // Progression
@@ -29,6 +28,9 @@ export interface GameState {
   // Vocabulary
   vocabulary: VocabularyProgress;
   learnedWords: string[];
+
+  // Grammar tracking (cumulative accuracy per issue type)
+  grammarStats: Record<string, { correct: number; total: number }>;
 
   // Turn history (for grammar context)
   turnHistory: TurnHistoryEntry[];
@@ -137,7 +139,6 @@ export interface Quest {
   triggerCondition: (state: GameState) => boolean;
   reward: QuestReward;
   prereqs?: string[];
-  autoStart?: boolean;  // true = engine auto-triggers; false/undefined = AI starts via NPC dialog
 }
 
 export interface QuestReward {
@@ -186,6 +187,7 @@ export interface NarrateResponse {
   stepsCompleted?: string[];
   questsStarted?: string[];
   questsCompleted?: string[];
+  questsCancelled?: string[];
   npcResponse?: {
     npcId: string;
     target?: string;

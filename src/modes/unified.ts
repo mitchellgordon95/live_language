@@ -253,10 +253,8 @@ ${activeQuestDescs.join('\n')}`;
 
   // Available quests — eligible but not yet started, for NPCs to offer during dialog
   const availableQuests = moduleQuests.filter(q =>
-    !q.autoStart &&
     !state.activeQuests.includes(q.id) &&
     !state.completedQuests.includes(q.id) &&
-    !state.abandonedQuests.includes(q.id) &&
     (!q.prereqs || q.prereqs.every(p => state.completedQuests.includes(p))) &&
     q.triggerCondition(state)
   );
@@ -524,6 +522,7 @@ export interface TurnResult {
   stepsCompleted: TutorialStep[];
   questsStarted: Quest[];
   questsCompleted: Quest[];
+  questsCancelled: Quest[];
   badgesEarned: string[];
   buildingChanged: boolean;
   newBuilding?: string;
@@ -567,6 +566,7 @@ export async function processTurn(
       stepsCompleted: [],
       questsStarted: [],
       questsCompleted: [],
+      questsCancelled: [],
       badgesEarned: [],
       buildingChanged: false,
     };
@@ -601,6 +601,29 @@ export async function processTurn(
     leveledUp = result.leveledUp;
   }
 
+  // Track grammar stats (cumulative accuracy per issue type)
+  if (parseResult.understood) {
+    const stats = { ...(newState.grammarStats || {}) };
+    // All known grammar issue types
+    const issueTypes = new Set<string>();
+    for (const issue of parseResult.grammar.issues) {
+      issueTypes.add(issue.type);
+    }
+    // For each issue type that appeared, increment total (error occurred)
+    for (const issueType of issueTypes) {
+      const prev = stats[issueType] || { correct: 0, total: 0 };
+      stats[issueType] = { correct: prev.correct, total: prev.total + 1 };
+    }
+    // For each issue type we've seen before but NOT in this turn, increment both (correct usage)
+    for (const knownType of Object.keys(stats)) {
+      if (!issueTypes.has(knownType)) {
+        const prev = stats[knownType];
+        stats[knownType] = { correct: prev.correct + 1, total: prev.total + 1 };
+      }
+    }
+    newState = { ...newState, grammarStats: stats };
+  }
+
   // Track vocabulary
   if (parseResult.understood && parseResult.grammar.score >= 80) {
     const wordsUsed = extractWordsFromText(input, newState.vocabulary);
@@ -609,23 +632,9 @@ export async function processTurn(
     }
   }
 
-  // --- Check quest triggers (only autoStart quests — others are AI-driven) ---
   const questsStarted: Quest[] = [];
   const finalBuilding = getBuildingForLocation(newState.currentLocation);
   const moduleQuests = getAllQuestsForModule(finalBuilding);
-  for (const quest of moduleQuests) {
-    if (
-      quest.autoStart &&
-      !newState.activeQuests.includes(quest.id) &&
-      !newState.completedQuests.includes(quest.id) &&
-      !newState.abandonedQuests.includes(quest.id) &&
-      (!quest.prereqs || quest.prereqs.every(p => newState.completedQuests.includes(p))) &&
-      quest.triggerCondition(newState)
-    ) {
-      newState = { ...newState, activeQuests: [...newState.activeQuests, quest.id] };
-      questsStarted.push(quest);
-    }
-  }
 
   // --- Pass 2: Narrate what happened ---
   const narrateResult = await narrateTurn(parseResult, newState, input);
@@ -769,18 +778,18 @@ export async function processTurn(
     }
   }
 
-  // Re-check autoStart quest triggers after completions
-  for (const quest of moduleQuests) {
-    if (
-      quest.autoStart &&
-      !newState.activeQuests.includes(quest.id) &&
-      !newState.completedQuests.includes(quest.id) &&
-      !newState.abandonedQuests.includes(quest.id) &&
-      (!quest.prereqs || quest.prereqs.every(p => newState.completedQuests.includes(p))) &&
-      quest.triggerCondition(newState)
-    ) {
-      newState = { ...newState, activeQuests: [...newState.activeQuests, quest.id] };
-      questsStarted.push(quest);
+  // Process quest cancellations (player refused via NPC dialog)
+  const questsCancelled: Quest[] = [];
+  if (narrateResult.questsCancelled?.length) {
+    for (const questId of narrateResult.questsCancelled) {
+      if (!newState.activeQuests.includes(questId)) continue;
+      const quest = getQuestById(questId);
+      if (!quest) continue;
+      newState = {
+        ...newState,
+        activeQuests: newState.activeQuests.filter(id => id !== questId),
+      };
+      questsCancelled.push(quest);
     }
   }
 
@@ -839,6 +848,7 @@ export async function processTurn(
     stepsCompleted,
     questsStarted,
     questsCompleted,
+    questsCancelled,
     badgesEarned,
     buildingChanged,
     newBuilding: buildingChanged ? currentBuilding : undefined,

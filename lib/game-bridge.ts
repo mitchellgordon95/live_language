@@ -761,6 +761,10 @@ function buildTurnResultView(result: any, state: any): TurnResultView {
       points: q.reward?.points || 0,
       badge: q.reward?.badge?.name,
     })),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    questsCancelled: (result.questsCancelled || []).map((q: any) => ({
+      title: q.title,
+    })),
   };
 
   // Include hint when action failed and there's a current goal with a hint
