@@ -54,9 +54,17 @@ export interface SerializableQuest {
   prereqs?: string[];
 }
 
+export interface Curriculum {
+  learningObjectives: string[];
+  grammarFocus: string[];
+  teachingApproach: string;
+}
+
 export interface SerializableModuleDefinition {
   name: string;
   displayName: string;
+  /** Pedagogical design: learning objectives, grammar focus, teaching approach. Optional for built-in modules. */
+  curriculum?: Curriculum;
   locations: Record<string, Location>;
   objects: WorldObject[];
   npcs: NPC[];

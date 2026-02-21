@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { playTurn, handleLearnCommand } from '@/lib/game-bridge';
 
+export const maxDuration = 60;
+
 export async function POST(request: Request) {
   try {
     const body = await request.json();
