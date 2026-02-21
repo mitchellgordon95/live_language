@@ -30,6 +30,9 @@ export interface GameState {
   vocabulary: VocabularyProgress;
   learnedWords: string[];
 
+  // Grammar tracking (cumulative accuracy per issue type)
+  grammarStats: Record<string, { correct: number; total: number }>;
+
   // Turn history (for grammar context)
   turnHistory: TurnHistoryEntry[];
 

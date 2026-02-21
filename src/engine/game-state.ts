@@ -145,6 +145,7 @@ export function createInitialState(
         chainComplete: false,
       },
     },
+    grammarStats: {},
     turnHistory: [],
     audioEnabled: true,
   };

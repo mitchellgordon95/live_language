@@ -66,7 +66,6 @@ export default function Home() {
   const autoPlayRef = useRef(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [langPickerOpen, setLangPickerOpen] = useState(false);
-  const [showTrophies, setShowTrophies] = useState(false);
   const { speak, isMuted, toggleMute } = useTTS();
   const { isRecording, isTranscribing, startRecording, stopRecording } = useSTT();
   const [sttResult, setSttResult] = useState('');
@@ -484,15 +483,15 @@ export default function Home() {
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
               Discord
             </a>
-            <button
-              onClick={() => setShowTrophies(true)}
+            <a
+              href={`/trophies?profile=${encodeURIComponent(game.profile)}&language=${encodeURIComponent(game.languageId)}`}
               className="text-xs text-amber-400 hover:text-amber-300 transition-colors flex items-center gap-1"
             >
               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-4.5A3.375 3.375 0 0019.875 10.875 3.375 3.375 0 0016.5 7.5h0V3.75m-9 15v-4.5A3.375 3.375 0 014.125 10.875 3.375 3.375 0 017.5 7.5h0V3.75m0 0h9" />
               </svg>
               Trophies
-            </button>
+            </a>
             <button
               onClick={() => { setAppState('menu'); setGame(null); }}
               className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
@@ -555,15 +554,15 @@ export default function Home() {
                   <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M20.317 4.37a19.791 19.791 0 00-4.885-1.515.074.074 0 00-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 00-5.487 0 12.64 12.64 0 00-.617-1.25.077.077 0 00-.079-.037A19.736 19.736 0 003.677 4.37a.07.07 0 00-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 00.031.057 19.9 19.9 0 005.993 3.03.078.078 0 00.084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 00-.041-.106 13.107 13.107 0 01-1.872-.892.077.077 0 01-.008-.128 10.2 10.2 0 00.372-.292.074.074 0 01.077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 01.078.01c.12.098.246.198.373.292a.077.077 0 01-.006.127 12.299 12.299 0 01-1.873.892.077.077 0 00-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 00.084.028 19.839 19.839 0 006.002-3.03.077.077 0 00.032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 00-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
                   Discord
                 </a>
-                <button
-                  onClick={() => { setShowTrophies(true); setMobileMenuOpen(false); }}
-                  className="w-full text-left px-4 py-2 text-sm text-amber-400 hover:bg-gray-700 flex items-center gap-2"
+                <a
+                  href={`/trophies?profile=${encodeURIComponent(game.profile)}&language=${encodeURIComponent(game.languageId)}`}
+                  className="flex items-center gap-2 px-4 py-2 text-sm text-amber-400 hover:bg-gray-700"
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-4.5A3.375 3.375 0 0019.875 10.875 3.375 3.375 0 0016.5 7.5h0V3.75m-9 15v-4.5A3.375 3.375 0 014.125 10.875 3.375 3.375 0 017.5 7.5h0V3.75m0 0h9" />
                   </svg>
                   Trophies
-                </button>
+                </a>
                 <button
                   onClick={() => { setAppState('menu'); setGame(null); setMobileMenuOpen(false); }}
                   className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
@@ -623,110 +622,6 @@ export default function Home() {
         />
       )}
 
-      {/* Trophies overlay */}
-      {showTrophies && (
-        <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setShowTrophies(false)}>
-          <div className="bg-gray-900 border border-gray-700 rounded-xl max-w-lg w-full max-h-[80vh] overflow-y-auto p-6" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-amber-400">Trophies</h2>
-              <button onClick={() => setShowTrophies(false)} className="text-gray-500 hover:text-gray-300">&times;</button>
-            </div>
-
-            {/* Vocabulary */}
-            <div className="mb-6">
-              <h3 className="text-sm font-medium text-gray-400 mb-3 uppercase tracking-wide">Vocabulary</h3>
-              <div className="grid grid-cols-3 gap-3 mb-3">
-                <div className="bg-gray-800 rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-blue-400">{game.trophies.vocabCounts.new}</div>
-                  <div className="text-xs text-gray-500">New</div>
-                </div>
-                <div className="bg-gray-800 rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-yellow-400">{game.trophies.vocabCounts.learning}</div>
-                  <div className="text-xs text-gray-500">Learning</div>
-                </div>
-                <div className="bg-gray-800 rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-green-400">{game.trophies.vocabCounts.known}</div>
-                  <div className="text-xs text-gray-500">Known</div>
-                </div>
-              </div>
-              <div className="space-y-2">
-                {[
-                  { n: 5, label: 'First Words', desc: 'Learn 5 words' },
-                  { n: 10, label: 'Getting There', desc: 'Learn 10 words' },
-                  { n: 25, label: 'Word Collector', desc: 'Learn 25 words' },
-                  { n: 50, label: 'Vocabulary Builder', desc: 'Learn 50 words' },
-                ].map(t => {
-                  const total = game.trophies.vocabCounts.learning + game.trophies.vocabCounts.known;
-                  const unlocked = total >= t.n;
-                  return (
-                    <div key={t.n} className={`flex items-center gap-3 p-2 rounded-lg ${unlocked ? 'bg-amber-500/10' : 'bg-gray-800/50'}`}>
-                      <span className="text-lg">{unlocked ? '\u{1F3C6}' : '\u{1F512}'}</span>
-                      <div>
-                        <div className={`text-sm font-medium ${unlocked ? 'text-amber-300' : 'text-gray-600'}`}>{t.label}</div>
-                        <div className="text-xs text-gray-500">{t.desc} ({Math.min(total, t.n)}/{t.n})</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Quests & Badges */}
-            <div className="mb-6">
-              <h3 className="text-sm font-medium text-gray-400 mb-3 uppercase tracking-wide">Quests</h3>
-              <div className="flex gap-3 mb-3">
-                <div className="bg-gray-800 rounded-lg p-3 text-center flex-1">
-                  <div className="text-2xl font-bold text-purple-400">{game.trophies.questsCompleted}</div>
-                  <div className="text-xs text-gray-500">Completed</div>
-                </div>
-                <div className="bg-gray-800 rounded-lg p-3 text-center flex-1">
-                  <div className="text-2xl font-bold text-pink-400">{game.trophies.badges.length}</div>
-                  <div className="text-xs text-gray-500">Badges</div>
-                </div>
-              </div>
-              {game.trophies.badges.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {game.trophies.badges.map(b => (
-                    <span key={b} className="px-2 py-1 bg-purple-500/20 text-purple-300 rounded-full text-xs">{b}</span>
-                  ))}
-                </div>
-              )}
-              {game.trophies.badges.length === 0 && (
-                <div className="text-xs text-gray-600">Complete quests to earn badges</div>
-              )}
-            </div>
-
-            {/* Progress */}
-            <div>
-              <h3 className="text-sm font-medium text-gray-400 mb-3 uppercase tracking-wide">Progress</h3>
-              <div className="grid grid-cols-3 gap-3">
-                <div className="bg-gray-800 rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-cyan-400">{game.trophies.level}</div>
-                  <div className="text-xs text-gray-500">Level</div>
-                </div>
-                <div className="bg-gray-800 rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-orange-400">{game.trophies.totalPoints}</div>
-                  <div className="text-xs text-gray-500">Total Points</div>
-                </div>
-                <div className="bg-gray-800 rounded-lg p-3 text-center">
-                  <div className="text-2xl font-bold text-teal-400">{game.trophies.locationsVisited}</div>
-                  <div className="text-xs text-gray-500">Places Visited</div>
-                </div>
-              </div>
-              {game.trophies.buildingsCompleted.length > 0 && (
-                <div className="mt-3">
-                  <div className="text-xs text-gray-500 mb-1">Completed modules:</div>
-                  <div className="flex flex-wrap gap-2">
-                    {game.trophies.buildingsCompleted.map(b => (
-                      <span key={b} className="px-2 py-1 bg-green-500/20 text-green-300 rounded-full text-xs">{b}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

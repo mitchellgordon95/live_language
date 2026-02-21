@@ -601,6 +601,29 @@ export async function processTurn(
     leveledUp = result.leveledUp;
   }
 
+  // Track grammar stats (cumulative accuracy per issue type)
+  if (parseResult.understood) {
+    const stats = { ...(newState.grammarStats || {}) };
+    // All known grammar issue types
+    const issueTypes = new Set<string>();
+    for (const issue of parseResult.grammar.issues) {
+      issueTypes.add(issue.type);
+    }
+    // For each issue type that appeared, increment total (error occurred)
+    for (const issueType of issueTypes) {
+      const prev = stats[issueType] || { correct: 0, total: 0 };
+      stats[issueType] = { correct: prev.correct, total: prev.total + 1 };
+    }
+    // For each issue type we've seen before but NOT in this turn, increment both (correct usage)
+    for (const knownType of Object.keys(stats)) {
+      if (!issueTypes.has(knownType)) {
+        const prev = stats[knownType];
+        stats[knownType] = { correct: prev.correct + 1, total: prev.total + 1 };
+      }
+    }
+    newState = { ...newState, grammarStats: stats };
+  }
+
   // Track vocabulary
   if (parseResult.understood && parseResult.grammar.score >= 80) {
     const wordsUsed = extractWordsFromText(input, newState.vocabulary);
