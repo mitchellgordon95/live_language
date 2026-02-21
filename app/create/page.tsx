@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { Suspense, useState, useCallback, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 type View = 'listing' | 'wizard';
 type WizardStep = 'describe' | 'directions' | 'generating';
@@ -34,10 +34,29 @@ const LANGUAGES = [
   { id: 'spanish', name: 'Spanish', flag: '\u{1F1EA}\u{1F1F8}' },
   { id: 'mandarin', name: 'Mandarin Chinese', flag: '\u{1F1E8}\u{1F1F3}' },
   { id: 'hindi', name: 'Hindi', flag: '\u{1F1EE}\u{1F1F3}' },
+  { id: 'portuguese', name: 'Brazilian Portuguese', flag: '\u{1F1E7}\u{1F1F7}' },
 ];
 
-export default function ModulesPage() {
+const BUILT_IN_MODULES = [
+  {
+    id: 'home',
+    title: 'Home',
+    description: 'Wake up, explore your apartment, interact with your roommate and pets. Learn daily routine vocabulary.',
+    thumbnail: (lang: string) => `/scenes/${lang}/home/living_room.png`,
+  },
+];
+
+export default function ModulesPageWrapper() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-950" />}>
+      <ModulesPage />
+    </Suspense>
+  );
+}
+
+function ModulesPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [view, setView] = useState<View>('listing');
 
   // Listing state
@@ -46,7 +65,8 @@ export default function ModulesPage() {
 
   // Wizard state
   const [step, setStep] = useState<WizardStep>('describe');
-  const [languageId, setLanguageId] = useState('spanish');
+  const initialLang = searchParams.get('language') || 'spanish';
+  const [languageId, setLanguageId] = useState(initialLang);
   const [description, setDescription] = useState('');
   const [directions, setDirections] = useState<Direction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -158,14 +178,46 @@ export default function ModulesPage() {
       {/* Listing View */}
       {view === 'listing' && (
         <div className="max-w-3xl mx-auto px-6 pt-8">
+          {/* Built-in Modules */}
+          <div className="mb-8">
+            <h2 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Built-in</h2>
+            <div className="space-y-3">
+              {BUILT_IN_MODULES.map(mod => {
+                const profile = typeof window !== 'undefined' ? localStorage.getItem('profile') || '' : '';
+                return (
+                  <button
+                    key={mod.id}
+                    onClick={() => {
+                      const url = `/?play=${mod.id}&language=${encodeURIComponent(languageId)}${profile ? `&profile=${encodeURIComponent(profile)}` : ''}`;
+                      window.location.href = url;
+                    }}
+                    className="w-full text-left p-4 bg-gray-900 border border-gray-800 hover:border-gray-600 rounded-xl transition-colors flex gap-4 items-center"
+                  >
+                    <img
+                      src={mod.thumbnail(languageId)}
+                      alt={mod.title}
+                      className="w-20 h-14 object-cover rounded-lg shrink-0"
+                    />
+                    <div>
+                      <h3 className="font-semibold text-white">{mod.title}</h3>
+                      <p className="text-gray-500 text-sm line-clamp-1">{mod.description}</p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* UGC Modules */}
+          <h2 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-3">Custom Modules</h2>
           {listLoading ? (
-            <div className="text-gray-400 animate-pulse text-center pt-16">Loading modules...</div>
+            <div className="text-gray-400 animate-pulse text-center pt-8">Loading modules...</div>
           ) : modules.length === 0 ? (
-            <div className="text-center pt-16">
-              <div className="text-gray-500 mb-4">No modules yet</div>
+            <div className="text-center pt-8 pb-8">
+              <div className="text-gray-600 text-sm mb-3">No custom modules yet</div>
               <button
                 onClick={startWizard}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-500 rounded-lg font-medium transition-colors"
+                className="px-5 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-medium transition-colors"
               >
                 Create your first module
               </button>

@@ -2,7 +2,6 @@ import type { LanguageConfig } from '../types';
 import { SPANISH_SYSTEM_PROMPT, SPANISH_NARRATE_PROMPT, spanishPromptConfig } from './prompt';
 import { stripArticles, findObjectByName } from './helpers';
 import { homeModule } from './modules/home';
-import { restaurantModule } from './modules/restaurant';
 
 export const spanishConfig: LanguageConfig = {
   id: 'spanish',
@@ -21,23 +20,5 @@ export const spanishConfig: LanguageConfig = {
 3. **Ask a question in English** — "How do I order food?" and the AI will guide you in Spanish.
 4. **/learn [topic]** — Get a quick Spanish lesson. Try: /learn greetings, /learn past tense, /learn food vocabulary
 5. **/help** — See your current location, goal, and nearby objects.`,
-  modules: [
-    homeModule,
-    {
-      name: 'street',
-      displayName: 'Street',
-      locations: { street: homeModule.locations.street },
-      objects: [],
-      npcs: [],
-      tutorial: [],
-      quests: [],
-      vocabulary: [],
-      startLocationId: 'street',
-      firstStepId: '',
-      locationIds: ['street'],
-      unlockLevel: 1,
-      guidance: '',
-    },
-    restaurantModule,
-  ],
+  modules: [homeModule],
 };

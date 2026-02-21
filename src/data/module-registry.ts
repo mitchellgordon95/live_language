@@ -102,7 +102,7 @@ export function getGuidanceForBuilding(building: string): string {
 }
 
 export function getModuleNames(): string[] {
-  return activeModules.filter(m => m.name !== 'street' && m.name !== 'home').map(m => m.name);
+  return activeModules.filter(m => m.name !== 'home').map(m => m.name);
 }
 
 export function getAllModules(): ModuleDefinition[] {

@@ -117,6 +117,9 @@ export interface GameView {
   helpText: string;
   verbs: BilingualText[];
 
+  // Set when the player moves to module_exit — frontend should redirect to /create
+  redirectToModules?: boolean;
+
   // Last turn results (null on init)
   turnResult: TurnResultView | null;
 }

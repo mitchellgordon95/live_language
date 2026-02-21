@@ -251,6 +251,14 @@ export default function Home() {
       }
 
       const gameView = data as GameView;
+
+      if (gameView.redirectToModules) {
+        setChatHistory(prev => prev.map(e => e.id === entryId ? { ...e, pending: false } : e));
+        setIsProcessing(false);
+        window.location.href = `/create?language=${encodeURIComponent(game.languageId)}`;
+        return;
+      }
+
       setGame(gameView);
       if (gameView.turnResult) {
         setChatHistory(prev => prev.map(e => e.id === entryId ? {
