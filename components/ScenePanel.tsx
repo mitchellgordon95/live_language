@@ -179,20 +179,20 @@ export default function ScenePanel({ game, onSpeak }: ScenePanelProps) {
                   </div>
                 )}
               </div>
-            </div>
 
-            {/* Object label overlays */}
-            <div className="absolute inset-0 pointer-events-none rounded-lg">
-              {labeledObjects.map((obj) => (
-                <ObjectLabel
-                  key={obj.id}
-                  obj={obj}
-                  isHighlighted={hoveredObjId === obj.id}
-                  onMouseEnter={() => setHoveredObjId(obj.id)}
-                  onMouseLeave={() => setHoveredObjId(null)}
-                  onSpeak={onSpeak}
-                />
-              ))}
+              {/* Object label overlays */}
+              <div className="absolute inset-0 pointer-events-none z-20 rounded-lg">
+                {labeledObjects.map((obj) => (
+                  <ObjectLabel
+                    key={obj.id}
+                    obj={obj}
+                    isHighlighted={hoveredObjId === obj.id}
+                    onMouseEnter={() => setHoveredObjId(obj.id)}
+                    onMouseLeave={() => setHoveredObjId(null)}
+                    onSpeak={onSpeak}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         </div>
@@ -547,8 +547,8 @@ function ObjectLabel({ obj, isHighlighted, onMouseEnter, onMouseLeave, onSpeak }
     <div
       className="absolute pointer-events-auto"
       style={{
-        left: `${obj.coords.x}%`,
-        top: `${obj.coords.y}%`,
+        left: `${obj.coords.x - obj.coords.w / 2}%`,
+        top: `${obj.coords.y - obj.coords.h / 2}%`,
         width: `${obj.coords.w}%`,
         height: `${obj.coords.h}%`,
       }}
