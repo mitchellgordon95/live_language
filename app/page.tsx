@@ -65,6 +65,7 @@ export default function Home() {
   const chatIdRef = useRef(0);
   const autoPlayRef = useRef(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [langPickerOpen, setLangPickerOpen] = useState(false);
   const { speak, isMuted, toggleMute } = useTTS();
   const { isRecording, isTranscribing, startRecording, stopRecording } = useSTT();
   const [sttResult, setSttResult] = useState('');
@@ -129,6 +130,20 @@ export default function Home() {
       setAppState('error');
     }
   }, [profile, selectedLanguage]);
+
+  const switchLanguage = useCallback(async (langId: string) => {
+    setLangPickerOpen(false);
+    setMobileMenuOpen(false);
+    if (langId === game?.languageId) return;
+    setSelectedLanguage(langId);
+    // Refresh saves list after switching
+    startGame(undefined, { language: langId }).then(() => {
+      fetch(`/api/game/check?profile=${encodeURIComponent(profile)}`)
+        .then(r => r.json())
+        .then(data => setSaves(data.saves || []))
+        .catch(() => {});
+    });
+  }, [game?.languageId, profile, startGame]);
 
   // Auto-start game when navigated from module explorer with ?play=ugc_xxx
   useEffect(() => {
@@ -392,7 +407,42 @@ export default function Home() {
     <div className="h-screen bg-gray-950 text-white flex flex-col">
       {/* Top bar */}
       <div className="flex items-center justify-between px-3 md:px-4 py-2 bg-gray-900 border-b border-gray-800 shrink-0">
-        <h1 className="text-sm font-medium text-gray-400 truncate">Language Life Sim <span className="text-gray-600 hidden sm:inline">(Alpha)</span></h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-sm font-medium text-gray-400 truncate">Language Life Sim <span className="text-gray-600 hidden sm:inline">(Alpha)</span></h1>
+          {/* Language picker */}
+          <div className="relative">
+            <button
+              onClick={() => setLangPickerOpen(prev => !prev)}
+              className="text-sm px-2 py-0.5 rounded hover:bg-gray-800 transition-colors"
+              title="Switch language"
+            >
+              {LANGUAGES.find(l => l.id === game.languageId)?.flag || '🌐'}
+            </button>
+            {langPickerOpen && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setLangPickerOpen(false)} />
+                <div className="absolute left-0 top-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl py-1 z-50 min-w-[200px]">
+                  {LANGUAGES.map(lang => (
+                    <button
+                      key={lang.id}
+                      onClick={() => switchLanguage(lang.id)}
+                      className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 hover:bg-gray-700 ${
+                        lang.id === game.languageId ? 'text-blue-400' : 'text-gray-300'
+                      }`}
+                    >
+                      <span>{lang.flag}</span>
+                      <span>{lang.name}</span>
+                      {lang.id === game.languageId && <span className="text-xs text-blue-500 ml-auto">Playing</span>}
+                      {lang.id !== game.languageId && saves.some(s => s.languageId === lang.id) && (
+                        <span className="text-xs text-gray-500 ml-auto">Saved</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
         <div className="flex items-center gap-2 md:gap-3">
           <span className="text-xs text-gray-500 whitespace-nowrap">
             Lvl {game.level} &middot; {game.points}/{game.pointsToNextLevel}
@@ -430,7 +480,25 @@ export default function Home() {
               </svg>
             </button>
             {mobileMenuOpen && (
-              <div className="absolute right-0 top-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl py-1 z-50 min-w-[160px]">
+              <div className="absolute right-0 top-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl py-1 z-50 min-w-[200px]">
+                <div className="px-4 py-1.5 text-xs text-gray-500 font-medium">Switch Language</div>
+                {LANGUAGES.map(lang => (
+                  <button
+                    key={lang.id}
+                    onClick={() => switchLanguage(lang.id)}
+                    className={`w-full text-left px-4 py-2 text-sm flex items-center gap-2 hover:bg-gray-700 ${
+                      lang.id === game.languageId ? 'text-blue-400' : 'text-gray-300'
+                    }`}
+                  >
+                    <span>{lang.flag}</span>
+                    <span>{lang.name}</span>
+                    {lang.id === game.languageId && <span className="text-xs text-blue-500 ml-auto">Playing</span>}
+                    {lang.id !== game.languageId && saves.some(s => s.languageId === lang.id) && (
+                      <span className="text-xs text-gray-500 ml-auto">Saved</span>
+                    )}
+                  </button>
+                ))}
+                <div className="border-t border-gray-700 my-1" />
                 <button
                   onClick={() => { toggleMute(); setMobileMenuOpen(false); }}
                   className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
