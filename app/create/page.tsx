@@ -1,10 +1,22 @@
 'use client';
 
-import { Suspense, useState, useCallback, useEffect } from 'react';
+import { Suspense, useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useAssetGeneration, type ItemStatus } from '@/hooks/useAssetGeneration';
 
 type View = 'listing' | 'wizard';
 type WizardStep = 'describe' | 'directions' | 'generating';
+
+// Module generation phases (sequential)
+type ModulePhase = 'curriculum' | 'world' | 'characters' | 'guidance';
+type PhaseStatus = 'pending' | 'generating' | 'done' | 'failed';
+
+const MODULE_PHASES: Array<{ id: ModulePhase; label: string }> = [
+  { id: 'curriculum', label: 'Curriculum & Vocabulary' },
+  { id: 'world', label: 'Locations & Objects' },
+  { id: 'characters', label: 'Characters & Quests' },
+  { id: 'guidance', label: 'AI Teaching Guide' },
+];
 
 interface Direction {
   title: string;
@@ -46,6 +58,43 @@ const BUILT_IN_MODULES = [
   },
 ];
 
+function StatusIcon({ status }: { status: ItemStatus | PhaseStatus }) {
+  switch (status) {
+    case 'pending':
+      return <span className="text-gray-600">&#9675;</span>;
+    case 'generating':
+      return <span className="text-blue-400 animate-spin inline-block">&#9696;</span>;
+    case 'done':
+      return <span className="text-green-400">&#10003;</span>;
+    case 'failed':
+      return <span className="text-red-400">&#10007;</span>;
+  }
+}
+
+function ProgressSection({ title, progress }: { title: string; progress: Record<string, ItemStatus> }) {
+  const entries = Object.entries(progress);
+  if (entries.length === 0) return null;
+  const done = entries.filter(([, s]) => s === 'done').length;
+  return (
+    <div className="mb-4">
+      <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1.5">
+        {title} ({done}/{entries.length})
+      </div>
+      <div className="space-y-1">
+        {entries.map(([id, status]) => (
+          <div key={id} className="flex items-center gap-2 text-sm">
+            <StatusIcon status={status} />
+            <span className={status === 'generating' ? 'text-blue-300' : status === 'done' ? 'text-gray-400' : 'text-gray-600'}>
+              {id.includes(':') ? `${id.split(':')[0]} (${id.split(':')[1]})` : id}
+            </span>
+            {status === 'generating' && <span className="text-blue-400/60 text-xs">generating...</span>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function ModulesPageWrapper() {
   return (
     <Suspense fallback={<div className="min-h-screen bg-gray-950" />}>
@@ -67,22 +116,71 @@ function ModulesPage() {
   const [step, setStep] = useState<WizardStep>('describe');
   const initialLang = searchParams.get('language') || 'spanish';
   const [languageId, setLanguageId] = useState(initialLang);
+  const returnModule = searchParams.get('module');
+  const returnProfile = searchParams.get('profile');
+  const backUrl = returnModule && initialLang && returnProfile
+    ? `/?play=${encodeURIComponent(returnModule)}&language=${encodeURIComponent(initialLang)}&profile=${encodeURIComponent(returnProfile)}`
+    : '/';
   const [description, setDescription] = useState('');
   const [directions, setDirections] = useState<Direction[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedDirection, setSelectedDirection] = useState<Direction | null>(null);
 
-  // Load modules on mount
+  // Module generation phases
+  const [phaseStatus, setPhaseStatus] = useState<Record<ModulePhase, PhaseStatus>>({
+    curriculum: 'pending',
+    world: 'pending',
+    characters: 'pending',
+    guidance: 'pending',
+  });
+  const [generationStage, setGenerationStage] = useState<'module' | 'assets'>('module');
+
+  // Created module (for assets stage)
+  const [createdModuleId, setCreatedModuleId] = useState<string | null>(null);
+  const [createdModuleData, setCreatedModuleData] = useState<Record<string, unknown> | null>(null);
+  const [createdTitle, setCreatedTitle] = useState('');
+
+  // Asset generation hook
+  const assetGen = useAssetGeneration(createdModuleId, createdModuleData);
+  const assetStartedRef = useRef(false);
+
+  // Load modules on mount and when language changes
   useEffect(() => {
     const profile = localStorage.getItem('profile');
     if (!profile) { setListLoading(false); return; }
-    fetch(`/api/modules?profile=${encodeURIComponent(profile)}`)
+    setListLoading(true);
+    fetch(`/api/modules?profile=${encodeURIComponent(profile)}&language=${encodeURIComponent(languageId)}`)
       .then(r => r.ok ? r.json() : { modules: [] })
       .then(data => setModules(data.modules || []))
       .catch(() => {})
       .finally(() => setListLoading(false));
-  }, []);
+  }, [languageId]);
+
+  // Auto-start asset generation when module design is done
+  useEffect(() => {
+    if (generationStage === 'assets' && createdModuleId && createdModuleData && !assetStartedRef.current) {
+      assetStartedRef.current = true;
+      assetGen.startGeneration();
+    }
+  }, [generationStage, createdModuleId, createdModuleData, assetGen]);
+
+  // Auto-redirect to gameplay when assets are done
+  useEffect(() => {
+    if (step !== 'generating' || generationStage !== 'assets' || assetGen.phase !== 'done' || !createdModuleId) return;
+    const profile = localStorage.getItem('profile') || 'anon';
+    const url = `/?play=${createdModuleId}&language=${encodeURIComponent(languageId)}&profile=${encodeURIComponent(profile)}`;
+    const timer = setTimeout(() => router.push(url), 800);
+    return () => clearTimeout(timer);
+  }, [assetGen.phase, step, generationStage, createdModuleId, languageId, router]);
+
+  // Warn before leaving during generation
+  useEffect(() => {
+    if (step !== 'generating') return;
+    const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [step]);
 
   const handleBrainstorm = useCallback(async () => {
     if (!description.trim()) return;
@@ -108,37 +206,74 @@ function ModulesPage() {
   const handleGenerate = useCallback(async (direction: Direction) => {
     setSelectedDirection(direction);
     setStep('generating');
+    setGenerationStage('module');
     setIsLoading(true);
     setError(null);
-    try {
-      const res = await fetch('/api/modules/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ direction, languageId, userDescription: description }),
-      });
-      if (!res.ok) throw new Error((await res.json()).error || 'Failed to generate');
-      const data = await res.json();
 
+    // Reset phase statuses
+    setPhaseStatus({
+      curriculum: 'pending',
+      world: 'pending',
+      characters: 'pending',
+      guidance: 'pending',
+    });
+
+    try {
+      // Run 4 module generation phases sequentially
+      const phases: ModulePhase[] = ['curriculum', 'world', 'characters', 'guidance'];
+      let accumulated: Record<string, unknown> = {};
+
+      for (const phase of phases) {
+        setPhaseStatus(prev => ({ ...prev, [phase]: 'generating' }));
+
+        const res = await fetch('/api/modules/generate-phase', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phase,
+            direction,
+            languageId,
+            userDescription: description,
+            previousData: accumulated,
+          }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || `Failed to generate ${phase}`);
+        }
+
+        const { data } = await res.json();
+        accumulated = { ...accumulated, ...data };
+        setPhaseStatus(prev => ({ ...prev, [phase]: 'done' }));
+      }
+
+      // Save assembled module to DB
       const profile = localStorage.getItem('profile') || ('anon_' + Math.random().toString(36).substring(2, 10));
       localStorage.setItem('profile', profile);
       const id = 'ugc_' + Math.random().toString(36).substring(2, 12);
-      const mod = data.moduleData as Record<string, unknown>;
-      const title = (mod.displayName as string) || (mod.name as string) || 'Untitled Module';
+      const title = (accumulated.displayName as string) || (accumulated.name as string) || 'Untitled Module';
 
       const saveRes = await fetch('/api/modules', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, profile, languageId, title, description, moduleData: data.moduleData }),
+        body: JSON.stringify({ id, profile, languageId, title, description, moduleData: accumulated }),
       });
       if (!saveRes.ok) throw new Error((await saveRes.json()).error || 'Failed to save');
-      router.push(`/create/${id}`);
+
+      // Transition to asset generation stage
+      setCreatedModuleId(id);
+      setCreatedModuleData(accumulated);
+      setCreatedTitle(title);
+      assetStartedRef.current = false;
+      setGenerationStage('assets');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to generate module');
       setStep('directions');
     } finally {
       setIsLoading(false);
     }
-  }, [languageId, description, router]);
+  }, [languageId, description]);
 
   const startWizard = useCallback(() => {
     setView('wizard');
@@ -147,15 +282,26 @@ function ModulesPage() {
     setDirections([]);
     setError(null);
     setSelectedDirection(null);
+    setCreatedModuleId(null);
+    setCreatedModuleData(null);
+    setGenerationStage('module');
+    assetStartedRef.current = false;
   }, []);
+
+  const handlePlayAnyway = useCallback(() => {
+    if (!createdModuleId) return;
+    const profile = localStorage.getItem('profile') || 'anon';
+    const url = `/?play=${createdModuleId}&language=${encodeURIComponent(languageId)}&profile=${encodeURIComponent(profile)}`;
+    router.push(url);
+  }, [createdModuleId, languageId, router]);
 
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       {/* Header */}
       <div className="border-b border-gray-800 px-6 py-3 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button onClick={() => view === 'wizard' ? setView('listing') : router.push('/')} className="text-gray-500 hover:text-gray-300 text-sm">
-            ← {view === 'wizard' ? 'Back' : 'Home'}
+          <button onClick={() => view === 'wizard' ? setView('listing') : router.push(backUrl)} className="text-gray-500 hover:text-gray-300 text-sm">
+            &larr; {view === 'wizard' ? 'Back' : backUrl === '/' ? 'Home' : 'Back to Game'}
           </button>
           <h1 className="text-lg font-semibold">{view === 'wizard' ? 'New Module' : 'Modules'}</h1>
         </div>
@@ -230,26 +376,43 @@ function ModulesPage() {
                 const vocab = mod.moduleData.vocabulary ? (mod.moduleData.vocabulary as unknown[]).length : 0;
                 const quests = mod.moduleData.quests ? (mod.moduleData.quests as unknown[]).length : 0;
                 const lang = LANGUAGES.find(l => l.id === mod.languageId);
+                const profile = typeof window !== 'undefined' ? localStorage.getItem('profile') || '' : '';
                 return (
-                  <button
+                  <div
                     key={mod.id}
-                    onClick={() => router.push(`/create/${mod.id}`)}
-                    className="w-full text-left p-4 bg-gray-900 border border-gray-800 hover:border-gray-600 rounded-xl transition-colors"
+                    className="flex items-center gap-2"
                   >
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="font-semibold text-white">{mod.title}</h3>
-                      {lang && <span className="text-xs text-gray-500 bg-gray-800 px-2 py-0.5 rounded">{lang.flag} {lang.name}</span>}
-                    </div>
-                    {mod.description && (
-                      <p className="text-gray-500 text-sm mb-2 line-clamp-1">{mod.description}</p>
-                    )}
-                    <div className="flex gap-3 text-xs text-gray-600">
-                      <span>{locs} locations</span>
-                      <span>{npcs} NPCs</span>
-                      <span>{quests} quests</span>
-                      <span>{vocab} vocab</span>
-                    </div>
-                  </button>
+                    <button
+                      onClick={() => {
+                        const url = `/?play=${mod.id}&language=${encodeURIComponent(mod.languageId)}${profile ? `&profile=${encodeURIComponent(profile)}` : ''}`;
+                        window.location.href = url;
+                      }}
+                      className="flex-1 text-left p-4 bg-gray-900 border border-gray-800 hover:border-gray-600 rounded-xl transition-colors"
+                    >
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="font-semibold text-white">{mod.title}</h3>
+                        {lang && <span className="text-xs text-gray-500 bg-gray-800 px-2 py-0.5 rounded">{lang.flag} {lang.name}</span>}
+                      </div>
+                      {mod.description && (
+                        <p className="text-gray-500 text-sm mb-2 line-clamp-1">{mod.description}</p>
+                      )}
+                      <div className="flex gap-3 text-xs text-gray-600">
+                        <span>{locs} locations</span>
+                        <span>{npcs} NPCs</span>
+                        <span>{quests} quests</span>
+                        <span>{vocab} vocab</span>
+                      </div>
+                    </button>
+                    <button
+                      onClick={() => router.push(`/create/${mod.id}`)}
+                      className="shrink-0 p-3 bg-gray-900 border border-gray-800 hover:border-gray-600 rounded-xl transition-colors text-gray-400 hover:text-blue-400"
+                      title="Edit module"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10" />
+                      </svg>
+                    </button>
+                  </div>
                 );
               })}
             </div>
@@ -330,18 +493,88 @@ function ModulesPage() {
             onClick={() => setStep('describe')}
             className="mt-4 text-gray-500 hover:text-gray-300 text-sm"
           >
-            ← Try different description
+            &larr; Try different description
           </button>
         </div>
       )}
 
-      {/* Wizard: Generating */}
+      {/* Wizard: Generating (module design + assets in one view) */}
       {view === 'wizard' && step === 'generating' && (
-        <div className="flex items-center justify-center pt-32">
-          <div className="text-center">
-            <div className="text-gray-400 animate-pulse text-lg mb-2">Building module...</div>
-            {selectedDirection && (
-              <div className="text-gray-600 text-sm">{selectedDirection.title}</div>
+        <div className="max-w-lg mx-auto px-6 pt-16">
+          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+            <h2 className="text-lg font-semibold mb-1">
+              {createdTitle || selectedDirection?.title || 'New Module'}
+            </h2>
+            <p className="text-gray-500 text-sm mb-5">
+              {generationStage === 'module' ? 'Designing your module...' : 'Generating artwork...'}
+              <span className="text-gray-600 ml-1">Usually takes about 2 minutes</span>
+            </p>
+
+            {/* Module design phases */}
+            <div className="mb-5">
+              <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Module Design</div>
+              <div className="space-y-1.5">
+                {MODULE_PHASES.map(({ id, label }) => (
+                  <div key={id} className="flex items-center gap-2 text-sm">
+                    <StatusIcon status={phaseStatus[id]} />
+                    <span className={
+                      phaseStatus[id] === 'done' ? 'text-gray-400'
+                        : phaseStatus[id] === 'generating' ? 'text-blue-300'
+                        : 'text-gray-600'
+                    }>
+                      {label}
+                    </span>
+                    {phaseStatus[id] === 'generating' && (
+                      <span className="text-blue-400/60 text-xs">generating...</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Asset generation (appears after module design completes) */}
+            {generationStage === 'assets' && (
+              <>
+                {/* Progress bar */}
+                <div className="mb-5">
+                  <div className="flex justify-between text-xs text-gray-500 mb-1.5">
+                    <span>{assetGen.completedItems} of {assetGen.totalItems} assets</span>
+                    <span>{assetGen.percentComplete}%</span>
+                  </div>
+                  <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-blue-500 rounded-full transition-all duration-500 ease-out"
+                      style={{ width: `${assetGen.percentComplete}%` }}
+                    />
+                  </div>
+                </div>
+
+                <ProgressSection title="Scenes" progress={assetGen.sceneProgress} />
+                <ProgressSection title="Portraits" progress={assetGen.npcProgress} />
+                <ProgressSection title="Object Vignettes" progress={assetGen.objectProgress} />
+              </>
+            )}
+
+            {/* Done state with failures */}
+            {assetGen.phase === 'done' && assetGen.failedItems > 0 && (
+              <div className="mt-4 pt-4 border-t border-gray-800">
+                <div className="text-yellow-400 text-sm mb-3">
+                  {assetGen.completedItems} of {assetGen.totalItems} assets generated. {assetGen.failedItems} failed.
+                </div>
+                <button
+                  onClick={handlePlayAnyway}
+                  className="w-full py-2.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Play anyway
+                </button>
+              </div>
+            )}
+
+            {/* Done — no failures (auto-redirects) */}
+            {assetGen.phase === 'done' && assetGen.failedItems === 0 && (
+              <div className="text-green-400 text-sm text-center mt-2">
+                Ready! Starting game...
+              </div>
             )}
           </div>
         </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useAssetGeneration } from '@/hooks/useAssetGeneration';
 
 interface LocationAsset {
   imageUrl: string;
@@ -103,12 +104,8 @@ export default function ModuleEditor() {
   const chatIdRef = useRef(0);
   const chatEndRef = useRef<HTMLDivElement>(null);
 
-  // Asset generation state
-  type LocStatus = 'pending' | 'generating' | 'done' | 'failed';
-  const [assetProgress, setAssetProgress] = useState<Record<string, LocStatus>>({});
-  const [npcProgress, setNpcProgress] = useState<Record<string, LocStatus>>({});
-  const [objVigProgress, setObjVigProgress] = useState<Record<string, LocStatus>>({});
-  const [isGeneratingAssets, setIsGeneratingAssets] = useState(false);
+  // Asset generation (shared hook)
+  const assetGen = useAssetGeneration(moduleId, moduleData);
 
   // Load module from DB
   useEffect(() => {
@@ -225,157 +222,18 @@ export default function ModuleEditor() {
   // Initialize asset progress from loaded module
   useEffect(() => {
     if (!mod?.assets) return;
-    const progress: Record<string, LocStatus> = {};
-    for (const locId of Object.keys(mod.assets)) {
-      if (locId === '_vignettes') continue;
-      if ((mod.assets[locId] as { imageUrl?: string })?.imageUrl) progress[locId] = 'done';
-    }
-    if (Object.keys(progress).length > 0) setAssetProgress(progress);
-    // NPC vignette progress
-    const vignettes = (mod.assets as Record<string, unknown>)?._vignettes as { npcs?: Record<string, string>; objects?: Record<string, Record<string, string>> } | undefined;
-    if (vignettes?.npcs) {
-      const np: Record<string, LocStatus> = {};
-      for (const npcId of Object.keys(vignettes.npcs)) {
-        np[npcId] = 'done';
-      }
-      setNpcProgress(np);
-    }
-    // Object vignette progress (flat map: { objId: { variant: url } })
-    if (vignettes?.objects) {
-      const op: Record<string, LocStatus> = {};
-      for (const [objId, variantMap] of Object.entries(vignettes.objects)) {
-        for (const variant of Object.keys(variantMap as Record<string, string>)) {
-          op[`${objId}:${variant}`] = 'done';
-        }
-      }
-      if (Object.keys(op).length > 0) setObjVigProgress(op);
-    }
-  }, [mod?.assets]);
+    assetGen.initFromExistingAssets(mod.assets as Record<string, unknown>);
+  }, [mod?.assets, assetGen]);
 
   const handleGenerateAssets = useCallback(async () => {
-    if (!moduleData) return;
-    const locs = moduleData.locations as Record<string, unknown> | undefined;
-    if (!locs) return;
-    const locationIds = Object.keys(locs);
-    if (locationIds.length === 0) return;
-
-    setIsGeneratingAssets(true);
-    setNpcProgress({});
-    setObjVigProgress({});
-    const progress: Record<string, LocStatus> = {};
-    locationIds.forEach(id => { progress[id] = 'pending'; });
-    setAssetProgress({ ...progress });
-
-    for (const locId of locationIds) {
-      progress[locId] = 'generating';
-      setAssetProgress({ ...progress });
-
-      try {
-        const res = await fetch(`/api/modules/${moduleId}/assets`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ locationId: locId }),
-        });
-        if (!res.ok) throw new Error('Generation failed');
-        progress[locId] = 'done';
-      } catch {
-        progress[locId] = 'failed';
-      }
-      setAssetProgress({ ...progress });
-    }
-
-    const allDone = Object.values(progress).every(s => s === 'done');
-    await fetch(`/api/modules/${moduleId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ assetStatus: allDone ? 'ready' : 'partial' }),
-    });
-
-    // Generate NPC vignettes
-    const npcsForGen = (moduleData.npcs || []) as Array<{ id: string; name: { native: string } }>;
-    if (npcsForGen.length > 0) {
-      const np: Record<string, LocStatus> = {};
-      npcsForGen.forEach(npc => { np[npc.id] = 'pending'; });
-      setNpcProgress({ ...np });
-
-      for (const npc of npcsForGen) {
-        np[npc.id] = 'generating';
-        setNpcProgress({ ...np });
-        try {
-          const res = await fetch(`/api/modules/${moduleId}/assets`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'vignette', npcId: npc.id }),
-          });
-          if (!res.ok) throw new Error('Vignette generation failed');
-          np[npc.id] = 'done';
-        } catch {
-          np[npc.id] = 'failed';
-        }
-        setNpcProgress({ ...np });
-      }
-    }
-
-    // Generate object state vignettes
-    const VISUAL_TAGS = new Set(['open', 'closed', 'on', 'off', 'ringing', 'cooked', 'lit', 'empty', 'full', 'broken']);
-    const TAG_COMPLEMENTS: Record<string, string> = { open: 'closed', closed: 'open', on: 'off', off: 'on' };
-    const objectsForVig = (moduleData.objects || []) as Array<{ id: string; name: { native: string }; tags: string[] }>;
-    const objVigDefs: Array<{ objectId: string; variant: string; prompt: string }> = [];
-    const seenObjVig = new Set<string>();
-    for (const obj of objectsForVig) {
-      const visualTags = (obj.tags || []).filter(t => VISUAL_TAGS.has(t));
-      if (visualTags.length === 0) continue;
-      for (const tag of visualTags) {
-        const key = `${obj.id}:${tag}`;
-        if (seenObjVig.has(key)) continue;
-        seenObjVig.add(key);
-        objVigDefs.push({ objectId: obj.id, variant: tag, prompt: `Close-up vignette of a ${obj.name.native} that is ${tag}.` });
-        const complement = TAG_COMPLEMENTS[tag];
-        if (complement && !visualTags.includes(complement)) {
-          const compKey = `${obj.id}:${complement}`;
-          if (!seenObjVig.has(compKey)) {
-            seenObjVig.add(compKey);
-            objVigDefs.push({ objectId: obj.id, variant: complement, prompt: `Close-up vignette of a ${obj.name.native} that is ${complement}.` });
-          }
-        }
-      }
-    }
-
-    if (objVigDefs.length > 0) {
-      const op: Record<string, LocStatus> = {};
-      objVigDefs.forEach(d => { op[`${d.objectId}:${d.variant}`] = 'pending'; });
-      setObjVigProgress({ ...op });
-
-      for (const d of objVigDefs) {
-        const opKey = `${d.objectId}:${d.variant}`;
-        op[opKey] = 'generating';
-        setObjVigProgress({ ...op });
-        try {
-          const res = await fetch(`/api/modules/${moduleId}/assets`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ type: 'object_vignette', objectId: d.objectId, variant: d.variant, prompt: d.prompt }),
-          });
-          if (!res.ok) throw new Error('Object vignette generation failed');
-          op[opKey] = 'done';
-        } catch {
-          op[opKey] = 'failed';
-        }
-        setObjVigProgress({ ...op });
-      }
-    }
-
+    await assetGen.startGeneration();
     // Re-fetch module to get updated assets (fixes stale thumbnails)
     const updatedRes = await fetch(`/api/modules/${moduleId}`);
     if (updatedRes.ok) {
       const updatedMod = await updatedRes.json();
       setMod(updatedMod);
-    } else {
-      setMod(prev => prev ? { ...prev, assetStatus: allDone ? 'ready' : 'partial' } : prev);
     }
-
-    setIsGeneratingAssets(false);
-  }, [moduleData, moduleId]);
+  }, [assetGen, moduleId]);
 
   if (loading) {
     return (
@@ -486,13 +344,13 @@ export default function ModuleEditor() {
                 <div>
                   <h3 className="text-sm font-semibold text-gray-400 uppercase tracking-wider mb-3">Scene Images</h3>
                   <div className="bg-gray-900 rounded-xl p-4">
-                    {isGeneratingAssets ? (
+                    {assetGen.isGenerating ? (
                       <div className="space-y-2">
                         {/* Scene progress */}
                         <div className="text-sm text-gray-300 mb-3">
-                          Generating scenes... ({Object.values(assetProgress).filter(s => s === 'done').length}/{Object.keys(assetProgress).length})
+                          Generating scenes... ({Object.values(assetGen.sceneProgress).filter(s => s === 'done').length}/{Object.keys(assetGen.sceneProgress).length})
                         </div>
-                        {Object.entries(assetProgress).map(([locId, status]) => (
+                        {Object.entries(assetGen.sceneProgress).map(([locId, status]) => (
                           <div key={locId} className="flex items-center gap-2 text-sm">
                             {status === 'done' && <span className="text-green-400 w-5 text-center">&#10003;</span>}
                             {status === 'generating' && <span className="text-blue-400 w-5 text-center animate-spin">&#9696;</span>}
@@ -505,12 +363,12 @@ export default function ModuleEditor() {
                           </div>
                         ))}
                         {/* NPC portrait progress */}
-                        {Object.keys(npcProgress).length > 0 && (
+                        {Object.keys(assetGen.npcProgress).length > 0 && (
                           <>
                             <div className="text-sm text-gray-300 mt-4 mb-3">
-                              Generating portraits... ({Object.values(npcProgress).filter(s => s === 'done').length}/{Object.keys(npcProgress).length})
+                              Generating portraits... ({Object.values(assetGen.npcProgress).filter(s => s === 'done').length}/{Object.keys(assetGen.npcProgress).length})
                             </div>
-                            {Object.entries(npcProgress).map(([npcId, status]) => {
+                            {Object.entries(assetGen.npcProgress).map(([npcId, status]) => {
                               const npc = npcs.find(n => n.id === npcId);
                               return (
                                 <div key={npcId} className="flex items-center gap-2 text-sm">
@@ -527,12 +385,12 @@ export default function ModuleEditor() {
                             })}
                           </>
                         )}
-                        {Object.keys(objVigProgress).length > 0 && (
+                        {Object.keys(assetGen.objectProgress).length > 0 && (
                           <>
                             <div className="text-sm text-gray-300 mt-4 mb-3">
-                              Generating object vignettes... ({Object.values(objVigProgress).filter(s => s === 'done').length}/{Object.keys(objVigProgress).length})
+                              Generating object vignettes... ({Object.values(assetGen.objectProgress).filter(s => s === 'done').length}/{Object.keys(assetGen.objectProgress).length})
                             </div>
-                            {Object.entries(objVigProgress).map(([key, status]) => {
+                            {Object.entries(assetGen.objectProgress).map(([key, status]) => {
                               const [objId, variant] = key.split(':');
                               const obj = objects.find(o => o.id === objId);
                               return (
@@ -551,16 +409,16 @@ export default function ModuleEditor() {
                           </>
                         )}
                       </div>
-                    ) : mod.assetStatus === 'ready' || Object.values(assetProgress).some(s => s === 'done') ? (
+                    ) : mod.assetStatus === 'ready' || Object.values(assetGen.sceneProgress).some(s => s === 'done') ? (
                       <div>
                         <div className="flex items-center gap-2 mb-3">
                           <span className="text-green-400">&#10003;</span>
                           <span className="text-sm text-gray-300">
-                            {Object.values(assetProgress).filter(s => s === 'done').length} of {Object.keys(locations).length} scenes generated
+                            {Object.values(assetGen.sceneProgress).filter(s => s === 'done').length} of {Object.keys(locations).length} scenes generated
                           </span>
                         </div>
                         <div className="flex flex-wrap gap-2 mb-3">
-                          {Object.entries(assetProgress).filter(([, s]) => s === 'done').map(([locId]) => {
+                          {Object.entries(assetGen.sceneProgress).filter(([, s]) => s === 'done').map(([locId]) => {
                             const asset = mod.assets?.[locId] as { imageUrl?: string } | undefined;
                             return (
                               <div key={locId} className="relative group">
@@ -579,11 +437,11 @@ export default function ModuleEditor() {
                           })}
                         </div>
                         {/* NPC portrait thumbnails */}
-                        {Object.values(npcProgress).some(s => s === 'done') && (
+                        {Object.values(assetGen.npcProgress).some(s => s === 'done') && (
                           <div className="mb-3">
                             <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Portraits</div>
                             <div className="flex flex-wrap gap-2">
-                              {Object.entries(npcProgress).filter(([, s]) => s === 'done').map(([npcId]) => {
+                              {Object.entries(assetGen.npcProgress).filter(([, s]) => s === 'done').map(([npcId]) => {
                                 const vignettes = (mod.assets as Record<string, unknown>)?._vignettes as { npcs?: Record<string, string> } | undefined;
                                 const url = vignettes?.npcs?.[npcId];
                                 const npc = npcs.find(n => n.id === npcId);
@@ -610,11 +468,11 @@ export default function ModuleEditor() {
                           </div>
                         )}
                         {/* Object vignette thumbnails */}
-                        {Object.values(objVigProgress).some(s => s === 'done') && (
+                        {Object.values(assetGen.objectProgress).some(s => s === 'done') && (
                           <div className="mb-3">
                             <div className="text-xs text-gray-500 uppercase tracking-wider mb-2">Object Vignettes</div>
                             <div className="flex flex-wrap gap-2">
-                              {Object.entries(objVigProgress).filter(([, s]) => s === 'done').map(([key]) => {
+                              {Object.entries(assetGen.objectProgress).filter(([, s]) => s === 'done').map(([key]) => {
                                 const [objId, variant] = key.split(':');
                                 const vigData = (mod.assets as Record<string, unknown>)?._vignettes as { objects?: Record<string, Record<string, string>> } | undefined;
                                 const url = vigData?.objects?.[objId]?.[variant];
@@ -643,7 +501,7 @@ export default function ModuleEditor() {
                         )}
                         <button
                           onClick={handleGenerateAssets}
-                          disabled={isGeneratingAssets}
+                          disabled={assetGen.isGenerating}
                           className="text-sm text-gray-500 hover:text-gray-300 transition-colors"
                         >
                           Regenerate All
@@ -654,7 +512,7 @@ export default function ModuleEditor() {
                         <span className="text-sm text-gray-500">No scene images or portraits yet</span>
                         <button
                           onClick={handleGenerateAssets}
-                          disabled={isGeneratingAssets}
+                          disabled={assetGen.isGenerating}
                           className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-lg text-sm font-medium transition-colors"
                         >
                           Generate Assets

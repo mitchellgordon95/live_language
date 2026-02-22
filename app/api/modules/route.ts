@@ -4,12 +4,13 @@ import { createModule, listModules } from '@/lib/db';
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const profile = url.searchParams.get('profile');
+  const language = url.searchParams.get('language') || undefined;
   if (!profile) {
     return NextResponse.json({ modules: [] });
   }
 
   try {
-    const modules = await listModules(profile);
+    const modules = await listModules(profile, language);
     return NextResponse.json({ modules });
   } catch (error) {
     console.error('List modules error:', error);
