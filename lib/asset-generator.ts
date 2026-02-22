@@ -9,7 +9,7 @@ import {
   getVignettePrompt,
   type VignetteDef,
 } from '../scripts/vignette-prompts';
-import { PALETTES } from '../scripts/style-guide';
+import { PALETTES, NPC_PORTRAIT_STYLE } from '../scripts/style-guide';
 
 export type { ScenePromptContext, VignetteDef };
 
@@ -154,7 +154,7 @@ export function buildNpcVignetteDef(
     id: npc.id,
     variant: 'default',
     isBase: true,
-    prompt: `${npc.name.native}, ${desc} ${palette}`,
+    prompt: `${NPC_PORTRAIT_STYLE} ${npc.name.native}, ${desc} ${palette}`,
   };
 }
 

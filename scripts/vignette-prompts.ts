@@ -6,7 +6,7 @@
  * Prompts are built from NPC appearance/personality and object names/tags.
  */
 
-import { PALETTES, VIGNETTE_STYLE, PLAYER_DESC, LANGUAGE_STYLES } from './style-guide';
+import { PALETTES, VIGNETTE_STYLE, PLAYER_DESC, LANGUAGE_STYLES, NPC_PORTRAIT_STYLE } from './style-guide';
 
 // --- Types ---
 
@@ -101,7 +101,7 @@ export function deriveVignetteDefs(module: ModuleData): VignetteDef[] {
     const desc = npc.appearance || npc.personality;
     defs.push({
       category: 'npc', id: npc.id, variant: 'default', isBase: true,
-      prompt: `${npc.name.native}, ${desc} ${palette}`,
+      prompt: `${NPC_PORTRAIT_STYLE} ${npc.name.native}, ${desc} ${palette}`,
     });
   }
 

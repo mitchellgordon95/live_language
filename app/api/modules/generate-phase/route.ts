@@ -171,7 +171,7 @@ Rules:
 - Include 3-5 quests that progress the player through the learning objectives
 - Chain quests via prereqs so completing one unlocks the next
 - Use descriptive completionHint so the AI knows when the player completes them
-- Each NPC should have an appearance description for portrait generation
+- Each NPC should have an appearance description for portrait generation — physical traits only (face, hair, build, clothing) — NOT poses, activities, settings, or held items
 - Quest triggerRules should reference valid location/object/NPC IDs from the world
 
 Respond with ONLY the JSON object, no other text or markdown fences.`;

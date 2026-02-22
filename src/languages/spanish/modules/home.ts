@@ -136,7 +136,7 @@ const npcs: NPC[] = [
     location: 'living_room',
     personality: 'Very sleepy roommate. Just woke up, sitting on the couch, barely awake. Will ask the player for coffee when they talk to him. After getting coffee, mentions being hungry. Grateful and casual.',
     gender: 'male',
-    appearance: 'A friendly young man in his mid-20s with light skin and messy brown hair. Wearing a gray hoodie, sitting on a couch with a sleepy half-smile, holding a coffee mug.',
+    appearance: 'A friendly young man in his mid-20s with light skin and messy brown hair. Gray hoodie, warm smile.',
   },
   {
     id: 'cat',

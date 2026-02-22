@@ -38,5 +38,8 @@ export const LANGUAGE_STYLES: Record<string, string> = {
   portuguese: 'Brazilian apartment aesthetic. Tropical wood furniture, colorful azulejo tile accents, lush indoor plants, bright airy spaces with natural light.',
 };
 
+// NPC portrait constraint — neutral headshot, no activity or held items
+export const NPC_PORTRAIT_STYLE = `Neutral portrait — head and upper body only, like a character select screen. No specific pose, activity, or held items. Friendly neutral expression.`;
+
 // Consistent player character description used in all player vignettes
 export const PLAYER_DESC = 'A gender-neutral young adult in their mid-20s with warm brown skin, short dark hair, and an expressive friendly face. Wearing casual home clothes (t-shirt and comfortable pants).';
