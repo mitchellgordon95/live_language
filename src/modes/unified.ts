@@ -365,7 +365,7 @@ function validateMutations(mutations: Mutation[], state: GameState): Mutation[] 
 /**
  * Pass 1: Parse target language input into grammar feedback + ordered mutations.
  */
-async function parseIntent(input: string, state: GameState): Promise<ParseResponse> {
+async function parseIntent(input: string, state: GameState): Promise<ParseResponse & { _usage?: { input_tokens: number; output_tokens: number; cache_read_input_tokens?: number | null; cache_creation_input_tokens?: number | null } }> {
   const contextPrompt = buildPrompt(state);
 
   const currentBuilding = getBuildingForLocation(state.currentLocation);
@@ -379,7 +379,7 @@ async function parseIntent(input: string, state: GameState): Promise<ParseRespon
     const response = await getClient().messages.create({
       model: AI_MODEL,
       max_tokens: 1024,
-      system: systemPrompt,
+      system: [{ type: 'text' as const, text: systemPrompt, cache_control: { type: 'ephemeral' as const } }],
       messages: [
         { role: 'user', content: `${contextPrompt}\n\nPLAYER INPUT: "${input}"` },
       ],
@@ -399,7 +399,7 @@ async function parseIntent(input: string, state: GameState): Promise<ParseRespon
       console.log('\x1b[2m' + JSON.stringify(parsed, null, 2) + '\x1b[0m\n');
     }
 
-    return parsed;
+    return { ...parsed, _usage: response.usage };
   } catch (error) {
     console.error('AI Parse error:', error);
     return {
@@ -420,7 +420,7 @@ async function narrateTurn(
   parseResult: ParseResponse,
   postMutationState: GameState,
   input: string,
-): Promise<NarrateResponse> {
+): Promise<NarrateResponse & { _usage?: { input_tokens: number; output_tokens: number; cache_read_input_tokens?: number | null; cache_creation_input_tokens?: number | null } }> {
   const currentBuilding = getBuildingForLocation(postMutationState.currentLocation);
   const guidance = getGuidanceForBuilding(currentBuilding);
   const narratePrompt = activeLanguage.narrateSystemPrompt;
@@ -445,7 +445,7 @@ Generate the narrative response for these mutations.`;
     const response = await getClient().messages.create({
       model: AI_MODEL,
       max_tokens: 1024,
-      system: systemPrompt,
+      system: [{ type: 'text' as const, text: systemPrompt, cache_control: { type: 'ephemeral' as const } }],
       messages: [
         { role: 'user', content: userMessage },
       ],
@@ -468,7 +468,7 @@ Generate the narrative response for these mutations.`;
       console.log('\x1b[2m' + JSON.stringify(parsed, null, 2) + '\x1b[0m\n');
     }
 
-    return parsed;
+    return { ...parsed, _usage: response.usage };
   } catch (error) {
     console.error('AI Narrate error:', error);
     return { message: 'You do that.' };
@@ -501,6 +501,17 @@ function handleBuildingTransition(state: GameState, newBuilding: BuildingName): 
 // EXPORTED TYPES
 // ============================================================================
 
+export interface TokenUsage {
+  parseInput: number;
+  parseOutput: number;
+  parseCacheRead: number;
+  parseCacheCreation: number;
+  narrateInput: number;
+  narrateOutput: number;
+  narrateCacheRead: number;
+  narrateCacheCreation: number;
+}
+
 export interface TurnResult {
   newState: GameState;
 
@@ -526,6 +537,9 @@ export interface TurnResult {
   badgesEarned: string[];
   buildingChanged: boolean;
   newBuilding?: string;
+
+  // Token usage tracking
+  tokenUsage?: TokenUsage;
 }
 
 // ============================================================================
@@ -549,6 +563,7 @@ export async function processTurn(
 
   // --- Pass 1: Parse input into mutations ---
   const parseResult = await parseIntent(input, state);
+  const parseUsage = parseResult._usage;
 
   // If not understood or invalid, return early (no Pass 2)
   if (!parseResult.valid) {
@@ -569,6 +584,16 @@ export async function processTurn(
       questsCancelled: [],
       badgesEarned: [],
       buildingChanged: false,
+      tokenUsage: parseUsage ? {
+        parseInput: parseUsage.input_tokens,
+        parseOutput: parseUsage.output_tokens,
+        parseCacheRead: parseUsage.cache_read_input_tokens ?? 0,
+        parseCacheCreation: parseUsage.cache_creation_input_tokens ?? 0,
+        narrateInput: 0,
+        narrateOutput: 0,
+        narrateCacheRead: 0,
+        narrateCacheCreation: 0,
+      } : undefined,
     };
   }
 
@@ -638,6 +663,7 @@ export async function processTurn(
 
   // --- Pass 2: Narrate what happened ---
   const narrateResult = await narrateTurn(parseResult, newState, input);
+  const narrateUsage = narrateResult._usage;
 
   // Validate step IDs from narration
   if (narrateResult.stepsCompleted) {
@@ -852,6 +878,16 @@ export async function processTurn(
     badgesEarned,
     buildingChanged,
     newBuilding: buildingChanged ? currentBuilding : undefined,
+    tokenUsage: (parseUsage || narrateUsage) ? {
+      parseInput: parseUsage?.input_tokens ?? 0,
+      parseOutput: parseUsage?.output_tokens ?? 0,
+      parseCacheRead: parseUsage?.cache_read_input_tokens ?? 0,
+      parseCacheCreation: parseUsage?.cache_creation_input_tokens ?? 0,
+      narrateInput: narrateUsage?.input_tokens ?? 0,
+      narrateOutput: narrateUsage?.output_tokens ?? 0,
+      narrateCacheRead: narrateUsage?.cache_read_input_tokens ?? 0,
+      narrateCacheCreation: narrateUsage?.cache_creation_input_tokens ?? 0,
+    } : undefined,
   };
 }
 

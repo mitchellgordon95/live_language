@@ -202,6 +202,17 @@ export async function playTurn(profile: string, languageId: string, input: strin
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const result = await processTurn(input, state, effectiveConfig) as any;
 
+  // Log token usage
+  if (result.tokenUsage) {
+    const t = result.tokenUsage;
+    const totalIn = t.parseInput + t.narrateInput;
+    const totalOut = t.parseOutput + t.narrateOutput;
+    const totalCacheRead = t.parseCacheRead + t.narrateCacheRead;
+    const totalCacheWrite = t.parseCacheCreation + t.narrateCacheCreation;
+    const cacheInfo = totalCacheRead > 0 ? ` | cache read: ${totalCacheRead}` : totalCacheWrite > 0 ? ` | cache write: ${totalCacheWrite}` : '';
+    console.log(`[tokens] parse: ${t.parseInput}in/${t.parseOutput}out | narrate: ${t.narrateInput}in/${t.narrateOutput}out | total: ${totalIn}in/${totalOut}out${cacheInfo}`);
+  }
+
   let newState = result.newState;
 
   // Detect module exit — revert location and signal frontend to redirect
