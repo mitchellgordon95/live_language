@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useCallback, useRef, useEffect } from 'react';
-import type { GameView } from '@/lib/types';
+import type { GameView, UserSettings } from '@/lib/types';
+import { DEFAULT_SETTINGS } from '@/lib/types';
 import ChatPanel from '@/components/ChatPanel';
 import type { ChatEntry } from '@/components/ChatPanel';
 import ScenePanel from '@/components/ScenePanel';
 import InputBar from '@/components/InputBar';
 import { SpeakerPopup } from '@/components/SpeakerPopup';
+import SettingsModal from '@/components/SettingsModal';
 import { useTTS } from '@/hooks/useTTS';
 import { useSTT } from '@/hooks/useSTT';
 import { useTextSelection } from '@/hooks/useTextSelection';
@@ -66,6 +68,7 @@ export default function Home() {
   const autoPlayRef = useRef(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [langPickerOpen, setLangPickerOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [hasSentMessage, setHasSentMessage] = useState(false);
   const { speak, isMuted, toggleMute } = useTTS();
   const { isRecording, isTranscribing, startRecording, stopRecording } = useSTT();
@@ -511,6 +514,16 @@ export default function Home() {
               Trophies
             </a>
             <button
+              onClick={() => setSettingsOpen(true)}
+              className="text-xs text-gray-400 hover:text-gray-200 transition-colors flex items-center gap-1"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Settings
+            </button>
+            <button
               onClick={() => { setAppState('menu'); setGame(null); }}
               className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
             >
@@ -595,6 +608,16 @@ export default function Home() {
                   Trophies
                 </a>
                 <button
+                  onClick={() => { setSettingsOpen(true); setMobileMenuOpen(false); }}
+                  className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 flex items-center gap-2"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  Settings
+                </button>
+                <button
                   onClick={() => { setAppState('menu'); setGame(null); setMobileMenuOpen(false); }}
                   className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
                 >
@@ -610,12 +633,12 @@ export default function Home() {
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         {/* World panel */}
         <div className="shrink-0 md:w-[55%] md:border-r border-gray-800">
-          <ScenePanel game={game} onSpeak={(text) => speak(prepareTTSText(text, game.languageId), TTS_VOICES[game.languageId] || 'alloy', game.languageId)} />
+          <ScenePanel game={game} onSpeak={(text) => speak(prepareTTSText(text, game.languageId), TTS_VOICES[game.languageId] || 'alloy', game.languageId)} showPinyin={game.settings?.showPinyin ?? true} />
         </div>
 
         {/* Chat + Input column */}
         <div className="flex-1 min-h-0 md:w-[45%] flex flex-col">
-          <ChatPanel chatHistory={chatHistory} onSpeak={(text, voice) => speak(text, voice, game.languageId)} languageName={LANGUAGES.find(l => l.id === game.languageId)?.name} />
+          <ChatPanel chatHistory={chatHistory} onSpeak={(text, voice) => speak(text, voice, game.languageId)} languageName={LANGUAGES.find(l => l.id === game.languageId)?.name} hideNpcDialogue={game.settings?.hideNpcDialogue ?? false} />
           <div
             className={`p-2 md:p-3 border-t shrink-0 ${showInputGlow ? 'rounded-lg border-blue-500/60' : 'border-gray-800'}`}
             style={showInputGlow ? { animation: 'onboarding-glow 2s ease-in-out infinite', '--glow-color': 'rgba(59, 130, 246, 0.5)' } as React.CSSProperties : undefined}
@@ -653,6 +676,17 @@ export default function Home() {
           position={position}
           onSpeak={(text) => speak(prepareTTSText(text, game.languageId), TTS_VOICES[game.languageId] || 'alloy', game.languageId)}
           onDismiss={dismiss}
+        />
+      )}
+
+      {/* Settings modal */}
+      {settingsOpen && (
+        <SettingsModal
+          settings={game.settings || DEFAULT_SETTINGS}
+          languageId={game.languageId}
+          profile={game.profile}
+          onUpdate={(s) => setGame(prev => prev ? { ...prev, settings: s } : prev)}
+          onClose={() => setSettingsOpen(false)}
         />
       )}
 

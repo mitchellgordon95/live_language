@@ -37,6 +37,7 @@ export interface GameState {
 
   profile?: string;
   audioEnabled: boolean;
+  schemaVersion: number;
 }
 
 export interface TurnHistoryEntry {

@@ -3,9 +3,15 @@
 import { useState } from 'react';
 import type { GameView, GameObjectView, ExitView } from '@/lib/types';
 
+// Strip parenthetical annotations like "(pinyin)" from text
+function stripPinyin(text: string): string {
+  return text.replace(/\s*\([^)]*\)/g, '');
+}
+
 interface ScenePanelProps {
   game: GameView;
   onSpeak?: (text: string) => void;
+  showPinyin?: boolean;
 }
 
 function distributeExits(exits: ExitView[]): { west: ExitView[]; east: ExitView[]; north: ExitView[] } {
@@ -20,7 +26,8 @@ function resolveVignetteUrl(path: string, sceneBase: string): string {
   return `${sceneBase}/vignettes/${path}`;
 }
 
-export default function ScenePanel({ game, onSpeak }: ScenePanelProps) {
+export default function ScenePanel({ game, onSpeak, showPinyin = true }: ScenePanelProps) {
+  const maybeStrip = (text: string) => showPinyin ? text : stripPinyin(text);
   const [hoveredObjId, setHoveredObjId] = useState<string | null>(null);
   const [tutorialExpanded, setTutorialExpanded] = useState(false);
 
@@ -74,21 +81,21 @@ export default function ScenePanel({ game, onSpeak }: ScenePanelProps) {
               {northExits.length > 0 && (
                 <div className="absolute top-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
                   {northExits.map(exit => (
-                    <ExitPill key={exit.to} exit={exit} direction="north" />
+                    <ExitPill key={exit.to} exit={exit} direction="north" showPinyin={showPinyin} />
                   ))}
                 </div>
               )}
               {westExits.length > 0 && (
                 <div className="absolute left-2 top-1/2 -translate-y-1/2 flex flex-col gap-1.5 z-10">
                   {westExits.map(exit => (
-                    <ExitPill key={exit.to} exit={exit} direction="west" />
+                    <ExitPill key={exit.to} exit={exit} direction="west" showPinyin={showPinyin} />
                   ))}
                 </div>
               )}
               {eastExits.length > 0 && (
                 <div className="absolute right-2 top-1/2 -translate-y-1/2 flex flex-col gap-1.5 z-10">
                   {eastExits.map(exit => (
-                    <ExitPill key={exit.to} exit={exit} direction="east" />
+                    <ExitPill key={exit.to} exit={exit} direction="east" showPinyin={showPinyin} />
                   ))}
                 </div>
               )}
@@ -190,6 +197,7 @@ export default function ScenePanel({ game, onSpeak }: ScenePanelProps) {
                     onMouseEnter={() => setHoveredObjId(obj.id)}
                     onMouseLeave={() => setHoveredObjId(null)}
                     onSpeak={onSpeak}
+                    showPinyin={showPinyin}
                   />
                 ))}
               </div>
@@ -270,6 +278,7 @@ export default function ScenePanel({ game, onSpeak }: ScenePanelProps) {
             activeQuests={activeQuests}
             questsExpanded={questsExpanded}
             setQuestsExpanded={setQuestsExpanded}
+            showPinyin={showPinyin}
           />
         )}
       </div>
@@ -289,6 +298,7 @@ export default function ScenePanel({ game, onSpeak }: ScenePanelProps) {
           activeQuests={activeQuests}
           questsExpanded={questsExpanded}
           setQuestsExpanded={setQuestsExpanded}
+          showPinyin={showPinyin}
         />
       </div>
     </div>
@@ -297,7 +307,7 @@ export default function ScenePanel({ game, onSpeak }: ScenePanelProps) {
 
 // --- Info Content (shared between mobile drawer and desktop) ---
 
-function InfoContent({ game, hasScene, unlabeledObjects, visibleSteps, completedCount, tutorialComplete, tutorialExpanded, setTutorialExpanded, hasQuests, activeQuests, questsExpanded, setQuestsExpanded }: {
+function InfoContent({ game, hasScene, unlabeledObjects, visibleSteps, completedCount, tutorialComplete, tutorialExpanded, setTutorialExpanded, hasQuests, activeQuests, questsExpanded, setQuestsExpanded, showPinyin = true }: {
   game: GameView;
   hasScene: boolean;
   unlabeledObjects: GameObjectView[];
@@ -310,7 +320,9 @@ function InfoContent({ game, hasScene, unlabeledObjects, visibleSteps, completed
   activeQuests: { id: string; title: { target: string; native: string }; description: string }[];
   questsExpanded: boolean;
   setQuestsExpanded: (v: boolean) => void;
+  showPinyin?: boolean;
 }) {
+  const maybeStrip = (text: string) => showPinyin ? text : stripPinyin(text);
   return (
     <div className="px-4 pb-3 md:pb-4 space-y-2 flex-shrink-0">
       {/* No-scene fallback: full text layout */}
@@ -318,7 +330,7 @@ function InfoContent({ game, hasScene, unlabeledObjects, visibleSteps, completed
         <>
           <div>
             <h2 className="text-lg font-bold text-blue-400">{game.locationName.native}</h2>
-            <p className="text-sm text-gray-400">{game.locationName.target}</p>
+            <p className="text-sm text-gray-400">{maybeStrip(game.locationName.target)}</p>
           </div>
           {game.npcs.length > 0 && (
             <div>
@@ -330,7 +342,7 @@ function InfoContent({ game, hasScene, unlabeledObjects, visibleSteps, completed
                       {npc.name.native.charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <span className="text-cyan-400">{npc.name.target}</span>
+                      <span className="text-cyan-400">{maybeStrip(npc.name.target)}</span>
                       <span className="text-gray-500 ml-1">({npc.name.native})</span>
                       {npc.mood && <span className="text-gray-600 text-xs ml-1">- {npc.mood}</span>}
                     </div>
@@ -343,7 +355,7 @@ function InfoContent({ game, hasScene, unlabeledObjects, visibleSteps, completed
             <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Objects</div>
             <div className="flex flex-wrap gap-1.5">
               {game.objects.map((obj) => (
-                <ObjectPill key={obj.id} obj={obj} />
+                <ObjectPill key={obj.id} obj={obj} showPinyin={showPinyin} />
               ))}
             </div>
           </div>
@@ -404,7 +416,7 @@ function InfoContent({ game, hasScene, unlabeledObjects, visibleSteps, completed
               <div className="flex flex-wrap gap-1.5">
                 {game.exits.map((exit) => (
                   <span key={exit.to} className="text-xs px-2 py-1 rounded bg-gray-700/30 text-gray-300 border border-gray-600/30 cursor-default">
-                    {exit.name.target} <span className="text-gray-500">({exit.name.native})</span>
+                    {maybeStrip(exit.name.target)} <span className="text-gray-500">({exit.name.native})</span>
                   </span>
                 ))}
               </div>
@@ -419,7 +431,7 @@ function InfoContent({ game, hasScene, unlabeledObjects, visibleSteps, completed
           <div className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Also here</div>
           <div className="flex flex-wrap gap-1.5">
             {unlabeledObjects.map((obj) => (
-              <ObjectPill key={obj.id} obj={obj} />
+              <ObjectPill key={obj.id} obj={obj} showPinyin={showPinyin} />
             ))}
           </div>
         </div>
@@ -432,7 +444,7 @@ function InfoContent({ game, hasScene, unlabeledObjects, visibleSteps, completed
           <div className="flex flex-wrap gap-1.5">
             {game.inventory.map((item) => (
               <span key={item.id} className={`text-xs px-2 py-1 rounded border ${item.cooked ? 'bg-orange-900/30 text-orange-200 border-orange-600/50' : 'bg-gray-700/50 text-gray-300 border-gray-600/50'}`}>
-                {item.name.target}{item.cooked ? ' (cocinado)' : ''}
+                {maybeStrip(item.name.target)}{item.cooked ? ' (cocinado)' : ''}
               </span>
             ))}
           </div>
@@ -453,7 +465,7 @@ function InfoContent({ game, hasScene, unlabeledObjects, visibleSteps, completed
           {game.verbs.map((v, i) => (
             <span key={i}>
               {i > 0 && <span className="mx-1">&middot;</span>}
-              <span className="text-gray-500">{v.target}</span>
+              <span className="text-gray-500">{maybeStrip(v.target)}</span>
               <span className="text-gray-700 ml-0.5">({v.native})</span>
             </span>
           ))}
@@ -472,7 +484,7 @@ function NeedDot({ value, label }: { value: number; label: string }) {
 
 // --- Exit Pill (directional, inside image) ---
 
-function ExitPill({ exit, direction }: { exit: ExitView; direction: 'north' | 'west' | 'east' }) {
+function ExitPill({ exit, direction, showPinyin = true }: { exit: ExitView; direction: 'north' | 'west' | 'east'; showPinyin?: boolean }) {
   const arrow = direction === 'west' ? '\u2190' : direction === 'east' ? '\u2192' : '\u2191';
   const unvisited = exit.visited === false;
   return (
@@ -485,7 +497,7 @@ function ExitPill({ exit, direction }: { exit: ExitView; direction: 'north' | 'w
       style={unvisited ? { animation: 'exit-glow 2s ease-in-out infinite' } : undefined}
     >
       {direction === 'west' && <span className={`${unvisited ? 'text-indigo-300' : 'text-gray-400'} mr-1`}>{arrow}</span>}
-      {exit.name.target}
+      {showPinyin ? exit.name.target : stripPinyin(exit.name.target)}
       {direction !== 'west' && <span className={`${unvisited ? 'text-indigo-300' : 'text-gray-400'} ml-1`}>{arrow}</span>}
     </div>
   );
@@ -493,7 +505,8 @@ function ExitPill({ exit, direction }: { exit: ExitView; direction: 'north' | 'w
 
 // --- Object Pill (text list item) ---
 
-function ObjectPill({ obj }: { obj: GameObjectView }) {
+function ObjectPill({ obj, showPinyin = true }: { obj: GameObjectView; showPinyin?: boolean }) {
+  const display = showPinyin ? obj.name.target : stripPinyin(obj.name.target);
   return (
     <span className={`text-xs px-2 py-1 rounded cursor-default ${
       obj.vocabStage === 'known'
@@ -502,7 +515,7 @@ function ObjectPill({ obj }: { obj: GameObjectView }) {
       ? 'bg-yellow-900/30 text-yellow-400 border border-yellow-800/50'
       : 'bg-gray-700/50 text-gray-300 border border-gray-600/50'
     }`}>
-      {obj.vocabStage === 'known' ? obj.name.target : `${obj.name.target} (${obj.name.native})`}
+      {obj.vocabStage === 'known' ? display : `${display} (${obj.name.native})`}
     </span>
   );
 }
@@ -534,9 +547,11 @@ interface ObjectLabelProps {
   onMouseEnter: () => void;
   onMouseLeave: () => void;
   onSpeak?: (text: string) => void;
+  showPinyin?: boolean;
 }
 
-function ObjectLabel({ obj, isHighlighted, onMouseEnter, onMouseLeave, onSpeak }: ObjectLabelProps) {
+function ObjectLabel({ obj, isHighlighted, onMouseEnter, onMouseLeave, onSpeak, showPinyin = true }: ObjectLabelProps) {
+  const maybeStrip = (text: string) => showPinyin ? text : stripPinyin(text);
   if (!obj.coords) return null;
 
   const isKnown = obj.vocabStage === 'known';
@@ -559,7 +574,7 @@ function ObjectLabel({ obj, isHighlighted, onMouseEnter, onMouseLeave, onSpeak }
         {isHighlighted ? (
           <div className="px-2 py-0.5 rounded text-xs whitespace-nowrap shadow-lg backdrop-blur-sm bg-gray-900/85 text-white border border-gray-500/50 mb-1 flex items-center gap-1.5">
             <span className={`w-1.5 h-1.5 rounded-full ${vocabColor} flex-shrink-0`} />
-            <span className="font-medium">{obj.name.target}</span>
+            <span className="font-medium">{maybeStrip(obj.name.target)}</span>
             {!isKnown && (
               <span className="text-blue-200">({obj.name.native})</span>
             )}

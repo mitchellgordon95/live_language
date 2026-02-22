@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { TurnResultView } from '@/lib/types';
 
 export interface LearnResult {
@@ -22,6 +22,7 @@ interface ChatPanelProps {
   chatHistory: ChatEntry[];
   onSpeak?: (text: string, voice?: string) => void;
   languageName?: string;
+  hideNpcDialogue?: boolean;
 }
 
 function LearnFeedback({ result }: { result: LearnResult }) {
@@ -73,7 +74,10 @@ function SpeakerIcon() {
   );
 }
 
-function TurnFeedback({ result, onSpeak }: { result: TurnResultView; onSpeak?: (text: string, voice?: string) => void }) {
+function TurnFeedback({ result, onSpeak, hideNpcDialogue }: { result: TurnResultView; onSpeak?: (text: string, voice?: string) => void; hideNpcDialogue?: boolean }) {
+  const [revealed, setRevealed] = useState(false);
+  const showText = !hideNpcDialogue || revealed;
+
   return (
     <div className="space-y-1.5">
       {/* Action result */}
@@ -105,7 +109,16 @@ function TurnFeedback({ result, onSpeak }: { result: TurnResultView; onSpeak?: (
           )}
           <div className="pl-2 border-l-2 border-cyan-600 flex-1">
             <div className="text-cyan-400 text-sm flex items-center gap-1">
-              <span>{result.npcResponse.npcName}: &quot;{result.npcResponse.target}&quot;</span>
+              {showText ? (
+                <span>{result.npcResponse.npcName}: &quot;{result.npcResponse.target}&quot;</span>
+              ) : (
+                <button
+                  onClick={() => setRevealed(true)}
+                  className="text-gray-500 hover:text-gray-300 text-xs italic transition-colors"
+                >
+                  {result.npcResponse.npcName}: [tap to reveal]
+                </button>
+              )}
               {onSpeak && (
                 <button
                   onClick={() => onSpeak(result.npcResponse!.target, result.npcResponse!.voice)}
@@ -187,7 +200,7 @@ function TurnFeedback({ result, onSpeak }: { result: TurnResultView; onSpeak?: (
   );
 }
 
-export default function ChatPanel({ chatHistory, onSpeak, languageName }: ChatPanelProps) {
+export default function ChatPanel({ chatHistory, onSpeak, languageName, hideNpcDialogue }: ChatPanelProps) {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Scroll when new entries are added or when pending entries resolve
@@ -223,7 +236,7 @@ export default function ChatPanel({ chatHistory, onSpeak, languageName }: ChatPa
             {/* Game response or learn lesson */}
             {(entry.turnResult || entry.learnResult || entry.sayResult) && (
               <div className="bg-gray-800/40 rounded-lg p-2.5 border border-gray-700/50">
-                {entry.turnResult && <TurnFeedback result={entry.turnResult} onSpeak={onSpeak} />}
+                {entry.turnResult && <TurnFeedback result={entry.turnResult} onSpeak={onSpeak} hideNpcDialogue={hideNpcDialogue} />}
                 {entry.learnResult && <LearnFeedback result={entry.learnResult} />}
                 {entry.sayResult && <SayFeedback text={entry.sayResult} />}
               </div>

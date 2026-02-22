@@ -47,7 +47,7 @@ public/scenes/            # Generated scene images and portraits
 
 **Modules**: Each location module exports locations, NPCs, goals, vocabulary, and `promptInstructions`. All modules are registered in `module-registry.ts`. The AI system prompt is composed dynamically: core rules + current building's module instructions.
 
-**State**: `GameState` tracks location, inventory, needs, goals, vocabulary progress, points/level, and per-building goal progress (paused when you leave a building). Persisted to Postgres as JSONB per profile.
+**State**: `GameState` tracks location, inventory, needs, goals, vocabulary progress, points/level, and per-building goal progress (paused when you leave a building). Persisted to Postgres as JSONB per profile. Schema-versioned with automatic migrations on load. User settings (pinyin, listening mode) are stored separately in a `user_settings` table keyed by profile.
 
 ## Adding a New Module
 

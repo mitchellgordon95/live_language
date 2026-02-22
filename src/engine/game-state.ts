@@ -147,6 +147,7 @@ export function createInitialState(
     grammarStats: {},
     turnHistory: [],
     audioEnabled: true,
+    schemaVersion: 1,
   };
 }
 
