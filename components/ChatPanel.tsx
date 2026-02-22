@@ -23,6 +23,11 @@ interface ChatPanelProps {
   onSpeak?: (text: string, voice?: string) => void;
   languageName?: string;
   hideNpcDialogue?: boolean;
+  showPinyin?: boolean;
+}
+
+function stripPinyin(text: string): string {
+  return text.replace(/\s*\([^)]*\)/g, '');
 }
 
 function LearnFeedback({ result }: { result: LearnResult }) {
@@ -74,7 +79,8 @@ function SpeakerIcon() {
   );
 }
 
-function TurnFeedback({ result, onSpeak, hideNpcDialogue }: { result: TurnResultView; onSpeak?: (text: string, voice?: string) => void; hideNpcDialogue?: boolean }) {
+function TurnFeedback({ result, onSpeak, hideNpcDialogue, showPinyin = true }: { result: TurnResultView; onSpeak?: (text: string, voice?: string) => void; hideNpcDialogue?: boolean; showPinyin?: boolean }) {
+  const maybeStrip = (text: string) => showPinyin ? text : stripPinyin(text);
   const [revealed, setRevealed] = useState(false);
   const showText = !hideNpcDialogue || revealed;
 
@@ -110,7 +116,7 @@ function TurnFeedback({ result, onSpeak, hideNpcDialogue }: { result: TurnResult
           <div className="pl-2 border-l-2 border-cyan-600 flex-1">
             <div className="text-cyan-400 text-sm flex items-center gap-1">
               {showText ? (
-                <span>{result.npcResponse.npcName}: &quot;{result.npcResponse.target}&quot;</span>
+                <span>{result.npcResponse.npcName}: &quot;{maybeStrip(result.npcResponse.target)}&quot;</span>
               ) : (
                 <button
                   onClick={() => setRevealed(true)}
@@ -139,13 +145,13 @@ function TurnFeedback({ result, onSpeak, hideNpcDialogue }: { result: TurnResult
       {/* Grammar feedback */}
       {result.grammarScore === 100 && result.valid && result.understood && (
         <div className="text-green-400 text-sm">
-          Perfect! <span className="text-gray-400">&quot;{result.targetModel}&quot;</span>
+          Perfect! <span className="text-gray-400">&quot;{maybeStrip(result.targetModel)}&quot;</span>
         </div>
       )}
       {result.understood && result.grammarIssues.length > 0 && result.grammarIssues[0].original.toLowerCase() !== result.grammarIssues[0].corrected.toLowerCase() && (
         <div className="text-sm">
           <span className="text-yellow-400">Tip:</span>{' '}
-          <span className="text-gray-300">&quot;{result.grammarIssues[0].corrected}&quot; is more natural</span>
+          <span className="text-gray-300">&quot;{maybeStrip(result.grammarIssues[0].corrected)}&quot; is more natural</span>
           <div className="text-gray-500 text-xs mt-0.5">{result.grammarIssues[0].explanation}</div>
         </div>
       )}
@@ -200,7 +206,7 @@ function TurnFeedback({ result, onSpeak, hideNpcDialogue }: { result: TurnResult
   );
 }
 
-export default function ChatPanel({ chatHistory, onSpeak, languageName, hideNpcDialogue }: ChatPanelProps) {
+export default function ChatPanel({ chatHistory, onSpeak, languageName, hideNpcDialogue, showPinyin }: ChatPanelProps) {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   // Scroll when new entries are added or when pending entries resolve
@@ -236,7 +242,7 @@ export default function ChatPanel({ chatHistory, onSpeak, languageName, hideNpcD
             {/* Game response or learn lesson */}
             {(entry.turnResult || entry.learnResult || entry.sayResult) && (
               <div className="bg-gray-800/40 rounded-lg p-2.5 border border-gray-700/50">
-                {entry.turnResult && <TurnFeedback result={entry.turnResult} onSpeak={onSpeak} hideNpcDialogue={hideNpcDialogue} />}
+                {entry.turnResult && <TurnFeedback result={entry.turnResult} onSpeak={onSpeak} hideNpcDialogue={hideNpcDialogue} showPinyin={showPinyin} />}
                 {entry.learnResult && <LearnFeedback result={entry.learnResult} />}
                 {entry.sayResult && <SayFeedback text={entry.sayResult} />}
               </div>

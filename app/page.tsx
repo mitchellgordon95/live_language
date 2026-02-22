@@ -638,7 +638,7 @@ export default function Home() {
 
         {/* Chat + Input column */}
         <div className="flex-1 min-h-0 md:w-[45%] flex flex-col">
-          <ChatPanel chatHistory={chatHistory} onSpeak={(text, voice) => speak(text, voice, game.languageId)} languageName={LANGUAGES.find(l => l.id === game.languageId)?.name} hideNpcDialogue={game.settings?.hideNpcDialogue ?? false} />
+          <ChatPanel chatHistory={chatHistory} onSpeak={(text, voice) => speak(text, voice, game.languageId)} languageName={LANGUAGES.find(l => l.id === game.languageId)?.name} hideNpcDialogue={game.settings?.hideNpcDialogue ?? false} showPinyin={game.settings?.showPinyin ?? true} />
           <div
             className={`p-2 md:p-3 border-t shrink-0 ${showInputGlow ? 'rounded-lg border-blue-500/60' : 'border-gray-800'}`}
             style={showInputGlow ? { animation: 'onboarding-glow 2s ease-in-out infinite', '--glow-color': 'rgba(59, 130, 246, 0.5)' } as React.CSSProperties : undefined}
