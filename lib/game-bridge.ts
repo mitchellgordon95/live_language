@@ -14,7 +14,7 @@ import type { SerializableModuleDefinition } from '../src/engine/serializable-mo
 
 // Engine imports (compiled by Next.js directly from TypeScript source)
 import { processTurn } from '../src/modes/unified';
-import { createInitialState } from '../src/engine/game-state';
+import { createInitialState, snapshotModuleState, restoreModuleSnapshot, createModuleSnapshot } from '../src/engine/game-state';
 import { getEffectDef } from '../src/engine/status-effects';
 import {
   setActiveModules,
@@ -33,7 +33,7 @@ import Anthropic from '@anthropic-ai/sdk';
 
 // --- Serialization (GameState ↔ DB) ---
 
-const CURRENT_SCHEMA_VERSION = 2;
+const CURRENT_SCHEMA_VERSION = 3;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function migrateState(raw: any): any {
@@ -79,6 +79,12 @@ function migrateState(raw: any): any {
       }
     }
     raw.schemaVersion = 2;
+  }
+  // v2 → v3: add activeModule and moduleSnapshots
+  if (raw.schemaVersion < 3) {
+    raw.activeModule = raw.activeModule || 'home';
+    raw.moduleSnapshots = raw.moduleSnapshots || {};
+    raw.schemaVersion = 3;
   }
   return raw;
 }
@@ -126,80 +132,109 @@ export async function initGame(options: {
   }
   setActiveModules(languageConfig.modules);
 
-  // UGC module: load from DB, hydrate, register
+  // UGC module: always start fresh (separate from built-in save system)
   if (options.module?.startsWith('ugc_')) {
     const ugcMod = await loadUGCModule(options.module);
     const startStep = ugcMod.firstStepId ? getStepById(ugcMod.firstStepId) || null : null;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let state = createInitialState(ugcMod.startLocationId, startStep, ugcMod.objects, ugcMod.npcs) as any;
-    state = { ...state, playerTags: ['standing'], audioEnabled: false };
+    state = { ...state, activeModule: options.module, playerTags: ['standing'], audioEnabled: false };
     await saveGame(options.profile, options.module, languageId, serializeState(state));
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return await buildGameView(options.profile, languageId, state, null, undefined, (languageConfig as any).helpText);
   }
 
-  // Check DB for existing save when no specific module requested
-  if (!options.module) {
-    try {
-      const save = await loadGame(options.profile, languageId);
-      if (save) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const savedLangConfig = getLanguage(save.languageId) || languageConfig;
-        setActiveModules(savedLangConfig.modules);
-        // Load UGC module if resuming one
-        if (save.module.startsWith('ugc_')) {
-          await loadUGCModule(save.module);
-        }
-        const state = deserializeState(save.state);
-        const view = await buildGameView(options.profile, save.languageId, state, null, undefined, (savedLangConfig as any).helpText);
-        return { ...view, resumed: true };
+  // Always try loading existing save first
+  let existingState: ReturnType<typeof deserializeState> | null = null;
+  try {
+    const save = await loadGame(options.profile, languageId);
+    if (save) {
+      const savedLangConfig = getLanguage(save.languageId) || languageConfig;
+      setActiveModules(savedLangConfig.modules);
+      if (save.module.startsWith('ugc_')) {
+        await loadUGCModule(save.module);
       }
-    } catch (err) {
-      console.error('Failed to load save, starting fresh:', err);
+      existingState = deserializeState(save.state);
+      // Backfill activeModule from the save's module column for pre-v3 saves
+      if (!existingState.activeModule) {
+        existingState.activeModule = save.module || 'home';
+      }
     }
+  } catch (err) {
+    console.error('Failed to load save:', err);
   }
 
-  // No save found (or specific module requested) — create fresh state
-  let moduleName = 'home';
-  if (options.module) {
+  const targetModule = options.module || null;
+
+  // Case 1: No save exists — create fresh
+  if (!existingState) {
+    const moduleName = targetModule || 'home';
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mod = getModuleByName(options.module) as any;
-    if (mod) {
-      moduleName = mod.name;
-    }
+    const state = createFreshState(moduleName) as any;
+    await saveGame(options.profile, moduleName, languageId, serializeState(state));
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return await buildGameView(options.profile, languageId, state, null, undefined, (languageConfig as any).helpText);
   }
 
+  // Case 2: Save exists, no specific module requested (or same module) — resume
+  if (!targetModule || targetModule === existingState.activeModule) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const view = await buildGameView(options.profile, languageId, existingState, null, undefined, (languageConfig as any).helpText);
+    return { ...view, resumed: true };
+  }
+
+  // Case 3: Save exists, different module requested — switch modules
+  // Snapshot current module state
+  const snapshot = snapshotModuleState(existingState);
+  const snapshots = { ...(existingState.moduleSnapshots || {}), [existingState.activeModule]: snapshot };
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let state = existingState as any;
+
+  if (snapshots[targetModule]) {
+    // Restore previously saved module state
+    state = restoreModuleSnapshot(state, snapshots[targetModule]);
+    delete snapshots[targetModule]; // Remove from snapshots since it's now active
+  } else {
+    // First visit to this module — create fresh module state
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const mod = getModuleByName(targetModule) as any;
+    const startLocationId = mod?.startLocationId || 'bedroom';
+    const firstStepId = mod?.firstStepId;
+    const forceStanding = targetModule !== 'home';
+    let startStep = getStartStepForBuilding(targetModule);
+    if (firstStepId) startStep = getStepById(firstStepId) || startStep;
+    const freshModule = createModuleSnapshot(
+      startLocationId, startStep, mod?.objects || [], mod?.npcs || [], forceStanding,
+    );
+    state = restoreModuleSnapshot(state, freshModule);
+  }
+
+  state = { ...state, activeModule: targetModule, moduleSnapshots: snapshots };
+  await saveGame(options.profile, targetModule, languageId, serializeState(state));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return await buildGameView(options.profile, languageId, state, null, undefined, (languageConfig as any).helpText);
+}
+
+function createFreshState(moduleName: string) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mod = getModuleByName(moduleName) as any;
   const startLocationId = mod?.startLocationId || 'bedroom';
   const firstStepId = mod?.firstStepId;
   const forceStanding = moduleName !== 'home';
-
-  let startStep = getStartStepForBuilding('home');
-  if (firstStepId) {
-    startStep = getStepById(firstStepId) || startStep;
-  }
-
-  const objects = mod?.objects || [];
-  const npcs = mod?.npcs || [];
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let state = createInitialState(startLocationId, startStep, objects, npcs) as any;
-
+  let startStep = getStartStepForBuilding(moduleName);
+  if (firstStepId) startStep = getStepById(firstStepId) || startStep;
+  let state = createInitialState(startLocationId, startStep, mod?.objects || [], mod?.npcs || []);
+  state = { ...state, activeModule: moduleName, audioEnabled: false };
   if (forceStanding) {
     state = {
       ...state,
-      playerTags: state.playerTags.filter((t: string) => t !== 'in_bed').concat(
+      playerTags: state.playerTags.filter(t => t !== 'in_bed').concat(
         state.playerTags.includes('standing') ? [] : ['standing']
       ),
     };
   }
-
-  state = { ...state, audioEnabled: false };
-
-  await saveGame(options.profile, moduleName, languageId, serializeState(state));
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  return await buildGameView(options.profile, languageId, state, null, undefined, (languageConfig as any).helpText);
+  return state;
 }
 
 export async function playTurn(profile: string, languageId: string, input: string): Promise<GameView> {

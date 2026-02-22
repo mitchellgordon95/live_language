@@ -1,42 +1,50 @@
 // Core game types — Generic mutation-based engine
 
-export interface GameState {
-  currentLocation: string;        // location ID
-  visitedLocations: string[];     // location IDs the player has been to
-  playerTags: string[];           // ['standing'] or ['in_bed']
-  statusEffects: string[];        // Active status effect IDs: ['hungry', 'needs_bathroom']
-  turnCount: number;              // Total turns processed (for timer math)
-  statusTimers: Record<string, number>; // category -> turn of last reset
-  objects: WorldObject[];         // ALL objects in the world (flat list)
+// Module-specific state that gets snapshotted when switching modules
+export interface ModuleSnapshot {
+  currentLocation: string;
+  visitedLocations: string[];
+  playerTags: string[];
+  objects: WorldObject[];
   npcStates: Record<string, NPCRuntimeState>;
   npcChatHistory: Record<string, NPCChatEntry[]>;
   time: GameTime;
-
-  // Tutorial
   currentStep: TutorialStep | null;
   completedSteps: string[];
-
-  // Quests
   activeQuests: string[];
+  locationProgress: Record<string, LocationProgress>;
+  turnHistory: TurnHistoryEntry[];
+}
+
+export interface GameState {
+  // --- Module-specific state (snapshotted on module switch) ---
+  currentLocation: string;
+  visitedLocations: string[];
+  playerTags: string[];
+  objects: WorldObject[];
+  npcStates: Record<string, NPCRuntimeState>;
+  npcChatHistory: Record<string, NPCChatEntry[]>;
+  time: GameTime;
+  currentStep: TutorialStep | null;
+  completedSteps: string[];
+  activeQuests: string[];
+  locationProgress: Record<string, LocationProgress>;
+  turnHistory: TurnHistoryEntry[];
+
+  // --- Global state (persists across module switches) ---
+  activeModule: string;
+  moduleSnapshots: Record<string, ModuleSnapshot>;
+  statusEffects: string[];
+  statusTimers: Record<string, number>;
+  turnCount: number;
   completedQuests: string[];
   badges: string[];
-
-  // Progression
   points: number;
   level: number;
   totalPointsEarned: number;
-  locationProgress: Record<string, LocationProgress>;
-
-  // Vocabulary
   vocabulary: VocabularyProgress;
   learnedWords: string[];
-
-  // Grammar tracking (cumulative accuracy per issue type)
   grammarStats: Record<string, { correct: number; total: number }>;
-
-  // Turn history (for grammar context)
-  turnHistory: TurnHistoryEntry[];
-
   profile?: string;
   audioEnabled: boolean;
   schemaVersion: number;

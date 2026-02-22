@@ -1,5 +1,6 @@
 import type {
   GameState,
+  ModuleSnapshot,
   Location,
   TutorialStep,
   Quest,
@@ -177,8 +178,82 @@ export function createInitialState(
     },
     grammarStats: {},
     turnHistory: [],
+    activeModule: 'home',
+    moduleSnapshots: {},
     audioEnabled: true,
-    schemaVersion: 2,
+    schemaVersion: 3,
+  };
+}
+
+// --- Module snapshot/restore ---
+
+const MODULE_FIELDS: (keyof ModuleSnapshot)[] = [
+  'currentLocation', 'visitedLocations', 'playerTags', 'objects',
+  'npcStates', 'npcChatHistory', 'time', 'currentStep', 'completedSteps',
+  'activeQuests', 'locationProgress', 'turnHistory',
+];
+
+export function snapshotModuleState(state: GameState): ModuleSnapshot {
+  return {
+    currentLocation: state.currentLocation,
+    visitedLocations: [...state.visitedLocations],
+    playerTags: [...state.playerTags],
+    objects: state.objects.map(o => ({ ...o })),
+    npcStates: { ...state.npcStates },
+    npcChatHistory: { ...state.npcChatHistory },
+    time: { ...state.time },
+    currentStep: state.currentStep,
+    completedSteps: [...state.completedSteps],
+    activeQuests: [...state.activeQuests],
+    locationProgress: { ...state.locationProgress },
+    turnHistory: [...state.turnHistory],
+  };
+}
+
+export function restoreModuleSnapshot(state: GameState, snapshot: ModuleSnapshot): GameState {
+  const restored = { ...state };
+  for (const key of MODULE_FIELDS) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (restored as any)[key] = snapshot[key];
+  }
+  return restored;
+}
+
+export function createModuleSnapshot(
+  startLocationId: string,
+  startStep: TutorialStep | null,
+  objects: WorldObject[],
+  npcs: NPC[],
+  forceStanding: boolean,
+): ModuleSnapshot {
+  const building = getBuildingForLocation(startLocationId);
+  const npcStates: Record<string, NPCRuntimeState> = {};
+  for (const npc of npcs) {
+    npcStates[npc.id] = {
+      mood: npc.isPet ? 'calm' : 'sleepy',
+      location: npc.location,
+    };
+  }
+  return {
+    currentLocation: startLocationId,
+    visitedLocations: [startLocationId],
+    playerTags: forceStanding ? ['standing'] : ['in_bed'],
+    objects: objects.map(o => ({ ...o })),
+    npcStates,
+    npcChatHistory: {},
+    time: { hour: 7, minute: 0 },
+    currentStep: startStep,
+    completedSteps: [],
+    activeQuests: [],
+    locationProgress: {
+      [building]: {
+        currentStepId: startStep?.id || null,
+        completedSteps: [],
+        difficulty: 1,
+        chainComplete: false,
+      },
+    },
+    turnHistory: [],
   };
 }
 

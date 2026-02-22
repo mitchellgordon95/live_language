@@ -118,8 +118,8 @@ function ModulesPage() {
   const [languageId, setLanguageId] = useState(initialLang);
   const returnModule = searchParams.get('module');
   const returnProfile = searchParams.get('profile');
-  const backUrl = returnModule && initialLang && returnProfile
-    ? `/?play=${encodeURIComponent(returnModule)}&language=${encodeURIComponent(initialLang)}&profile=${encodeURIComponent(returnProfile)}`
+  const backUrl = initialLang && returnProfile
+    ? `/?resume=true&language=${encodeURIComponent(initialLang)}&profile=${encodeURIComponent(returnProfile)}`
     : '/';
   const [description, setDescription] = useState('');
   const [directions, setDirections] = useState<Direction[]>([]);

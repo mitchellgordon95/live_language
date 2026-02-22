@@ -58,8 +58,8 @@ function TrophiesContent() {
   const profile = searchParams.get('profile');
   const language = searchParams.get('language');
   const module = searchParams.get('module');
-  const backUrl = module && language && profile
-    ? `/?play=${encodeURIComponent(module)}&language=${encodeURIComponent(language)}&profile=${encodeURIComponent(profile)}`
+  const backUrl = language && profile
+    ? `/?resume=true&language=${encodeURIComponent(language)}&profile=${encodeURIComponent(profile)}`
     : '/';
   const [data, setData] = useState<TrophyData | null>(null);
   const [loading, setLoading] = useState(true);

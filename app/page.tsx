@@ -150,23 +150,24 @@ export default function Home() {
     });
   }, [game?.languageId, profile, startGame]);
 
-  // Auto-start game when navigated from module explorer with ?play=ugc_xxx
+  // Auto-start game from URL params: ?play=module (switch to module) or ?resume=true (resume save)
   useEffect(() => {
     if (autoPlayRef.current) return;
     const params = new URLSearchParams(window.location.search);
     const playModule = params.get('play');
+    const resumeGame = params.get('resume');
     const lang = params.get('language');
     const prof = params.get('profile');
-    if (playModule && lang) {
+    if ((playModule || resumeGame) && lang) {
       autoPlayRef.current = true;
       if (prof) {
         setProfile(prof);
         localStorage.setItem('profile', prof);
       }
       setSelectedLanguage(lang);
-      // Clean URL without reloading
       window.history.replaceState({}, '', '/');
-      startGame(playModule, { language: lang, profile: prof || undefined });
+      // resume=true → no module (loads save as-is); play=X → switch to that module
+      startGame(playModule || undefined, { language: lang, profile: prof || undefined });
     }
   }, [startGame]);
 

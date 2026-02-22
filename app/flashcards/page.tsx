@@ -67,8 +67,8 @@ function FlashcardsContent() {
   const [started, setStarted] = useState(false);
   const [reviewing, setReviewing] = useState(false);
 
-  const backUrl = module && language && profile
-    ? `/?play=${encodeURIComponent(module)}&language=${encodeURIComponent(language)}&profile=${encodeURIComponent(profile)}`
+  const backUrl = language && profile
+    ? `/?resume=true&language=${encodeURIComponent(language)}&profile=${encodeURIComponent(profile)}`
     : '/';
 
   const fetchCards = useCallback(async () => {
