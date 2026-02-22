@@ -433,7 +433,7 @@ export default function Home() {
       {/* Top bar */}
       <div className="flex items-center justify-between px-3 md:px-4 py-2 bg-gray-900 border-b border-gray-800 shrink-0">
         <div className="flex items-center gap-2">
-          <h1 className="text-sm font-medium text-gray-400 truncate">Language Life Sim <span className="text-gray-600 hidden sm:inline">(Alpha)</span></h1>
+          <button onClick={() => { setAppState('menu'); setGame(null); }} className="text-sm font-medium text-gray-400 hover:text-gray-200 transition-colors truncate cursor-pointer">Language Life Sim <span className="text-gray-600 hidden sm:inline">(Alpha)</span></button>
           {/* Language picker */}
           <div className="relative">
             <button
@@ -533,12 +533,6 @@ export default function Home() {
               </svg>
               Settings
             </button>
-            <button
-              onClick={() => { setAppState('menu'); setGame(null); }}
-              className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
-            >
-              Back to Menu
-            </button>
           </div>
           {/* Mobile hamburger */}
           <div className="relative md:hidden">
@@ -637,12 +631,6 @@ export default function Home() {
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
                   Settings
-                </button>
-                <button
-                  onClick={() => { setAppState('menu'); setGame(null); setMobileMenuOpen(false); }}
-                  className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-gray-700"
-                >
-                  Back to Menu
                 </button>
               </div>
             )}
