@@ -62,6 +62,12 @@ async function ensureSchema(): Promise<void> {
   } catch {
     // Column already exists
   }
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_settings (
+      profile   TEXT PRIMARY KEY,
+      settings  JSONB NOT NULL DEFAULT '{}'
+    )
+  `);
   schemaReady = true;
 }
 
@@ -105,6 +111,26 @@ export async function listSaves(profile: string): Promise<Array<{ languageId: st
     [profile],
   );
   return result.rows.map(row => ({ languageId: row.language_id, module: row.module }));
+}
+
+// --- User Settings ---
+
+export async function loadSettings(profile: string): Promise<Record<string, unknown>> {
+  await ensureSchema();
+  const pool = getPool();
+  const result = await pool.query('SELECT settings FROM user_settings WHERE profile = $1', [profile]);
+  return result.rows.length > 0 ? result.rows[0].settings : {};
+}
+
+export async function saveSettings(profile: string, settings: Record<string, unknown>): Promise<void> {
+  await ensureSchema();
+  const pool = getPool();
+  await pool.query(
+    `INSERT INTO user_settings (profile, settings)
+     VALUES ($1, $2)
+     ON CONFLICT (profile) DO UPDATE SET settings = $2`,
+    [profile, JSON.stringify(settings)],
+  );
 }
 
 // --- User Modules ---

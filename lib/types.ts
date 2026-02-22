@@ -1,6 +1,16 @@
 // View model types sent from server to client each turn.
 // These are the minimal types the web UI needs — not the full GameState.
 
+export interface UserSettings {
+  showPinyin: boolean;      // Show romanization for Mandarin (default true)
+  hideNpcDialogue: boolean; // Hide NPC text for listening practice (default false)
+}
+
+export const DEFAULT_SETTINGS: UserSettings = {
+  showPinyin: true,
+  hideNpcDialogue: false,
+};
+
 export interface BilingualText {
   target: string;
   native: string;
@@ -131,6 +141,8 @@ export interface GameView {
   redirectToModules?: boolean;
 
   trophies: TrophyData;
+
+  settings: UserSettings;
 
   // Last turn results (null on init)
   turnResult: TurnResultView | null;

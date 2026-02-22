@@ -5,9 +5,10 @@
 import 'server-only';
 import { join } from 'path';
 import { readFileSync, existsSync } from 'fs';
-import type { GameView, TurnResultView, TrophyData, QuestView, ObjectCoords, SceneInfo, ExitView, NPCView, TutorialStepView, VignetteHint } from './types';
+import type { GameView, TurnResultView, TrophyData, QuestView, ObjectCoords, SceneInfo, ExitView, NPCView, TutorialStepView, VignetteHint, UserSettings } from './types';
+import { DEFAULT_SETTINGS } from './types';
 import { getCachedVignette, getPlaceholderPath, isGenerationEnabled, isGenerating, triggerGeneration } from './vignette-generator';
-import { saveGame, loadGame, listSaves, getModule, type LocationAsset } from './db';
+import { saveGame, loadGame, listSaves, loadSettings, saveSettings, getModule, type LocationAsset } from './db';
 import { hydrateModule } from '../src/engine/serializable-module';
 import type { SerializableModuleDefinition } from '../src/engine/serializable-module';
 
@@ -31,20 +32,32 @@ import Anthropic from '@anthropic-ai/sdk';
 
 // --- Serialization (GameState ↔ DB) ---
 
+const CURRENT_SCHEMA_VERSION = 1;
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function migrateState(raw: any): any {
+  // v0 → v1: existing saves without a version field
+  if (!raw.schemaVersion) {
+    // Migrate old locations that no longer exist
+    if (raw.currentLocation === 'street') raw.currentLocation = 'living_room';
+    if (raw.currentLocation?.startsWith('restaurant_')) raw.currentLocation = 'living_room';
+    raw.schemaVersion = 1;
+  }
+  // Future: if (raw.schemaVersion < 2) { /* v1→v2 migration */ raw.schemaVersion = 2; }
+  return raw;
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function serializeState(state: any): object {
-  return { ...state, currentStep: state.currentStep?.id ?? null };
+  return { ...state, currentStep: state.currentStep?.id ?? null, schemaVersion: CURRENT_SCHEMA_VERSION };
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function deserializeState(raw: any): any {
-  // Migrate old saves: street and restaurant locations no longer exist
-  if (raw.currentLocation === 'street') raw.currentLocation = 'living_room';
-  if (raw.currentLocation?.startsWith('restaurant_')) raw.currentLocation = 'living_room';
-
+  const migrated = migrateState(raw);
   return {
-    ...raw,
-    currentStep: raw.currentStep ? getStepById(raw.currentStep) ?? null : null,
+    ...migrated,
+    currentStep: migrated.currentStep ? getStepById(migrated.currentStep) ?? null : null,
   };
 }
 
@@ -524,6 +537,10 @@ async function buildGameView(profile: string, langId: string, state: any, turnRe
   const locationId = state.currentLocation;
   const module = getModuleForLocation(locationId) || 'home';
 
+  // Load user settings
+  const rawSettings = await loadSettings(profile);
+  const settings: UserSettings = { ...DEFAULT_SETTINGS, ...rawSettings };
+
   // Load UGC assets from DB (cached in memory)
   const ugcAssets = module.startsWith('ugc_') ? await loadUGCAssets(module) : null;
   const manifest = loadManifest(langId, module, locationId, ugcAssets || undefined);
@@ -669,6 +686,7 @@ async function buildGameView(profile: string, langId: string, state: any, turnRe
     tutorialComplete,
     helpText: helpText || '',
     verbs: currentLoc?.verbs || [],
+    settings,
     turnResult,
   };
 }
