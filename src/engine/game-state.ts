@@ -4,7 +4,6 @@ import type {
   TutorialStep,
   Quest,
   QuestReward,
-  Needs,
   WorldObject,
   Mutation,
   VocabularyProgress,
@@ -12,6 +11,7 @@ import type {
   NPCRuntimeState,
   NPC,
 } from './types';
+import { getEffectCategory, clearCategory, getEffectDef } from './status-effects';
 import { createInitialVocabulary } from './vocabulary';
 import { type BuildingName, getBuildingForLocation, getBuildingUnlockLevels } from '../data/module-registry';
 export { type BuildingName, getBuildingForLocation, getBuildingUnlockLevels };
@@ -61,8 +61,42 @@ export function applyMutation(state: GameState, mutation: Mutation): GameState {
       return { ...state, playerTags: tags };
     }
 
-    case 'needs':
-      return updateNeeds(state, mutation.changes);
+    case 'status': {
+      let effects = [...(state.statusEffects || [])];
+      let timers = { ...(state.statusTimers || {}) };
+
+      // Removing effects resets their category timer
+      if (mutation.remove) {
+        for (const idToRemove of mutation.remove) {
+          const category = getEffectCategory(idToRemove);
+          if (category) {
+            const result = clearCategory(effects, timers, category, state.turnCount || 0);
+            effects = result.effects;
+            timers = result.timers;
+          } else {
+            // Unknown effect — just remove by ID
+            effects = effects.filter(id => id !== idToRemove);
+          }
+        }
+      }
+
+      // Adding effects auto-removes other effects in the same category
+      if (mutation.add) {
+        for (const idToAdd of mutation.add) {
+          if (!effects.includes(idToAdd)) {
+            const category = getEffectCategory(idToAdd);
+            if (category) {
+              // Remove any existing effect in same category
+              const categoryIds = effects.filter(id => getEffectCategory(id) === category);
+              effects = effects.filter(id => !categoryIds.includes(id));
+            }
+            effects.push(idToAdd);
+          }
+        }
+      }
+
+      return { ...state, statusEffects: effects, statusTimers: timers };
+    }
 
     case 'create':
       return { ...state, objects: [...state.objects, mutation.object] };
@@ -116,12 +150,9 @@ export function createInitialState(
     currentLocation: startLocationId,
     visitedLocations: [startLocationId],
     playerTags: ['in_bed'],
-    needs: {
-      energy: 80,
-      hunger: 60,
-      hygiene: 70,
-      bladder: 50,
-    },
+    statusEffects: ['hungry', 'needs_bathroom', 'needs_shower'],
+    turnCount: 0,
+    statusTimers: { hunger: 0, energy: 0, hygiene: 0, bladder: 0 },
     objects: objects.map(o => ({ ...o })),  // deep copy
     npcStates,
     npcChatHistory: {},
@@ -147,19 +178,7 @@ export function createInitialState(
     grammarStats: {},
     turnHistory: [],
     audioEnabled: true,
-    schemaVersion: 1,
-  };
-}
-
-export function updateNeeds(state: GameState, changes: Partial<Needs>): GameState {
-  return {
-    ...state,
-    needs: {
-      energy: clamp(state.needs.energy + (changes.energy || 0), 0, 100),
-      hunger: clamp(state.needs.hunger + (changes.hunger || 0), 0, 100),
-      hygiene: clamp(state.needs.hygiene + (changes.hygiene || 0), 0, 100),
-      bladder: clamp(state.needs.bladder + (changes.bladder || 0), 0, 100),
-    },
+    schemaVersion: 2,
   };
 }
 
@@ -187,10 +206,6 @@ export function formatTime(time: { hour: number; minute: number }): string {
   const period = time.hour < 12 ? 'AM' : 'PM';
   const displayHour = time.hour % 12 || 12;
   return `${displayHour}:${m} ${period}`;
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
 }
 
 // ============================================================================

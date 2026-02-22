@@ -87,7 +87,7 @@ const objects: WorldObject[] = [
   // Bathroom
   { id: 'sink', name: { target: 'a pia', native: 'sink' }, location: 'bathroom', tags: [] },
   { id: 'mirror', name: { target: 'o espelho', native: 'mirror' }, location: 'bathroom', tags: [] },
-  { id: 'toilet', name: { target: 'o vaso sanitário', native: 'toilet' }, location: 'bathroom', tags: [], needsEffect: { bladder: 100 } },
+  { id: 'toilet', name: { target: 'o vaso sanitário', native: 'toilet' }, location: 'bathroom', tags: [] },
   { id: 'shower', name: { target: 'o chuveiro', native: 'shower' }, location: 'bathroom', tags: ['off'] },
   { id: 'toothbrush', name: { target: 'a escova de dentes', native: 'toothbrush' }, location: 'bathroom', tags: [] },
   { id: 'towel', name: { target: 'a toalha', native: 'towel' }, location: 'bathroom', tags: ['takeable'] },
@@ -106,15 +106,15 @@ const objects: WorldObject[] = [
   { id: 'pet_food', name: { target: 'a ração', native: 'pet food' }, location: 'kitchen', tags: ['takeable'] },
 
   // Food (inside fridge — location is the container ID)
-  { id: 'milk', name: { target: 'o leite', native: 'milk' }, location: 'refrigerator', tags: ['takeable', 'consumable'], needsEffect: { hunger: 10 } },
-  { id: 'eggs', name: { target: 'os ovos', native: 'eggs' }, location: 'refrigerator', tags: ['takeable', 'consumable'], needsEffect: { hunger: 25 } },
+  { id: 'milk', name: { target: 'o leite', native: 'milk' }, location: 'refrigerator', tags: ['takeable', 'consumable'] },
+  { id: 'eggs', name: { target: 'os ovos', native: 'eggs' }, location: 'refrigerator', tags: ['takeable', 'consumable'] },
   { id: 'butter', name: { target: 'a manteiga', native: 'butter' }, location: 'refrigerator', tags: ['takeable'] },
-  { id: 'juice', name: { target: 'o suco', native: 'juice' }, location: 'refrigerator', tags: ['takeable', 'consumable'], needsEffect: { hunger: 10 } },
+  { id: 'juice', name: { target: 'o suco', native: 'juice' }, location: 'refrigerator', tags: ['takeable', 'consumable'] },
 
   // Food (on counter)
-  { id: 'bread', name: { target: 'o pão', native: 'bread' }, location: 'kitchen', tags: ['takeable', 'consumable'], needsEffect: { hunger: 15 } },
-  { id: 'coffee', name: { target: 'o café', native: 'coffee' }, location: 'kitchen', tags: ['takeable', 'consumable'], needsEffect: { energy: 20 } },
-  { id: 'water', name: { target: 'a água', native: 'water' }, location: 'kitchen', tags: ['consumable'], needsEffect: { hunger: 5 } },
+  { id: 'bread', name: { target: 'o pão', native: 'bread' }, location: 'kitchen', tags: ['takeable', 'consumable'] },
+  { id: 'coffee', name: { target: 'o café', native: 'coffee' }, location: 'kitchen', tags: ['takeable', 'consumable'] },
+  { id: 'water', name: { target: 'a água', native: 'water' }, location: 'kitchen', tags: ['consumable'] },
 
   // Living room
   { id: 'couch', name: { target: 'o sofá', native: 'couch' }, location: 'living_room', tags: [] },
@@ -414,8 +414,8 @@ OBJECTS:
 - stove: Must have "on" tag to cook. Turn on = tag add "on", remove "off".
 - coffee_maker: Turn on to make coffee available.
 - kitchen_sink: Kitchen sink. Can be used to wash dishes or hands.
-- toilet: Using it ALWAYS sets bladder to full. Emit needs mutation { bladder: 100 } (additive, clamped to 100).
-- shower: Using it improves hygiene significantly. Emit needs mutation { hygiene: 40 }.
+- toilet: Using it relieves the player. Emit status mutation: { "type": "status", "remove": ["needs_bathroom", "urgent_bathroom", "desperate_bathroom"] }
+- shower: Using it cleans the player. Emit status mutation: { "type": "status", "remove": ["needs_shower", "dirty", "very_dirty"] }
 - toothbrush, sink: Bathroom fixtures. Using them improves hygiene slightly.
 - tv: Living room. Can be turned on/off.
 - pet_food: In kitchen. Takeable, used to feed pets.
@@ -423,7 +423,7 @@ OBJECTS:
 COOKING FLOW:
 When the player cooks something, add "cooked" tag to the food item. The stove should get "on" tag.
 If the player wants to take cooked food elsewhere, they move it to "inventory" after cooking.
-Consuming food = "remove" mutation + "needs" mutation with the food's needsEffect.
+Consuming food = "remove" mutation + status mutation: { "type": "status", "remove": ["hungry", "very_hungry", "starving"] }. Coffee also removes tiredness: { "type": "status", "remove": ["tired", "very_tired", "exhausted"] }
 
 NPCs:
 - Lucas (roommate): In living_room. Very sleepy, barely awake. Casual Brazilian Portuguese.

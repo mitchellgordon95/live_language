@@ -255,10 +255,9 @@ export default function ScenePanel({ game, onSpeak, showPinyin = true }: ScenePa
           onClick={() => setInfoExpanded(!infoExpanded)}
           className="w-full flex items-center gap-2 px-3 py-1.5 bg-gray-900/80 border-y border-gray-800"
         >
-          <NeedDot value={game.needs.energy} label="Energy" />
-          <NeedDot value={game.needs.hunger} label="Hunger" />
-          <NeedDot value={game.needs.hygiene} label="Hygiene" />
-          <NeedDot value={game.needs.bladder} label="Bladder" />
+          {game.statusEffects.map(effect => (
+            <StatusDot key={effect.id} effect={effect} />
+          ))}
           {game.inventory.length > 0 && (
             <span className="text-[10px] text-gray-500 ml-1">{game.inventory.length} item{game.inventory.length !== 1 ? 's' : ''}</span>
           )}
@@ -451,13 +450,14 @@ function InfoContent({ game, hasScene, unlabeledObjects, visibleSteps, completed
         </div>
       )}
 
-      {/* Compact needs 2x2 */}
-      <div className="grid grid-cols-2 gap-x-3 gap-y-1 max-w-sm mx-auto">
-        <CompactNeed icon={"\u26a1"} value={game.needs.energy} label="Energy" />
-        <CompactNeed icon={"\ud83c\udf54"} value={game.needs.hunger} label="Hunger" />
-        <CompactNeed icon={"\ud83e\uddfc"} value={game.needs.hygiene} label="Hygiene" />
-        <CompactNeed icon={"\ud83d\udebb"} value={game.needs.bladder} label="Bladder" />
-      </div>
+      {/* Status effects */}
+      {game.statusEffects.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 justify-center">
+          {game.statusEffects.map(effect => (
+            <StatusPill key={effect.id} effect={effect} />
+          ))}
+        </div>
+      )}
 
       {/* Verb hints */}
       {game.verbs.length > 0 && (
@@ -475,11 +475,11 @@ function InfoContent({ game, hasScene, unlabeledObjects, visibleSteps, completed
   );
 }
 
-// --- Need Dot (tiny mobile indicator) ---
+// --- Status Dot (tiny mobile indicator) ---
 
-function NeedDot({ value, label }: { value: number; label: string }) {
-  const color = value > 60 ? 'bg-green-500' : value > 30 ? 'bg-yellow-500' : 'bg-red-500';
-  return <div className={`w-2.5 h-2.5 rounded-full ${color}`} title={`${label}: ${value}%`} />;
+function StatusDot({ effect }: { effect: { id: string; label: string; severity: 'mild' | 'moderate' | 'urgent'; icon: string } }) {
+  const color = effect.severity === 'urgent' ? 'bg-red-500' : effect.severity === 'moderate' ? 'bg-orange-500' : 'bg-yellow-500';
+  return <div className={`w-2.5 h-2.5 rounded-full ${color}`} title={effect.label} />;
 }
 
 // --- Exit Pill (directional, inside image) ---
@@ -520,22 +520,20 @@ function ObjectPill({ obj, showPinyin = true }: { obj: GameObjectView; showPinyi
   );
 }
 
-// --- Compact Needs Bar ---
+// --- Status Pill (tag-based status indicator) ---
 
-function CompactNeed({ icon, value, label }: { icon: string; value: number; label: string }) {
-  const color = value > 60 ? 'bg-green-500' : value > 30 ? 'bg-yellow-500' : 'bg-red-500';
+function StatusPill({ effect }: { effect: { id: string; label: string; severity: 'mild' | 'moderate' | 'urgent'; icon: string } }) {
+  const colors = effect.severity === 'urgent'
+    ? 'bg-red-900/50 text-red-300 border-red-600/50'
+    : effect.severity === 'moderate'
+    ? 'bg-orange-900/50 text-orange-300 border-orange-600/50'
+    : 'bg-yellow-900/50 text-yellow-300 border-yellow-600/50';
   return (
-    <div className="flex items-center gap-1 flex-1" title={`${label}: ${value}%`}>
-      <span className="text-sm">{icon}</span>
-      <div className="flex-1">
-        <div className="flex justify-between text-[10px] text-gray-500 leading-none mb-0.5">
-          <span>{label}</span>
-        </div>
-        <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
-          <div className={`h-full ${color} rounded-full transition-all duration-500`} style={{ width: `${value}%` }} />
-        </div>
-      </div>
-    </div>
+    <span
+      className={`text-xs px-2 py-0.5 rounded-full border ${colors} ${effect.severity === 'urgent' ? 'animate-pulse' : ''}`}
+    >
+      {effect.icon} {effect.label}
+    </span>
   );
 }
 

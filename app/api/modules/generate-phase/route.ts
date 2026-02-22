@@ -61,7 +61,6 @@ interface WorldObject {
   name: { target: string; native: string };
   location: string;       // location ID, or container object ID for items inside containers
   tags: string[];         // State tags: 'open','closed','on','off','takeable','consumable','container','ringing'
-  needsEffect?: { energy?: number; hunger?: number; hygiene?: number; bladder?: number };
 }
 
 // Output format:

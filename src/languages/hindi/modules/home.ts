@@ -87,7 +87,7 @@ const objects: WorldObject[] = [
   // Bathroom
   { id: 'sink', name: { target: 'वॉशबेसिन (washbasin)', native: 'sink' }, location: 'bathroom', tags: [] },
   { id: 'mirror', name: { target: 'शीशा (sheesha)', native: 'mirror' }, location: 'bathroom', tags: [] },
-  { id: 'toilet', name: { target: 'टॉयलेट (toilet)', native: 'toilet' }, location: 'bathroom', tags: [], needsEffect: { bladder: 100 } },
+  { id: 'toilet', name: { target: 'टॉयलेट (toilet)', native: 'toilet' }, location: 'bathroom', tags: [] },
   { id: 'shower', name: { target: 'शावर (shower)', native: 'shower' }, location: 'bathroom', tags: ['off'] },
   { id: 'toothbrush', name: { target: 'टूथब्रश (toothbrush)', native: 'toothbrush' }, location: 'bathroom', tags: [] },
   { id: 'towel', name: { target: 'तौलिया (tauliya)', native: 'towel' }, location: 'bathroom', tags: ['takeable'] },
@@ -106,15 +106,15 @@ const objects: WorldObject[] = [
   { id: 'pet_food', name: { target: 'पालतू जानवर का खाना (paaltoo jaanvar ka khaana)', native: 'pet food' }, location: 'kitchen', tags: ['takeable'] },
 
   // Food (inside fridge)
-  { id: 'milk', name: { target: 'दूध (doodh)', native: 'milk' }, location: 'refrigerator', tags: ['takeable', 'consumable'], needsEffect: { hunger: 10 } },
-  { id: 'eggs', name: { target: 'अंडे (ande)', native: 'eggs' }, location: 'refrigerator', tags: ['takeable', 'consumable'], needsEffect: { hunger: 25 } },
+  { id: 'milk', name: { target: 'दूध (doodh)', native: 'milk' }, location: 'refrigerator', tags: ['takeable', 'consumable'] },
+  { id: 'eggs', name: { target: 'अंडे (ande)', native: 'eggs' }, location: 'refrigerator', tags: ['takeable', 'consumable'] },
   { id: 'butter', name: { target: 'मक्खन (makkhan)', native: 'butter' }, location: 'refrigerator', tags: ['takeable'] },
-  { id: 'juice', name: { target: 'जूस (juice)', native: 'juice' }, location: 'refrigerator', tags: ['takeable', 'consumable'], needsEffect: { hunger: 10 } },
+  { id: 'juice', name: { target: 'जूस (juice)', native: 'juice' }, location: 'refrigerator', tags: ['takeable', 'consumable'] },
 
   // Food (on counter)
-  { id: 'bread', name: { target: 'ब्रेड (bread)', native: 'bread' }, location: 'kitchen', tags: ['takeable', 'consumable'], needsEffect: { hunger: 15 } },
-  { id: 'coffee', name: { target: 'कॉफ़ी (coffee)', native: 'coffee' }, location: 'kitchen', tags: ['takeable', 'consumable'], needsEffect: { energy: 20 } },
-  { id: 'water', name: { target: 'पानी (paani)', native: 'water' }, location: 'kitchen', tags: ['consumable'], needsEffect: { hunger: 5 } },
+  { id: 'bread', name: { target: 'ब्रेड (bread)', native: 'bread' }, location: 'kitchen', tags: ['takeable', 'consumable'] },
+  { id: 'coffee', name: { target: 'कॉफ़ी (coffee)', native: 'coffee' }, location: 'kitchen', tags: ['takeable', 'consumable'] },
+  { id: 'water', name: { target: 'पानी (paani)', native: 'water' }, location: 'kitchen', tags: ['consumable'] },
 
   // Living room
   { id: 'couch', name: { target: 'सोफ़ा (sofa)', native: 'couch' }, location: 'living_room', tags: [] },
@@ -425,8 +425,8 @@ OBJECTS:
 - stove: Must have "on" tag to cook. Turn on = tag add "on", remove "off".
 - coffee_maker: Turn on to make coffee available.
 - kitchen_sink: Kitchen sink. Can be used to wash dishes or hands.
-- toilet: Using it ALWAYS sets bladder to full. Emit needs mutation { bladder: 100 } (additive, clamped to 100).
-- shower: Using it improves hygiene significantly. Emit needs mutation { hygiene: 40 }.
+- toilet: Using it relieves the player. Emit status mutation: { "type": "status", "remove": ["needs_bathroom", "urgent_bathroom", "desperate_bathroom"] }
+- shower: Using it cleans the player. Emit status mutation: { "type": "status", "remove": ["needs_shower", "dirty", "very_dirty"] }
 - toothbrush, sink: Bathroom fixtures. Using them improves hygiene slightly.
 - tv: Living room. Can be turned on/off.
 - pet_food: In kitchen. Takeable, used to feed pets.
@@ -434,7 +434,7 @@ OBJECTS:
 COOKING FLOW:
 When the player cooks something, add "cooked" tag to the food item. The stove should get "on" tag.
 If the player wants to take cooked food elsewhere, they move it to "inventory" after cooking.
-Consuming food = "remove" mutation + "needs" mutation with the food's needsEffect.
+Consuming food = "remove" mutation + status mutation: { "type": "status", "remove": ["hungry", "very_hungry", "starving"] }. Coffee also removes tiredness: { "type": "status", "remove": ["tired", "very_tired", "exhausted"] }
 
 NPCs:
 - Raj राज (roommate): In living_room. Very sleepy, barely awake. Simple Hindi using तुम form.

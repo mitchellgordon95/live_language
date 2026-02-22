@@ -33,7 +33,6 @@ interface ObjectData {
   name: { target: string; native: string };
   location: string;
   tags: string[];
-  needsEffect?: Record<string, number>;
 }
 
 interface NPCData {
@@ -609,11 +608,6 @@ export default function ModuleEditor() {
                             <span key={tag} className="text-xs bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded">{tag}</span>
                           ))}
                         </div>
-                      )}
-                      {obj.needsEffect && (
-                        <span className="text-xs text-green-400 ml-2">
-                          {Object.entries(obj.needsEffect).map(([k, v]) => `${k}+${v}`).join(' ')}
-                        </span>
                       )}
                     </div>
                   ))}

@@ -87,7 +87,7 @@ const objects: WorldObject[] = [
   // Bathroom
   { id: 'sink', name: { target: '洗手池 (xǐshǒuchí)', native: 'sink' }, location: 'bathroom', tags: [] },
   { id: 'mirror', name: { target: '镜子 (jìngzi)', native: 'mirror' }, location: 'bathroom', tags: [] },
-  { id: 'toilet', name: { target: '马桶 (mǎtǒng)', native: 'toilet' }, location: 'bathroom', tags: [], needsEffect: { bladder: 100 } },
+  { id: 'toilet', name: { target: '马桶 (mǎtǒng)', native: 'toilet' }, location: 'bathroom', tags: [] },
   { id: 'shower', name: { target: '淋浴 (línyù)', native: 'shower' }, location: 'bathroom', tags: ['off'] },
   { id: 'toothbrush', name: { target: '牙刷 (yáshuā)', native: 'toothbrush' }, location: 'bathroom', tags: [] },
   { id: 'towel', name: { target: '毛巾 (máojīn)', native: 'towel' }, location: 'bathroom', tags: ['takeable'] },
@@ -106,15 +106,15 @@ const objects: WorldObject[] = [
   { id: 'pet_food', name: { target: '宠物食品 (chǒngwù shípǐn)', native: 'pet food' }, location: 'kitchen', tags: ['takeable'] },
 
   // Food (inside fridge — location is the container ID)
-  { id: 'milk', name: { target: '牛奶 (niúnǎi)', native: 'milk' }, location: 'refrigerator', tags: ['takeable', 'consumable'], needsEffect: { hunger: 10 } },
-  { id: 'eggs', name: { target: '鸡蛋 (jīdàn)', native: 'eggs' }, location: 'refrigerator', tags: ['takeable', 'consumable'], needsEffect: { hunger: 25 } },
+  { id: 'milk', name: { target: '牛奶 (niúnǎi)', native: 'milk' }, location: 'refrigerator', tags: ['takeable', 'consumable'] },
+  { id: 'eggs', name: { target: '鸡蛋 (jīdàn)', native: 'eggs' }, location: 'refrigerator', tags: ['takeable', 'consumable'] },
   { id: 'butter', name: { target: '黄油 (huángyóu)', native: 'butter' }, location: 'refrigerator', tags: ['takeable'] },
-  { id: 'juice', name: { target: '果汁 (guǒzhī)', native: 'juice' }, location: 'refrigerator', tags: ['takeable', 'consumable'], needsEffect: { hunger: 10 } },
+  { id: 'juice', name: { target: '果汁 (guǒzhī)', native: 'juice' }, location: 'refrigerator', tags: ['takeable', 'consumable'] },
 
   // Food (on counter)
-  { id: 'bread', name: { target: '面包 (miànbāo)', native: 'bread' }, location: 'kitchen', tags: ['takeable', 'consumable'], needsEffect: { hunger: 15 } },
-  { id: 'coffee', name: { target: '咖啡 (kāfēi)', native: 'coffee' }, location: 'kitchen', tags: ['takeable', 'consumable'], needsEffect: { energy: 20 } },
-  { id: 'water', name: { target: '水 (shuǐ)', native: 'water' }, location: 'kitchen', tags: ['consumable'], needsEffect: { hunger: 5 } },
+  { id: 'bread', name: { target: '面包 (miànbāo)', native: 'bread' }, location: 'kitchen', tags: ['takeable', 'consumable'] },
+  { id: 'coffee', name: { target: '咖啡 (kāfēi)', native: 'coffee' }, location: 'kitchen', tags: ['takeable', 'consumable'] },
+  { id: 'water', name: { target: '水 (shuǐ)', native: 'water' }, location: 'kitchen', tags: ['consumable'] },
 
   // Living room
   { id: 'couch', name: { target: '沙发 (shāfā)', native: 'couch' }, location: 'living_room', tags: [] },
@@ -427,8 +427,8 @@ OBJECTS:
 - stove: Must have "on" tag to cook. Turn on = tag add "on", remove "off".
 - coffee_maker: Turn on to make coffee available.
 - kitchen_sink: Kitchen sink. Can be used to wash dishes or hands.
-- toilet: Using it ALWAYS sets bladder to full. Emit needs mutation { bladder: 100 } (additive, clamped to 100).
-- shower: Using it improves hygiene significantly. Emit needs mutation { hygiene: 40 }.
+- toilet: Using it relieves the player. Emit status mutation: { "type": "status", "remove": ["needs_bathroom", "urgent_bathroom", "desperate_bathroom"] }
+- shower: Using it cleans the player. Emit status mutation: { "type": "status", "remove": ["needs_shower", "dirty", "very_dirty"] }
 - toothbrush, sink: Bathroom fixtures. Using them improves hygiene slightly.
 - tv: Living room. Can be turned on/off.
 - pet_food: In kitchen. Takeable, used to feed pets.
@@ -436,7 +436,7 @@ OBJECTS:
 COOKING FLOW:
 When the player cooks something, add "cooked" tag to the food item. The stove should get "on" tag.
 If the player wants to take cooked food elsewhere, they move it to "inventory" after cooking.
-Consuming food = "remove" mutation + "needs" mutation with the food's needsEffect.
+Consuming food = "remove" mutation + status mutation: { "type": "status", "remove": ["hungry", "very_hungry", "starving"] }. Coffee also removes tiredness: { "type": "status", "remove": ["tired", "very_tired", "exhausted"] }
 
 NPCs:
 - Xiao Ming 小明 (roommate): In living_room. Very sleepy, barely awake. Simple Mandarin.

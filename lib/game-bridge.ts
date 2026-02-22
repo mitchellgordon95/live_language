@@ -5,7 +5,7 @@
 import 'server-only';
 import { join } from 'path';
 import { readFileSync, existsSync } from 'fs';
-import type { GameView, TurnResultView, TrophyData, QuestView, ObjectCoords, SceneInfo, ExitView, NPCView, TutorialStepView, VignetteHint, UserSettings } from './types';
+import type { GameView, TurnResultView, TrophyData, QuestView, ObjectCoords, SceneInfo, ExitView, NPCView, TutorialStepView, VignetteHint, UserSettings, StatusEffectView } from './types';
 import { DEFAULT_SETTINGS } from './types';
 import { getCachedVignette, getPlaceholderPath, isGenerationEnabled, isGenerating, triggerGeneration } from './vignette-generator';
 import { saveGame, loadGame, listSaves, loadSettings, saveSettings, getModule, type LocationAsset } from './db';
@@ -15,6 +15,7 @@ import type { SerializableModuleDefinition } from '../src/engine/serializable-mo
 // Engine imports (compiled by Next.js directly from TypeScript source)
 import { processTurn } from '../src/modes/unified';
 import { createInitialState } from '../src/engine/game-state';
+import { getEffectDef } from '../src/engine/status-effects';
 import {
   setActiveModules,
   getStepById,
@@ -43,7 +44,30 @@ function migrateState(raw: any): any {
     if (raw.currentLocation?.startsWith('restaurant_')) raw.currentLocation = 'living_room';
     raw.schemaVersion = 1;
   }
+  // v1 → v2: needs scalars → status effect tags + SRS fields
   if (raw.schemaVersion < 2) {
+    // Convert numeric needs to status effect tags
+    const effects: string[] = [];
+    if (raw.needs) {
+      if (raw.needs.hunger < 30) effects.push('starving');
+      else if (raw.needs.hunger < 60) effects.push('hungry');
+      if (raw.needs.bladder < 30) effects.push('desperate_bathroom');
+      else if (raw.needs.bladder < 60) effects.push('needs_bathroom');
+      if (raw.needs.energy < 30) effects.push('exhausted');
+      else if (raw.needs.energy < 60) effects.push('tired');
+      if (raw.needs.hygiene < 30) effects.push('very_dirty');
+      else if (raw.needs.hygiene < 60) effects.push('needs_shower');
+      delete raw.needs;
+    }
+    raw.statusEffects = raw.statusEffects || effects;
+    raw.turnCount = raw.turnCount || 0;
+    raw.statusTimers = raw.statusTimers || { hunger: 0, energy: 0, hygiene: 0, bladder: 0 };
+    // Strip needsEffect from objects
+    if (raw.objects) {
+      for (const obj of raw.objects) {
+        delete obj.needsEffect;
+      }
+    }
     // Add SRS fields to vocabulary words
     const words = raw.vocabulary?.words;
     if (words) {
@@ -694,7 +718,12 @@ async function buildGameView(profile: string, langId: string, state: any, turnRe
     objects,
     npcs,
     exits,
-    needs: state.needs,
+    statusEffects: ((state.statusEffects || []) as string[]).map((id: string): StatusEffectView => {
+      const def = getEffectDef(id);
+      return def
+        ? { id: def.id, label: def.label, severity: def.severity, icon: def.icon }
+        : { id, label: id, severity: 'mild', icon: '?' };
+    }),
     tutorial: tutorialSteps,
     quests: buildQuestList(state, module),
     inventory,

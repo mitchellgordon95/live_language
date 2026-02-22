@@ -44,11 +44,11 @@ export interface ExitView {
   visited?: boolean;
 }
 
-export interface NeedsView {
-  energy: number;
-  hunger: number;
-  hygiene: number;
-  bladder: number;
+export interface StatusEffectView {
+  id: string;
+  label: string;
+  severity: 'mild' | 'moderate' | 'urgent';
+  icon: string;
 }
 
 export interface TutorialStepView {
@@ -122,7 +122,7 @@ export interface GameView {
   objects: GameObjectView[];
   npcs: NPCView[];
   exits: ExitView[];
-  needs: NeedsView;
+  statusEffects: StatusEffectView[];
   tutorial: TutorialStepView[];
   quests: QuestView[];
   inventory: ItemView[];

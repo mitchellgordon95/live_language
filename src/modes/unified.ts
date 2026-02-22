@@ -31,6 +31,7 @@ import {
   loadLocationProgress,
   type BuildingName,
 } from '../engine/game-state';
+import { tickStatusTimers, CORE_STATUS_TIMERS } from '../engine/status-effects';
 import {
   getAllLocations,
   getAllNPCs,
@@ -117,9 +118,8 @@ function buildPrompt(state: GameState): string {
   const objectsDesc = visibleObjects.length > 0
     ? visibleObjects.map(obj => {
         const tagsStr = obj.tags.length > 0 ? ` [${obj.tags.join(', ')}]` : '';
-        const needsStr = obj.needsEffect ? ` {needsEffect: ${JSON.stringify(obj.needsEffect)}}` : '';
         const containerNote = obj.location !== state.currentLocation ? ` (inside ${obj.location})` : '';
-        return `- ${obj.id}: "${obj.name.target}" (${obj.name.native})${tagsStr}${needsStr}${containerNote}`;
+        return `- ${obj.id}: "${obj.name.target}" (${obj.name.native})${tagsStr}${containerNote}`;
       }).join('\n')
     : '(none)';
 
@@ -205,11 +205,7 @@ ${exitsDesc}
 Player inventory:
 ${inventoryDesc}
 
-Needs (0-100, higher is better):
-- energy: ${state.needs.energy}
-- hunger: ${state.needs.hunger}
-- hygiene: ${state.needs.hygiene}
-- bladder: ${state.needs.bladder}`;
+Player status effects: ${(state.statusEffects || []).length > 0 ? (state.statusEffects || []).join(', ') : '(none)'}`;
 
   // Tutorial section — only if tutorial is active
   const tutorialActive = state.currentStep && state.currentStep.id !== 'tutorial_complete';
@@ -335,7 +331,7 @@ function validateMutations(mutations: Mutation[], state: GameState): Mutation[] 
       }
 
       case 'playerTag':
-      case 'needs':
+      case 'status':
         return true;
 
       case 'create': {
@@ -611,8 +607,16 @@ export async function processTurn(
     newState = handleBuildingTransition(newState, currentBuilding);
   }
 
-  // Advance time
+  // Advance time and tick status timers
   newState = advanceTime(newState, 5);
+  newState = { ...newState, turnCount: (newState.turnCount || 0) + 1 };
+  const timerResult = tickStatusTimers(
+    newState.statusEffects || [],
+    newState.statusTimers || {},
+    newState.turnCount,
+    CORE_STATUS_TIMERS,
+  );
+  newState = { ...newState, statusEffects: timerResult.effects, statusTimers: timerResult.timers };
 
   // Award points
   let pointsAwarded = 0;

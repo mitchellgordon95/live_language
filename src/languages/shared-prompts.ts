@@ -50,7 +50,8 @@ MUTATION TYPES (return in execution order):
 - { "type": "move", "objectId": "eggs", "to": "inventory" }              — move object (to location ID, "inventory", or container ID)
 - { "type": "tag", "objectId": "stove", "add": ["on"], "remove": ["off"] } — change object tags
 - { "type": "playerTag", "add": ["standing"], "remove": ["in_bed"] }     — change player tags
-- { "type": "needs", "changes": { "hunger": 25, "energy": -5 } }         — adjust needs (deltas)
+- { "type": "status", "remove": ["hungry"] }                              — remove player status effects
+- { "type": "status", "add": ["tired"] }                                  — add player status effects
 - { "type": "remove", "objectId": "eggs" }                                — consume/destroy object
 - { "type": "npcMood", "npcId": "roommate", "mood": "happy" }            — change NPC mood
 
@@ -61,9 +62,11 @@ COMMON PATTERNS:
 - Open fridge: tag refrigerator, add "open", remove "closed"
 - Take item from open container: move objectId to "inventory"
 - Cook food: tag food item, add "cooked" (stove should be on)
-- Eat/drink: remove objectId + needs mutation with the food's needsEffect values
+- Eat/drink: remove objectId + status mutation removing hunger effects (e.g., { "type": "status", "remove": ["hungry", "very_hungry", "starving"] })
+- Drink coffee/energy drinks: also remove tiredness effects (e.g., { "type": "status", "remove": ["tired", "very_tired", "exhausted"] })
 - Give item to NPC: remove objectId (NPC receives it conceptually)
-- Use bathroom fixtures: needs mutation (hygiene, bladder)
+- Use toilet: status mutation removing bathroom effects (e.g., { "type": "status", "remove": ["needs_bathroom", "urgent_bathroom", "desperate_bathroom"] })
+- Shower/bathe: status mutation removing hygiene effects (e.g., { "type": "status", "remove": ["needs_shower", "dirty", "very_dirty"] })
 - Look at decorative items: no mutations needed (valid=true, empty mutations array)
 
 ORDER MATTERS! Put mutations in the sequence they should execute:
@@ -79,9 +82,10 @@ IMPORTANT RULES:
 - Player must be standing to leave bedroom
 - Tutorial steps are SUGGESTIONS, not gates. If the player wants to leave a room, go somewhere, or do something out of order, ALLOW IT. Never block a valid movement or action just because a prior tutorial step is incomplete.
 - Can't access items in closed containers — fridge must have "open" tag first
-- When consuming food with needsEffect, include BOTH a "remove" mutation AND a "needs" mutation
-- Needs values are deltas: positive = better (hunger +25 means less hungry)
-- For cooking: add "cooked" tag to the food. If player cooks and eats in one command, tag first then remove+needs
+- When consuming food, include BOTH a "remove" mutation for the food AND a "status" mutation removing hunger effects
+- Status effects appear automatically over time (hungry, needs_bathroom, tired, needs_shower). Remove them when the player takes the appropriate action.
+- Ignore any references to "needsEffect" or "needs" mutations in module guidance — use "status" mutations instead.
+- For cooking: add "cooked" tag to the food. If player cooks and eats in one command, tag first then remove+status
 - NEVER reference objects that don't exist in the context
 
 ENGLISH OR MIXED INPUT: If the player writes fully or partially in English, do NOT execute any mutation. Set understood=true, valid=false, mutations=[], grammar.score=0. Always include a grammar issue with type "other", original set to their phrase, corrected set to the natural ${config.languageName} equivalent. Handle these three cases:
@@ -132,7 +136,7 @@ RESPOND WITH ONLY VALID JSON:
     "actionText": "${config.npcExample.actionText}"
   },
   "mutations": [
-    { "type": "create", "object": { "id": "my_sopa", "name": { "target": "la sopa", "native": "soup" }, "location": "kitchen", "tags": ["consumable"], "needsEffect": { "hunger": 30 } } }
+    { "type": "create", "object": { "id": "my_sopa", "name": { "target": "la sopa", "native": "soup" }, "location": "kitchen", "tags": ["consumable"] } }
   ]
 }
 

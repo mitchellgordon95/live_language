@@ -4,7 +4,9 @@ export interface GameState {
   currentLocation: string;        // location ID
   visitedLocations: string[];     // location IDs the player has been to
   playerTags: string[];           // ['standing'] or ['in_bed']
-  needs: Needs;
+  statusEffects: string[];        // Active status effect IDs: ['hungry', 'needs_bathroom']
+  turnCount: number;              // Total turns processed (for timer math)
+  statusTimers: Record<string, number>; // category -> turn of last reset
   objects: WorldObject[];         // ALL objects in the world (flat list)
   npcStates: Record<string, NPCRuntimeState>;
   npcChatHistory: Record<string, NPCChatEntry[]>;
@@ -80,7 +82,6 @@ export interface WorldObject {
   name: BilingualText;
   location: string;       // location ID, 'inventory', container ID, or 'removed'
   tags: string[];          // ALL state + capabilities: ['open', 'cooked', 'takeable', 'consumable', 'ringing']
-  needsEffect?: Partial<Needs>;
 }
 
 // NPCs — pets are NPCs with isPet: true
@@ -94,11 +95,21 @@ export interface NPC {
   appearance?: string;
 }
 
-export interface Needs {
-  energy: number;
-  hunger: number;
-  hygiene: number;
-  bladder: number;
+// Status effects — replaces old numeric Needs system
+export type StatusSeverity = 'mild' | 'moderate' | 'urgent';
+
+export interface StatusEffectDef {
+  id: string;               // 'hungry', 'very_hungry', 'starving'
+  label: string;            // 'Very Hungry'
+  severity: StatusSeverity;
+  icon: string;             // '🍔'
+  category: string;         // 'hunger' — groups related effects
+}
+
+export interface StatusTimerConfig {
+  category: string;
+  triggerEvery: number;     // Turns between escalations
+  escalation: string[];     // Effect IDs in order: ['hungry', 'very_hungry', 'starving']
 }
 
 export interface GameTime {
@@ -164,7 +175,7 @@ export type Mutation =
   | { type: 'move'; objectId: string; to: string }
   | { type: 'tag'; objectId: string; add?: string[]; remove?: string[] }
   | { type: 'playerTag'; add?: string[]; remove?: string[] }
-  | { type: 'needs'; changes: Partial<Needs> }
+  | { type: 'status'; add?: string[]; remove?: string[] }
   | { type: 'create'; object: WorldObject }
   | { type: 'remove'; objectId: string }
   | { type: 'npcMood'; npcId: string; mood: string };
