@@ -236,6 +236,10 @@ export interface WordFamiliarity {
   consecutiveCorrect: number;
   lastUsed: number;
   stage: FamiliarityStage;
+  srsInterval: number;    // days until next review
+  srsEase: number;        // ease factor (SM-2, starts at 2.5)
+  srsNextReview: number;  // timestamp when next review is due
+  srsDueCount: number;    // times reviewed via flashcards
 }
 
 export interface VocabularyProgress {

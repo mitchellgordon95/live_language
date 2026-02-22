@@ -35,6 +35,10 @@ export function createInitialVocabulary(): VocabularyProgress {
       consecutiveCorrect: 0,
       lastUsed: 0,
       stage: 'new',
+      srsInterval: 0,
+      srsEase: 2.5,
+      srsNextReview: 0,
+      srsDueCount: 0,
     };
   }
 
@@ -90,6 +94,12 @@ export function recordWordUse(
     if (word.stage === 'learning') {
       updatedWord.usesSinceLearning = word.usesSinceLearning + 1;
     }
+    // Advance SRS schedule (in-game use counts as a "Good" review)
+    const srs = advanceSrs(updatedWord, 3);
+    updatedWord.srsInterval = srs.srsInterval;
+    updatedWord.srsEase = srs.srsEase;
+    updatedWord.srsNextReview = srs.srsNextReview;
+    updatedWord.srsDueCount = (updatedWord.srsDueCount || 0) + 1;
   } else {
     // Reset consecutive streak on error
     updatedWord.consecutiveCorrect = 0;
@@ -255,4 +265,75 @@ export function extractWordsFromText(
   }
 
   return foundWords;
+}
+
+// --- Spaced Repetition (SM-2) ---
+
+const DAY_MS = 86400000;
+
+function advanceSrs(word: WordFamiliarity, quality: number): { srsInterval: number; srsEase: number; srsNextReview: number } {
+  let interval = word.srsInterval || 0;
+  let ease = word.srsEase || 2.5;
+
+  if (quality <= 1) {
+    // Again: reset to 1 day
+    interval = 1;
+    ease = Math.max(1.3, ease - 0.2);
+  } else if (quality === 2) {
+    // Hard
+    interval = Math.max(1, Math.round((interval || 1) * 1.2));
+    ease = Math.max(1.3, ease - 0.15);
+  } else if (quality === 3) {
+    // Good
+    interval = interval === 0 ? 1 : Math.round(interval * ease);
+  } else {
+    // Easy (quality >= 4)
+    interval = interval === 0 ? 4 : Math.round(interval * ease * 1.3);
+    ease = ease + 0.15;
+  }
+
+  return {
+    srsInterval: interval,
+    srsEase: ease,
+    srsNextReview: Date.now() + interval * DAY_MS,
+  };
+}
+
+export function getDueWords(vocab: VocabularyProgress): WordFamiliarity[] {
+  const now = Date.now();
+  return Object.values(vocab.words)
+    .filter(w => {
+      // Skip words never encountered in-game
+      if (w.timesUsedCorrectly === 0 && w.timesSeenInContext === 0) return false;
+      // Due if never reviewed or past due date
+      return w.srsNextReview === 0 || !w.srsNextReview || w.srsNextReview <= now;
+    })
+    .sort((a, b) => (a.srsNextReview || 0) - (b.srsNextReview || 0));
+}
+
+export function reviewWord(
+  vocab: VocabularyProgress,
+  wordId: string,
+  quality: number
+): VocabularyProgress {
+  const word = vocab.words[wordId];
+  if (!word) return vocab;
+
+  const srs = advanceSrs(word, quality);
+  const updatedWord: WordFamiliarity = {
+    ...word,
+    lastUsed: Date.now(),
+    srsInterval: srs.srsInterval,
+    srsEase: srs.srsEase,
+    srsNextReview: srs.srsNextReview,
+    srsDueCount: (word.srsDueCount || 0) + 1,
+  };
+
+  return {
+    ...vocab,
+    words: {
+      ...vocab.words,
+      [wordId]: updatedWord,
+    },
+  };
 }

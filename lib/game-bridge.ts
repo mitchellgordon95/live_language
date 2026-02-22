@@ -32,7 +32,7 @@ import Anthropic from '@anthropic-ai/sdk';
 
 // --- Serialization (GameState ↔ DB) ---
 
-const CURRENT_SCHEMA_VERSION = 1;
+const CURRENT_SCHEMA_VERSION = 2;
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function migrateState(raw: any): any {
@@ -43,7 +43,19 @@ function migrateState(raw: any): any {
     if (raw.currentLocation?.startsWith('restaurant_')) raw.currentLocation = 'living_room';
     raw.schemaVersion = 1;
   }
-  // Future: if (raw.schemaVersion < 2) { /* v1→v2 migration */ raw.schemaVersion = 2; }
+  if (raw.schemaVersion < 2) {
+    // Add SRS fields to vocabulary words
+    const words = raw.vocabulary?.words;
+    if (words) {
+      for (const w of Object.values(words) as any[]) {
+        if (w.srsInterval === undefined) w.srsInterval = 0;
+        if (w.srsEase === undefined) w.srsEase = 2.5;
+        if (w.srsNextReview === undefined) w.srsNextReview = 0;
+        if (w.srsDueCount === undefined) w.srsDueCount = 0;
+      }
+    }
+    raw.schemaVersion = 2;
+  }
   return raw;
 }
 
